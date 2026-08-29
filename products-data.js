@@ -1,6 +1,6 @@
 // Saver Market product catalogue — generated from Saver-Market-Products-SYP-Template-1.xlsx
 // 132 products: STK001 to STK132
-window.PRODUCTS = [
+const CUSTOM_PRODUCTS_DATA = [
   {
     "sku": "STK001",
     "nameEn": "BANT ABOUHA Arabic Name Necklace",
