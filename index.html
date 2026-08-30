@@ -8375,6 +8375,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if(currentUser()){await loadAccountCart();await syncWishlistFromAccount();await loadProfileIntoForm()}else restoreGuestCart();
     refreshCartDisplayEngine();updateWishlistBadge();updateAccountIndicators();
   }
+  // Expose only the customer helpers needed by the later account/address UI module.
+  window.saverCustomerCurrentUser = currentUser;
+  window.saverCustomerRest = rest;
+  window.saverCustomerLoadOrders = loadOrders;
+  window.saverCustomerAuthMessage = authMessage;
+
   window.addEventListener('load',()=>{initializeCustomerFeatures().catch(console.warn)});
 })();
 </script>\n
@@ -8387,18 +8393,18 @@ document.addEventListener("DOMContentLoaded", function () {
   function escapeHtml(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]))}
 
   async function saverFetchProfile(){
-    const u=currentUser(); if(!u)return {};
-    const rows=await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}&select=*`);
+    const u=window.saverCustomerCurrentUser(); if(!u)return {};
+    const rows=await window.saverCustomerRest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}&select=*`);
     return rows?.[0]||{};
   }
   async function saverFetchAddresses(){
-    const u=currentUser(); if(!u)return [];
-    return await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}&select=id,label,recipient_name,phone,city,address,is_default,created_at&order=is_default.desc,created_at.asc`);
+    const u=window.saverCustomerCurrentUser(); if(!u)return [];
+    return await window.saverCustomerRest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}&select=id,label,recipient_name,phone,city,address,is_default,created_at&order=is_default.desc,created_at.asc`);
   }
 
   window.saverRenderAccountView=async function(){
     const root=document.getElementById('saverAccountContent'); if(!root)return;
-    const user=currentUser();
+    const user=window.saverCustomerCurrentUser();
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
         <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
@@ -8416,7 +8422,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="saver-account-card" id="saverProfileCard"><h3>${lang('My Profile','ملفي الشخصي')}</h3><p>${escapeHtml(user.email||'')}</p><div id="saverProfileSummary">${lang('Loading profile...','جاري تحميل الملف...')}</div></div>
       <div class="saver-account-card"><h3>${lang('My Orders','طلباتي')}</h3><p>${lang('Orders linked to your account will appear here.','ستظهر الطلبات المرتبطة بحسابك هنا.')}</p><div class="saver-orders-list" id="saverOrdersList"><div style="color:#888">${lang('Loading...','جاري التحميل...')}</div></div></div>
     </div>`;
-    await Promise.all([saverRenderProfileSummary(),loadOrders()]);
+    await Promise.all([saverRenderProfileSummary(),window.saverCustomerLoadOrders()]);
   };
 
   window.saverRenderProfileSummary=async function(){
@@ -8437,7 +8443,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const ed=document.getElementById('saverAccountEditor'); if(!ed)return; const p=await saverFetchProfile();
     ed.innerHTML=`<div class="saver-account-editor"><form class="saver-auth-form" onsubmit="saverSaveCompactProfile(event)"><div class="saver-profile-grid"><div><label>${lang('Full name','الاسم الكامل')}</label><input class="form-input" id="saverProfileName" value="${escapeHtml(p.full_name||'')}"></div><div><label>${lang('Phone','الهاتف')}</label><input class="form-input" id="saverProfilePhone" type="tel" value="${escapeHtml(p.phone||'')}"></div></div><div class="saver-account-actions"><button class="saver-account-primary" type="submit">${lang('Save Profile','حفظ الملف')}</button><button class="saver-account-secondary" type="button" onclick="saverRenderProfileSummary()">${lang('Cancel','إلغاء')}</button></div><div class="saver-auth-message" id="saverAuthMessage"></div></form></div>`;
   };
-  window.saverSaveCompactProfile=async function(e){e.preventDefault();const u=currentUser();if(!u)return;try{await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({full_name:document.getElementById('saverProfileName').value.trim(),phone:document.getElementById('saverProfilePhone').value.trim(),updated_at:new Date().toISOString()})});await saverRenderProfileSummary()}catch(err){authMessage(err.message,'error')}};
+  window.saverSaveCompactProfile=async function(e){e.preventDefault();const u=window.saverCustomerCurrentUser();if(!u)return;try{await window.saverCustomerRest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({full_name:document.getElementById('saverProfileName').value.trim(),phone:document.getElementById('saverProfilePhone').value.trim(),updated_at:new Date().toISOString()})});await saverRenderProfileSummary()}catch(err){window.saverCustomerAuthMessage(err.message,'error')}};
 
   window.saverShowAddressManager=async function(){
     const ed=document.getElementById('saverAccountEditor'); if(!ed)return; let addresses=[];
@@ -8446,21 +8452,21 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   window.saverEditAddress=async function(id){
-    const host=document.getElementById('saverAddressFormHost')||document.getElementById('saverAccountEditor');if(!host)return;let a={};if(id){const rows=await rest(`customer_addresses?id=eq.${Number(id)}&select=*`);a=rows?.[0]||{}}
+    const host=document.getElementById('saverAddressFormHost')||document.getElementById('saverAccountEditor');if(!host)return;let a={};if(id){const rows=await window.saverCustomerRest(`customer_addresses?id=eq.${Number(id)}&select=*`);a=rows?.[0]||{}}
     host.innerHTML=`<form class="saver-auth-form saver-account-editor" onsubmit="saverSaveAddress(event,${id?Number(id):'null'})"><div class="saver-profile-grid"><div><label>${lang('Label','اسم العنوان')}</label><select class="form-input" id="saverAddressLabel"><option value="Home" ${a.label==='Home'?'selected':''}>${lang('Home','المنزل')}</option><option value="Work" ${a.label==='Work'?'selected':''}>${lang('Work','العمل')}</option><option value="Other" ${a.label==='Other'?'selected':''}>${lang('Other','أخرى')}</option></select></div><div><label>${lang('Recipient name','اسم المستلم')}</label><input class="form-input" id="saverAddressName" value="${escapeHtml(a.recipient_name||'')}"></div><div><label>${lang('Phone','الهاتف')}</label><input class="form-input" id="saverAddressPhone" type="tel" value="${escapeHtml(a.phone||'')}"></div><div><label>${lang('City','المدينة')}</label><input class="form-input" id="saverAddressCity" value="${escapeHtml(a.city||'Damascus')}"></div><div class="full"><label>${lang('Address','العنوان')}</label><textarea class="form-input" id="saverAddressText" rows="3">${escapeHtml(a.address||'')}</textarea></div><div class="full"><label style="display:flex;align-items:center;gap:8px"><input id="saverAddressDefault" type="checkbox" ${a.is_default?'checked':''}> ${lang('Use as default delivery address','استخدم كعنوان التوصيل الافتراضي')}</label></div></div><div class="saver-account-actions"><button class="saver-account-primary" type="submit">${lang('Save Address','حفظ العنوان')}</button><button class="saver-account-secondary" type="button" onclick="saverShowAddressManager()">${lang('Cancel','إلغاء')}</button></div><div class="saver-auth-message" id="saverAuthMessage"></div></form>`;
   };
 
   window.saverSaveAddress=async function(e,id){
-    e.preventDefault();const u=currentUser();if(!u)return;const payload={user_id:u.id,label:document.getElementById('saverAddressLabel').value,recipient_name:document.getElementById('saverAddressName').value.trim(),phone:document.getElementById('saverAddressPhone').value.trim(),city:document.getElementById('saverAddressCity').value.trim(),address:document.getElementById('saverAddressText').value.trim(),is_default:document.getElementById('saverAddressDefault').checked,updated_at:new Date().toISOString()};
-    try{if(payload.is_default)await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});if(id)await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});else await rest('customer_addresses',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});await saverShowAddressManager()}catch(err){authMessage(err.message,'error')}
+    e.preventDefault();const u=window.saverCustomerCurrentUser();if(!u)return;const payload={user_id:u.id,label:document.getElementById('saverAddressLabel').value,recipient_name:document.getElementById('saverAddressName').value.trim(),phone:document.getElementById('saverAddressPhone').value.trim(),city:document.getElementById('saverAddressCity').value.trim(),address:document.getElementById('saverAddressText').value.trim(),is_default:document.getElementById('saverAddressDefault').checked,updated_at:new Date().toISOString()};
+    try{if(payload.is_default)await window.saverCustomerRest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});if(id)await window.saverCustomerRest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});else await window.saverCustomerRest('customer_addresses',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});await saverShowAddressManager()}catch(err){window.saverCustomerAuthMessage(err.message,'error')}
   };
-  window.saverMakeDefaultAddress=async function(id){const u=currentUser();if(!u)return;await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:true,updated_at:new Date().toISOString()})});await saverShowAddressManager()};
-  window.saverDeleteAddress=async function(id){if(!confirm(lang('Delete this saved address?','حذف هذا العنوان المحفوظ؟')))return;await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}});await saverShowAddressManager()};
+  window.saverMakeDefaultAddress=async function(id){const u=window.saverCustomerCurrentUser();if(!u)return;await window.saverCustomerRest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});await window.saverCustomerRest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:true,updated_at:new Date().toISOString()})});await saverShowAddressManager()};
+  window.saverDeleteAddress=async function(id){if(!confirm(lang('Delete this saved address?','حذف هذا العنوان المحفوظ؟')))return;await window.saverCustomerRest(`customer_addresses?id=eq.${Number(id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}});await saverShowAddressManager()};
 
   const oldCheckout=window.handleCheckout;
   if(typeof oldCheckout==='function'&&!oldCheckout.__savedAddressEnhanced){
     const enhanced=async function(){
-      const u=currentUser(); if(u){try{const a=await saverFetchAddresses();const d=a.find(x=>x.is_default)||a[0];const p=await saverFetchProfile();const n=document.getElementById('custName'),ph=document.getElementById('custPhone'),ad=document.getElementById('custAddress');if(n&&!n.value)n.value=d?.recipient_name||p.full_name||'';if(ph&&!ph.value)ph.value=d?.phone||p.phone||'';if(ad&&!ad.value)ad.value=d?.address||''}catch(e){}}
+      const u=window.saverCustomerCurrentUser(); if(u){try{const a=await saverFetchAddresses();const d=a.find(x=>x.is_default)||a[0];const p=await saverFetchProfile();const n=document.getElementById('custName'),ph=document.getElementById('custPhone'),ad=document.getElementById('custAddress');if(n&&!n.value)n.value=d?.recipient_name||p.full_name||'';if(ph&&!ph.value)ph.value=d?.phone||p.phone||'';if(ad&&!ad.value)ad.value=d?.address||''}catch(e){}}
       return oldCheckout.apply(this,arguments);
     }; enhanced.__savedAddressEnhanced=true;window.handleCheckout=enhanced;try{handleCheckout=window.handleCheckout}catch(e){}
   }
