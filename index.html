@@ -3969,6 +3969,34 @@ html[dir="rtl"] .saver-gallery-controls {
     }
 }
 
+
+/* =========================================================
+   SAVER MARKET FINAL CONTACT / ABOUT / LANGUAGE FIXES
+   ========================================================= */
+.about-page-layout { display:block !important; }
+.about-message-block { max-width:1100px; margin:0 auto 34px; }
+.about-message-block .section-title { text-align:start !important; }
+.about-message-divider { margin:0 0 20px !important; }
+html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-right:0 !important; }
+.about-message-block p { color:#555; margin-bottom:16px; line-height:1.8; }
+.about-static-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; }
+.about-static-card { width:100%; height:520px; border-radius:28px; overflow:hidden; box-shadow:0 15px 35px rgba(0,0,0,.10); background:var(--sage-light); }
+.about-static-card img { width:100%; height:100%; object-fit:fill; display:block; }
+
+.contact-direct-link { color:var(--sage-dark); font-weight:600; word-break:break-word; }
+.contact-direct-link:hover { color:var(--gold-dark); text-decoration:underline; }
+#view-contact .contact-grid { align-items:stretch !important; }
+#view-contact .contact-map-wrap { position:relative !important; width:100% !important; min-height:430px !important; height:100% !important; border-radius:24px; overflow:hidden; box-shadow:0 10px 30px var(--shadow-light); background:var(--sage-light); }
+#view-contact .contact-map-wrap iframe { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; min-width:100% !important; min-height:100% !important; max-width:none !important; border:0 !important; display:block !important; }
+
+@media (max-width:768px) {
+    .about-message-block { margin-bottom:22px; }
+    .about-static-grid { grid-template-columns:1fr; gap:18px; }
+    .about-static-card { height:auto; aspect-ratio:4/5; border-radius:20px; }
+    .about-static-card img { object-fit:fill; }
+    #view-contact .contact-map-wrap { min-height:330px !important; height:330px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -4050,7 +4078,7 @@ html[dir="rtl"] .saver-gallery-controls {
                 <span class="nav-link" data-view="contact" onclick="switchView('contact')" data-en="Contact" data-ar="اتصل بنا">Contact</span>
             </nav>
             <div class="nav-actions">
-                <button class="lang-switch" id="langSwitch" onclick="toggleLanguage()">العربية</button>
+                <button class="lang-switch" id="langSwitch" onclick="toggleLanguage()">English</button>
                 <button class="theme-switch" id="themeSwitch" type="button" onclick="toggleTheme()" aria-label="Dark mode" title="Dark mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -4064,7 +4092,7 @@ html[dir="rtl"] .saver-gallery-controls {
                 </div>
                 <div class="social-icons">
                     <a href="https://www.instagram.com/saver_marketing9?igsh=OHRsNnRyOGg3cG9q" target="_blank"><i class="fab fa-instagram"></i></a>
-                    <a href="https://www.facebook.com/share/1FpjcD5aRU/?mibextid=wwXIfr" target="_blank"><i class="fab fa-facebook"></i></a>
+                    <a href="https://www.facebook.com/share/15p96niQhz/" target="_blank"><i class="fab fa-facebook"></i></a>
                     <a href="https://wa.me/963991727336" target="_blank"><i class="fab fa-whatsapp"></i></a>
                 </div>
             </div>
@@ -4281,60 +4309,42 @@ html[dir="rtl"] .saver-gallery-controls {
         </section>
 
         <section id="view-about" class="app-view">
-            <div class="container about-content">
-                <div>
-                    <h2 class="section-title" style="text-align:left;" data-tr="about_title">Crafting Premium Shopping Experiences</h2>
-                    <div class="section-divider" style="margin:0 0 20px 0;"></div><p
-    style="margin-bottom:20px; color:#555;"
-    data-en="Saver Market is Damascus's premier modern digital luxury marketplace boutique store. We provide premium fashion, accessories, beauty products, home products, and everyday essentials with quality and trust."
-    data-ar="يعد Saver Market وجهتك الموثوقة للتسوق الإلكتروني في دمشق، حيث نقدم تشكيلة مميزة من الأزياء والإكسسوارات والمنتجات المنزلية ومنتجات التجميل والاحتياجات اليومية، مع التركيز على الجودة والأسعار المناسبة.">
-    Saver Market is Damascus's premier modern digital luxury marketplace boutique store. We provide premium fashion, accessories, beauty products, home products, and everyday essentials with quality and trust.
-</p>
+            <div class="container about-page-layout">
+                <div class="about-message-block">
+                    <h2 class="section-title" data-tr="about_title">Crafting Premium Shopping Experiences</h2>
+                    <div class="section-divider about-message-divider"></div>
+                    <p
+                        data-en="Saver Market is Damascus's premier modern digital luxury marketplace boutique store. We provide premium fashion, accessories, beauty products, home products, and everyday essentials with quality and trust."
+                        data-ar="يعد Saver Market وجهتك الموثوقة للتسوق الإلكتروني في دمشق، حيث نقدم تشكيلة مميزة من الأزياء والإكسسوارات والمنتجات المنزلية ومنتجات التجميل والاحتياجات اليومية، مع التركيز على الجودة والأسعار المناسبة.">
+                        يعد Saver Market وجهتك الموثوقة للتسوق الإلكتروني في دمشق، حيث نقدم تشكيلة مميزة من الأزياء والإكسسوارات والمنتجات المنزلية ومنتجات التجميل والاحتياجات اليومية، مع التركيز على الجودة والأسعار المناسبة.
+                    </p>
+                    <p
+                        data-en="We are committed to providing a simple, secure shopping experience with direct WhatsApp ordering, fast customer service, and reliable delivery throughout Syria."
+                        data-ar="نسعى إلى توفير تجربة تسوق سهلة وآمنة، مع إمكانية الطلب مباشرة عبر واتساب وخدمة عملاء سريعة وتوصيل موثوق داخل سوريا.">
+                        نسعى إلى توفير تجربة تسوق سهلة وآمنة، مع إمكانية الطلب مباشرة عبر واتساب وخدمة عملاء سريعة وتوصيل موثوق داخل سوريا.
+                    </p>
+                </div>
 
-<p
-    style="color:#555;"
-    data-en="We are committed to providing a simple, secure shopping experience with direct WhatsApp ordering, fast customer service, and reliable delivery throughout Syria."
-    data-ar="نسعى إلى توفير تجربة تسوق سهلة وآمنة، مع إمكانية الطلب مباشرة عبر واتساب وخدمة عملاء سريعة وتوصيل موثوق داخل سوريا.">
-    We are committed to providing a simple, secure shopping experience with direct WhatsApp ordering, fast customer service, and reliable delivery throughout Syria.
-</p> </div>
-               <div id="aboutSlideshow"
-style="
-position:relative;
-width:100%;
-height:520px;
-overflow:hidden;
-border-radius:30px;
-box-shadow:0 15px 35px rgba(0,0,0,.12);
-">
-
-<picture class="about-slide active">
-    <source media="(max-width: 768px)" srcset="images/assets/aboutmobile1.jpg">
-    <img src="images/assets/about1.jpg" alt="Saver Market about 1" draggable="false">
-</picture>
-
-<picture class="about-slide">
-    <source media="(max-width: 768px)" srcset="images/assets/aboutmobile2.jpg">
-    <img src="images/assets/about2.jpg" alt="Saver Market about 2" draggable="false">
-</picture>
-
-<picture class="about-slide">
-    <source media="(max-width: 768px)" srcset="images/assets/aboutmobile3.jpg">
-    <img src="images/assets/about3.jpg" alt="Saver Market about 3" draggable="false">
-</picture>
-
-<picture class="about-slide">
-    <source media="(max-width: 768px)" srcset="images/assets/aboutmobile4.jpg">
-    <img src="images/assets/about4.jpg" alt="Saver Market about 4" draggable="false">
-</picture>
-
-<picture class="about-slide">
-    <source media="(max-width: 768px)" srcset="images/assets/aboutmobile5.jpg">
-    <img src="images/assets/about5.jpg" alt="Saver Market about 5" draggable="false">
-</picture>
-
-</div>
-</div>
-</section>
+                <div class="about-static-grid" aria-label="Saver Market information gallery">
+                    <picture class="about-static-card">
+                        <source media="(max-width: 768px)" srcset="images/assets/aboutmobile1.jpg">
+                        <img src="images/assets/about1.jpg" alt="Saver Market about 1" loading="eager" decoding="async">
+                    </picture>
+                    <picture class="about-static-card">
+                        <source media="(max-width: 768px)" srcset="images/assets/aboutmobile2.jpg">
+                        <img src="images/assets/about2.jpg" alt="Saver Market about 2" loading="lazy" decoding="async">
+                    </picture>
+                    <picture class="about-static-card">
+                        <source media="(max-width: 768px)" srcset="images/assets/aboutmobile3.jpg">
+                        <img src="images/assets/about3.jpg" alt="Saver Market about 3" loading="lazy" decoding="async">
+                    </picture>
+                    <picture class="about-static-card">
+                        <source media="(max-width: 768px)" srcset="images/assets/aboutmobile4.jpg">
+                        <img src="images/assets/about4.jpg" alt="Saver Market about 4" loading="lazy" decoding="async">
+                    </picture>
+                </div>
+            </div>
+        </section>
 
         <section id="view-contact" class="app-view">
             <div class="container">
@@ -4347,35 +4357,41 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
                         <div class="contact-item-row">
                             <div class="contact-icon-box"><i class="fas fa-map-marker-alt"></i></div>
                             <div>
-                                <h4 style="font-weight:600; margin-bottom:4px;" data-en="Address Location" data-ar="موقع العنوان">Address Location</h4>
-                                <p style="color:#666; font-size:0.9rem;" data-tr="addr_text">Damascus, Syria</p>
+                                <h4 data-en="Address Location" data-ar="موقع العنوان">موقع العنوان</h4>
+                                <p id="contactAddressText" data-en="Damascus, Syria" data-ar="دمشق، سوريا">دمشق، سوريا</p>
                             </div>
                         </div>
                         <div class="contact-item-row">
                             <div class="contact-icon-box"><i class="fas fa-clock"></i></div>
                             <div>
-                                <h4 style="font-weight:600; margin-bottom:4px;" data-en="Business Operating Hours" data-ar="ساعات العمل الرسمية">Business Operating Hours</h4>
-                                <p style="color:#666; font-size:0.9rem;" data-tr="hours_line1">Open 24 Hours</p>
-                                <p style="color:#666; font-size:0.9rem;" data-tr="hours_line2">Available 24/7</p>
+                                <h4 data-en="Business Operating Hours" data-ar="ساعات العمل الرسمية">ساعات العمل الرسمية</h4>
+                                <p data-en="Open 24 Hours" data-ar="متاحون 24 ساعة">متاحون 24 ساعة</p>
+                                <p data-en="Available 24/7" data-ar="خدمة العملاء متاحة 24/7">خدمة العملاء متاحة 24/7</p>
                             </div>
                         </div>
                         <div class="contact-item-row">
-                            <div class="contact-icon-box"><i class="fas fa-phone-alt"></i></div>
+                            <div class="contact-icon-box"><i class="fab fa-whatsapp"></i></div>
                             <div>
-                                <h4 style="font-weight:600; margin-bottom:4px;" data-en="Customer Support Hotline" data-ar="خط المساعدة المباشر">Customer Support Hotline</h4>
-                                <p style="color:#666; font-size:0.9rem;">+963 991 727 336</p>
+                                <h4 data-en="Phone / WhatsApp Support" data-ar="الهاتف / دعم واتساب">الهاتف / دعم واتساب</h4>
+                                <a id="contactPhoneLink" class="contact-direct-link" href="https://wa.me/963991727336" target="_blank" rel="noopener">+963 991 727 336</a>
+                            </div>
+                        </div>
+                        <div class="contact-item-row">
+                            <div class="contact-icon-box"><i class="fas fa-envelope"></i></div>
+                            <div>
+                                <h4 data-en="Customer Support Email" data-ar="البريد الإلكتروني لخدمة العملاء">البريد الإلكتروني لخدمة العملاء</h4>
+                                <a id="contactEmailLink" class="contact-direct-link" href="mailto:saver.marketing9@gmail.com">saver.marketing9@gmail.com</a>
                             </div>
                         </div>
                     </div>
-                    <div class="contact-map-wrap" style="width:100%; min-height:400px; border-radius:24px; overflow:hidden; box-shadow:0 10px 30px var(--shadow-light); background:var(--sage-light);">
+                    <div class="contact-map-wrap">
                         <iframe
-                            src="https://www.openstreetmap.org/export/embed.html?bbox=36.1800%2C33.4400%2C36.3900%2C33.5900&amp;layer=mapnik&amp;marker=33.5138%2C36.2765"
+                            id="damascusMapFrame"
+                            src="about:blank"
+                            data-src="https://www.openstreetmap.org/export/embed.html?bbox=36.1800%2C33.4400%2C36.3900%2C33.5900&amp;layer=mapnik&amp;marker=33.5138%2C36.2765"
                             title="Interactive map of Damascus, Syria"
-                            width="100%"
-                            height="100%"
-                            style="border:0; width:100%; min-height:400px; display:block;"
                             allowfullscreen=""
-                            loading="eager"
+                            loading="lazy"
                             referrerpolicy="no-referrer-when-downgrade">
                         </iframe>
                     </div>
@@ -4626,7 +4642,7 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
         // Global Application Database Array Stores populated from products-data.js
         const productsDatabase = [];
         const backorderDatabase = [];
-        let currentLanguage = 'en';
+        let currentLanguage = 'ar';
         let shoppingCart = [];
         const wishlistItems = new Set(JSON.parse(localStorage.getItem('saverMarketWishlist') || '[]'));
         let wishlistOnly = false;
@@ -4734,7 +4750,7 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
                     tags: Array.isArray(item.tags) ? item.tags : String(item.tags || "").split(",").map(v => v.trim()).filter(Boolean),
                     relatedSkus: Array.isArray(item.relatedSkus) ? item.relatedSkus : String(item.relatedSkus || "").split(",").map(v => v.trim()).filter(Boolean),
                     dateAdded: item.dateAdded || "",
-                    imageCount: 1,
+                    imageCount: Math.max(1, Number(item.imageCount) || 1),
                     images: itemImages,
                     currentImgIndex: 0,
                     imagesDiscovered: false
@@ -4765,7 +4781,7 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
         // Global Variables for State Engine Pagination Tracker
         let currentFilteredProducts = [];
         let currentFilteredBackorders = [];
-        const itemsPerPage = 25;
+        const itemsPerPage = 20;
         let activeProductsPage = 1;
         let activeBackorderPage = 1;
 
@@ -4795,6 +4811,25 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
 
             const viewTarget = document.getElementById(`view-${targetViewId}`);
             if(viewTarget) viewTarget.classList.add('active');
+
+            if(targetViewId === 'contact') {
+                setTimeout(() => {
+                    const frame = document.getElementById('damascusMapFrame');
+                    if(frame && frame.dataset.src) {
+                        /* Load only after the Contact page is visible so the
+                           embedded map measures the complete container. */
+                        if(frame.dataset.loaded !== '1') {
+                            frame.src = frame.dataset.src;
+                            frame.dataset.loaded = '1';
+                        } else {
+                            /* A tiny resize nudge fixes cached iframe sizing on
+                               browsers that restore a hidden frame. */
+                            frame.style.width = '99.99%';
+                            requestAnimationFrame(() => { frame.style.width = '100%'; });
+                        }
+                    }
+                }, 60);
+            }
 
             const linkTarget = document.querySelector(`.nav-link[data-view="${targetViewId}"]`);
             if(linkTarget) linkTarget.classList.add('active');
@@ -5499,7 +5534,8 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
         // WhatsApp direct link reservation for upcoming backorders logic
         function triggerDirectWhatsAppReservation(skuNum, productTitle) {
             const rawMessage = `Hello Saver Market, I would like to reserve the upcoming Backorder Item:\nSKU: ${skuNum}\nProduct: ${productTitle}\nPlease notify me upon arrival stock updates.`;
-            window.open(`https://wa.me/963991727336?text=${encodeURIComponent(rawMessage)}`, '_blank');
+            const supportPhone = (window.SAVER_MARKET_SETTINGS?.whatsappNumber || '963991727336').replace(/\D/g,'');
+            window.open(`https://wa.me/${supportPhone}?text=${encodeURIComponent(rawMessage)}`, '_blank');
         }
 
         function handleCheckout(event) {
@@ -5540,7 +5576,7 @@ box-shadow:0 15px 35px rgba(0,0,0,.12);
 
     // 4. Send directly to WhatsApp
     // Note: 963 is the country code for Syria. 
-    const phoneNumber = "963991727336"; 
+    const phoneNumber = (window.SAVER_MARKET_SETTINGS?.whatsappNumber || '963991727336').replace(/\D/g,''); 
     const whatsappUrl = "https://wa.me/" + phoneNumber + "?text=" + encodeURIComponent(finalMessage);
 
     window.open(whatsappUrl, '_blank');
@@ -5762,7 +5798,7 @@ aboutSlides[current].classList.add("active");
         try {
             const response = await fetch(url, {
                 method: 'HEAD',
-                cache: 'no-store'
+                cache: 'force-cache'
             });
             if (response.ok) return true;
         } catch (_) {}
@@ -5815,72 +5851,18 @@ aboutSlides[current].classList.add("active");
         return found;
     }
 
-    window.initializeResponsiveHeroSlider = async function () {
-        const box = document.getElementById('heroSlideshowBox');
-        if (!box) return;
-
-        const buildToken = ++saverHeroBuildToken;
+    function saverRenderHeroSources(box, sources, heroData, buildToken) {
+        if (!box || !sources.length || buildToken !== saverHeroBuildToken) return;
 
         if (heroTimer) {
             clearInterval(heroTimer);
             heroTimer = null;
         }
 
-        /*
-         * Foldables and tablets are touch devices, so they use the dedicated
-         * mobile artwork just like phones.
-         */
-        const useMobileArtwork =
-            window.matchMedia('(max-width: 1024px)').matches ||
-            window.matchMedia('(pointer: coarse)').matches;
-
-        const prefix = useMobileArtwork ? 'heromobile' : 'hero';
-
-        /*
-         * Automatically discover every sequential image:
-         *
-         * Mobile:
-         *   heromobile1.jpg
-         *   heromobile2.jpg
-         *   heromobile3.jpg
-         *   ...
-         *
-         * Desktop:
-         *   hero1.jpg
-         *   hero2.jpg
-         *   hero3.jpg
-         *   ...
-         *
-         * JPG, JPEG, PNG and WEBP are accepted.
-         */
-        let sources = await saverFindNumberedHeroImages(prefix);
-
-        /* Ignore an older async build if the screen changed meanwhile. */
-        if (buildToken !== saverHeroBuildToken) return;
-
-        /*
-         * Backward-compatible fallback to hero-data.js if no numbered files
-         * were discovered. This means the existing site still works even
-         * before you rename/add anything.
-         */
-        const heroData = window.SAVER_MARKET_HERO || [];
-
-        if (!sources.length && heroData.length) {
-            sources = heroData
-                .map(item => useMobileArtwork
-                    ? (item.mobileImage || item.desktopImage || item.image)
-                    : (item.desktopImage || item.image || item.mobileImage))
-                .filter(Boolean);
-        }
-
-        if (!sources.length) return;
-
         box.innerHTML = '';
-
         sources.forEach((source, index) => {
             const item = heroData[index] || {};
             const slide = document.createElement('div');
-
             slide.className = 'hero-slide saver-responsive-hero-slide';
             slide.setAttribute('role', 'img');
             slide.setAttribute(
@@ -5897,48 +5879,81 @@ aboutSlides[current].classList.add("active");
             image.draggable = false;
             image.decoding = 'async';
             image.loading = index === 0 ? 'eager' : 'lazy';
-
+            if (index === 0) image.fetchPriority = 'high';
             slide.appendChild(image);
 
             Object.assign(slide.style, {
-                position: 'absolute',
-                inset: '0',
+                position: 'absolute', inset: '0',
                 opacity: index === 0 ? '1' : '0',
                 zIndex: index === 0 ? '1' : '0',
                 transition: 'opacity 1.05s ease'
             });
-
             box.appendChild(slide);
         });
 
         const overlay = document.createElement('div');
         overlay.className = 'saver-hero-overlay';
-
         Object.assign(overlay.style, {
-            position: 'absolute',
-            inset: '0',
-            background:
-                'linear-gradient(to bottom, rgba(0,0,0,.01), rgba(0,0,0,.06))',
-            pointerEvents: 'none',
-            zIndex: '5'
+            position: 'absolute', inset: '0',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,.01), rgba(0,0,0,.06))',
+            pointerEvents: 'none', zIndex: '5'
         });
-
         box.appendChild(overlay);
 
         const slides = Array.from(box.querySelectorAll('.hero-slide'));
         if (slides.length < 2) return;
-
         let current = 0;
-
         heroTimer = setInterval(() => {
             slides[current].style.opacity = '0';
             slides[current].style.zIndex = '0';
-
             current = (current + 1) % slides.length;
-
             slides[current].style.opacity = '1';
             slides[current].style.zIndex = '1';
         }, (window.SAVER_MARKET_SETTINGS || {}).heroInterval || 4500);
+    }
+
+    window.initializeResponsiveHeroSlider = async function () {
+        const box = document.getElementById('heroSlideshowBox');
+        if (!box) return;
+        const buildToken = ++saverHeroBuildToken;
+
+        const useMobileArtwork =
+            window.matchMedia('(max-width: 1024px)').matches ||
+            window.matchMedia('(pointer: coarse)').matches;
+        const prefix = useMobileArtwork ? 'heromobile' : 'hero';
+        const heroData = window.SAVER_MARKET_HERO || [];
+
+        /* Render the configured hero-data.js banners immediately. Previously
+           the page waited for sequential HEAD requests before showing anything. */
+        const configuredSources = heroData
+            .map(item => useMobileArtwork
+                ? (item.mobileImage || item.desktopImage || item.image)
+                : (item.desktopImage || item.image || item.mobileImage))
+            .filter(Boolean);
+
+        if (configuredSources.length) {
+            saverRenderHeroSources(box, configuredSources, heroData, buildToken);
+        }
+
+        /* Continue discovering hero1, hero2... / heromobile1, heromobile2...
+           in the background so the unlimited-number behavior is preserved. */
+        const cacheKey = `saverHeroSources:${prefix}`;
+        let discovered = [];
+        try { discovered = JSON.parse(sessionStorage.getItem(cacheKey) || '[]'); } catch (_) {}
+
+        if (!discovered.length) {
+            discovered = await saverFindNumberedHeroImages(prefix);
+            try { sessionStorage.setItem(cacheKey, JSON.stringify(discovered)); } catch (_) {}
+        }
+
+        if (buildToken !== saverHeroBuildToken) return;
+        if (discovered.length) {
+            const same = configuredSources.length === discovered.length &&
+                configuredSources.every((v, i) => v === discovered[i]);
+            if (!same || !configuredSources.length) {
+                saverRenderHeroSources(box, discovered, heroData, buildToken);
+            }
+        }
     };
 
     function syncMobileBadges() {
@@ -6690,7 +6705,7 @@ aboutSlides[current].classList.add("active");
             ...(typeof backorderDatabase !== "undefined" ? backorderDatabase : [])
         ];
 
-        const batchSize = 5;
+        const batchSize = 8;
         for (let i = 0; i < all.length; i += batchSize) {
             await Promise.all(all.slice(i, i + batchSize).map(discoverProductImages));
         }
@@ -7755,6 +7770,62 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.addEventListener('load', function () {
         setTimeout(installDesktopHomeRailControls, 150);
+    });
+})();
+</script>
+
+
+<script>
+(function(){
+    "use strict";
+
+    function applyInitialArabicLanguage() {
+        /* The document is Arabic-first; keep the JS state in sync before the
+           first user interaction. This fixes the old state where direction
+           changed but the visible language could remain unchanged. */
+        currentLanguage = 'ar';
+        document.documentElement.lang = 'ar';
+        document.documentElement.dir = 'rtl';
+
+        const switcher = document.getElementById('langSwitch');
+        if (switcher) switcher.textContent = 'English';
+
+        document.querySelectorAll('[data-tr]').forEach(element => {
+            const key = element.getAttribute('data-tr');
+            if (translations?.ar?.[key]) element.textContent = translations.ar[key];
+        });
+        document.querySelectorAll('[data-en][data-ar]').forEach(element => {
+            element.textContent = element.getAttribute('data-ar') || element.textContent;
+        });
+
+        if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+        if (typeof renderBackorderGrid === 'function') renderBackorderGrid();
+        if (typeof refreshCartDisplayEngine === 'function') refreshCartDisplayEngine();
+        if (typeof window.renderMobileHomeProducts === 'function') window.renderMobileHomeProducts();
+        if (typeof window.renderCategoriesPage === 'function') window.renderCategoriesPage();
+        if (typeof window.refreshFilterLanguage === 'function') window.refreshFilterLanguage();
+    }
+
+    function applyContactSettings() {
+        const s = window.SAVER_MARKET_SETTINGS || {};
+        const phone = String(s.whatsappNumber || '963991727336').replace(/\D/g,'');
+        const phoneDisplay = s.phoneDisplay || '+963 991 727 336';
+        const email = s.supportEmail || 'saver.marketing9@gmail.com';
+
+        const phoneLink = document.getElementById('contactPhoneLink');
+        if (phoneLink) { phoneLink.href = 'https://wa.me/' + phone; phoneLink.textContent = phoneDisplay; }
+        const emailLink = document.getElementById('contactEmailLink');
+        if (emailLink) { emailLink.href = 'mailto:' + email; emailLink.textContent = email; }
+        const addr = document.getElementById('contactAddressText');
+        if (addr) {
+            addr.setAttribute('data-en', s.addressEn || 'Damascus, Syria');
+            addr.setAttribute('data-ar', s.addressAr || 'دمشق، سوريا');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        applyContactSettings();
+        applyInitialArabicLanguage();
     });
 })();
 </script>
