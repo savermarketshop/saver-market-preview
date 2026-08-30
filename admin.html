@@ -162,8 +162,9 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
         <div class="media-help"><b>Website Media Manager</b><br>Upload and manage the public website logo, desktop/mobile hero banners and About Us images. Changes are stored in Supabase and appear on the public site automatically.</div>
         <div class="media-toolbar">
           <div class="field"><label>Media type</label><select id="mediaType"><option value="hero_desktop">Hero — Desktop</option><option value="hero_mobile">Hero — Mobile</option><option value="about_desktop">About — Desktop</option><option value="about_mobile">About — Mobile</option><option value="logo">Logo</option></select></div>
-          <div class="field" style="flex:1;min-width:240px"><label>Choose image</label><input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp"></div>
-          <button id="uploadMediaBtn" class="btn btn-primary">Upload Image</button>
+          <div class="field" style="flex:1;min-width:240px"><label>Choose image(s)</label><input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp" multiple></div>
+          <button id="uploadMediaBtn" class="btn btn-primary">Upload Selected</button>
+          <button id="importGithubMediaBtn" class="btn btn-light">Import Existing GitHub Media</button>
           <button id="refreshMediaBtn" class="btn btn-light">Refresh</button>
         </div>
         <div id="mediaMessage" class="subtle" style="margin-bottom:12px"></div>
@@ -547,27 +548,95 @@ function renderMedia(){
 }
 $('mediaType').onchange=renderMedia;
 $('refreshMediaBtn').onclick=loadMedia;
+async function clearExistingLogo(){
+  const olds=allMedia.filter(m=>m.media_type==='logo');
+  if(olds.length){
+    const paths=olds.map(m=>m.storage_path).filter(Boolean);
+    if(paths.length)await sb.storage.from(MEDIA_BUCKET).remove(paths);
+    const del=await sb.from('site_media').delete().eq('media_type','logo');
+    if(del.error)throw del.error;
+    allMedia=allMedia.filter(m=>m.media_type!=='logo');
+  }
+}
+async function uploadMediaBlob(file,type,preferredOrder=null){
+  if(file.size>10*1024*1024)throw new Error(`${file.name||'Image'} is larger than 10 MB.`);
+  const rawExt=((file.name||'image.jpg').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const ext=rawExt||'jpg';
+  const path=`${type}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const up=await sb.storage.from(MEDIA_BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||'image/jpeg'});
+  if(up.error)throw up.error;
+  const publicUrl=sb.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+  const same=allMedia.filter(m=>m.media_type===type);
+  const nextOrder=preferredOrder!==null?preferredOrder:(type==='logo'?0:(same.length?Math.max(...same.map(m=>Number(m.sort_order||0)))+1:0));
+  const ins=await sb.from('site_media').insert({media_type:type,image_url:publicUrl,storage_path:path,sort_order:nextOrder,is_active:true}).select().single();
+  if(ins.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);throw ins.error}
+  allMedia.push(ins.data);
+  return ins.data;
+}
 $('uploadMediaBtn').onclick=async()=>{
-  const file=$('mediaFile').files?.[0], type=$('mediaType').value;
-  if(!file){alert('Choose an image first.');return}
-  if(file.size>10*1024*1024){alert('Please use an image smaller than 10 MB.');return}
-  $('uploadMediaBtn').disabled=true;$('mediaMessage').textContent='Uploading...';
+  const files=Array.from($('mediaFile').files||[]), type=$('mediaType').value;
+  if(!files.length){alert('Choose one or more images first.');return}
+  if(type==='logo'&&files.length>1){alert('Logo accepts one image. Only the first selected file will be used.');files.splice(1)}
+  $('uploadMediaBtn').disabled=true;$('importGithubMediaBtn').disabled=true;
   try{
-    if(type==='logo'){
-      const olds=allMedia.filter(m=>m.media_type==='logo');
-      if(olds.length){await sb.storage.from(MEDIA_BUCKET).remove(olds.map(m=>m.storage_path).filter(Boolean));await sb.from('site_media').delete().eq('media_type','logo')}
+    if(type==='logo')await clearExistingLogo();
+    for(let i=0;i<files.length;i++){
+      $('mediaMessage').textContent=`Uploading ${i+1} of ${files.length}...`;
+      await uploadMediaBlob(files[i],type);
     }
-    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
-    const path=`${type}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const up=await sb.storage.from(MEDIA_BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
-    if(up.error)throw up.error;
-    const publicUrl=sb.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
-    const same=allMedia.filter(m=>m.media_type===type);
-    const nextOrder=type==='logo'?0:(same.length?Math.max(...same.map(m=>Number(m.sort_order||0)))+1:0);
-    const ins=await sb.from('site_media').insert({media_type:type,image_url:publicUrl,storage_path:path,sort_order:nextOrder,is_active:true});
-    if(ins.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);throw ins.error}
-    $('mediaFile').value='';await loadMedia();$('mediaMessage').textContent='Image uploaded successfully.';
-  }catch(e){$('mediaMessage').textContent='Upload failed: '+(e.message||e)}finally{$('uploadMediaBtn').disabled=false}
+    $('mediaFile').value='';await loadMedia();$('mediaMessage').textContent=`${files.length} image${files.length===1?'':'s'} uploaded successfully.`;
+  }catch(e){$('mediaMessage').textContent='Upload failed: '+(e.message||e)}finally{$('uploadMediaBtn').disabled=false;$('importGithubMediaBtn').disabled=false}
+};
+
+async function fetchExistingAsset(relativePath){
+  const url=new URL(relativePath,window.location.href).href;
+  try{
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok)return null;
+    const blob=await r.blob();
+    if(!blob.type.startsWith('image/'))return null;
+    const name=relativePath.split('/').pop()||'image.jpg';
+    return new File([blob],name,{type:blob.type||'image/jpeg'});
+  }catch{return null}
+}
+async function discoverNumberedAssets(prefix,max=20){
+  const found=[];let consecutiveMisses=0;
+  for(let i=1;i<=max;i++){
+    let file=null;
+    for(const ext of ['jpg','jpeg','png','webp']){
+      file=await fetchExistingAsset(`images/assets/${prefix}${i}.${ext}`);
+      if(file)break;
+    }
+    if(file){found.push(file);consecutiveMisses=0}else{consecutiveMisses++;if(consecutiveMisses>=2&&i>4)break}
+  }
+  return found;
+}
+$('importGithubMediaBtn').onclick=async()=>{
+  if(allMedia.length&&!confirm('Some Supabase media already exists. Importing will ADD the GitHub slideshow images. The logo will be replaced. Continue?'))return;
+  $('importGithubMediaBtn').disabled=true;$('uploadMediaBtn').disabled=true;
+  try{
+    const groups=[
+      ['hero_desktop','hero'],
+      ['hero_mobile','heromobile'],
+      ['about_desktop','about'],
+      ['about_mobile','aboutmobile']
+    ];
+    let imported=0;
+    for(const [type,prefix] of groups){
+      $('mediaMessage').textContent=`Finding existing ${MEDIA_LABELS[type]} images on GitHub...`;
+      const files=await discoverNumberedAssets(prefix);
+      const existingNames=new Set(allMedia.filter(m=>m.media_type===type).map(m=>String(m.storage_path||'').split('/').pop()));
+      for(let i=0;i<files.length;i++){
+        $('mediaMessage').textContent=`Importing ${MEDIA_LABELS[type]} ${i+1} of ${files.length}...`;
+        await uploadMediaBlob(files[i],type,i);imported++;
+      }
+    }
+    $('mediaMessage').textContent='Importing logo...';
+    const logo=await fetchExistingAsset('images/assets/logo.png')||await fetchExistingAsset('images/assets/logo.jpg')||await fetchExistingAsset('images/assets/logo.webp');
+    if(logo){await clearExistingLogo();await uploadMediaBlob(logo,'logo',0);imported++}
+    await loadMedia();
+    $('mediaMessage').textContent=`Import complete: ${imported} existing GitHub media file(s) copied to Supabase.`;
+  }catch(e){$('mediaMessage').textContent='Import failed: '+(e.message||e)}finally{$('importGithubMediaBtn').disabled=false;$('uploadMediaBtn').disabled=false}
 };
 window.deleteMedia=async id=>{
   const m=allMedia.find(x=>x.id===id);if(!m||!confirm('Delete this image from the website media library?'))return;
