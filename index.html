@@ -8397,7 +8397,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   window.saverRenderAccountView=async function(){
-    const root=document.getElementById('saverAccountRoot'); if(!root)return;
+    const root=document.getElementById('saverAccountContent'); if(!root)return;
     const user=currentUser();
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
