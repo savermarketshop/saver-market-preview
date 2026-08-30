@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saver Market Bulk Import</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{--green:#556B2F;--dark:#20351f;--light:#edf3e9;--bg:#f7f8f4;--gold:#d4af37;--red:#b63a3a;--text:#293238;--muted:#6e776e}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1050px;margin:0 auto;padding:28px}.card{background:#fff;border-radius:22px;padding:24px;box-shadow:0 8px 28px rgba(0,0,0,.06);margin-bottom:18px}
+h1,h2{margin-top:0}.brand{color:var(--green)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:block;font-weight:700;margin-bottom:7px}.field{margin-bottom:15px}
+input{width:100%;padding:12px;border:1px solid #d9dfd4;border-radius:12px;font:inherit;background:#fff}
+button{border:0;border-radius:12px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer}.primary{background:var(--green);color:#fff}.secondary{background:#fff;border:1px solid #d8dfd4;color:var(--text)}
+button:disabled{opacity:.5;cursor:not-allowed}.hidden{display:none!important}.msg{padding:12px 14px;border-radius:12px;margin-top:12px}.error{background:#fff0f0;color:#8e2f2f}.ok{background:#edf7ea;color:#376029}.warn{background:#fff8df;color:#735a00}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.stat{background:var(--light);padding:14px;border-radius:14px}.stat b{display:block;font-size:1.45rem;color:var(--green);margin-top:3px}
+table{width:100%;border-collapse:collapse}.table-wrap{overflow:auto;max-height:330px;border:1px solid #edf0e9;border-radius:14px}th,td{padding:9px 10px;border-bottom:1px solid #edf0e9;text-align:left;font-size:.86rem}th{position:sticky;top:0;background:#f5f7f2}
+.progress-shell{height:18px;background:#e7ebe4;border-radius:999px;overflow:hidden;margin:14px 0}.progress{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--green));transition:width .2s}
+.log{background:#182019;color:#eaf1e6;border-radius:14px;padding:14px;height:240px;overflow:auto;font-family:Consolas,monospace;font-size:.8rem;white-space:pre-wrap}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.pill{padding:6px 10px;background:var(--light);border-radius:999px;color:var(--green);font-weight:700;font-size:.82rem}
+@media(max-width:720px){.grid,.stats{grid-template-columns:1fr}.wrap{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <div><h1 class="brand">Saver Market Bulk Import</h1><div id="who" style="color:var(--muted)">Not signed in</div></div>
+      <button id="logout" class="secondary hidden">Log Out</button>
+    </div>
+  </div>
+
+  <div id="loginCard" class="card">
+    <h2>Admin Login</h2>
+    <div class="grid">
+      <div class="field"><label>Email</label><input id="email" type="email"></div>
+      <div class="field"><label>Password</label><input id="password" type="password"></div>
+    </div>
+    <button id="login" class="primary">Sign In</button>
+    <div id="loginMsg"></div>
+  </div>
+
+  <div id="importCard" class="card hidden">
+    <h2>1. Choose your two files</h2>
+    <p style="color:var(--muted)">Choose the Excel product file and the ZIP that contains <b>Product/STK001...</b> image folders.</p>
+    <div class="grid">
+      <div class="field"><label>Products Excel (.xlsx)</label><input id="xlsxFile" type="file" accept=".xlsx,.xls"></div>
+      <div class="field"><label>Product Images ZIP (.zip)</label><input id="zipFile" type="file" accept=".zip"></div>
+    </div>
+    <button id="analyze" class="primary">Analyze Files</button>
+    <div id="analyzeMsg"></div>
+  </div>
+
+  <div id="previewCard" class="card hidden">
+    <h2>2. Validation Preview</h2>
+    <div class="stats">
+      <div class="stat">Products<b id="sProducts">0</b></div>
+      <div class="stat">SKU folders<b id="sFolders">0</b></div>
+      <div class="stat">Images<b id="sImages">0</b></div>
+      <div class="stat">Problems<b id="sProblems">0</b></div>
+    </div>
+    <div id="validationMsg"></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>SKU</th><th>Name</th><th>Excel Count</th><th>Actual Images</th><th>Check</th></tr></thead><tbody id="previewBody"></tbody></table>
+    </div>
+    <div style="margin-top:16px" class="row">
+      <span class="pill">Actual ZIP images are always used as source of truth</span>
+      <button id="startImport" class="primary">Import / Update Everything</button>
+    </div>
+  </div>
+
+  <div id="progressCard" class="card hidden">
+    <h2>3. Import Progress</h2>
+    <div id="progressText">Preparing...</div>
+    <div class="progress-shell"><div id="bar" class="progress"></div></div>
+    <div id="log" class="log"></div>
+    <div id="finishMsg"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL="https://zjfdedemugnfplrkojax.supabase.co";
+const SB_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+let parsedProducts=[], zipObject=null, zipImagesBySku=new Map(), validation=[];
+
+const $=id=>document.getElementById(id);
+function msg(el,text,type){el.innerHTML=`<div class="msg ${type}">${text}</div>`}
+function clear(el){el.innerHTML=''}
+function log(t){const el=$('log');el.textContent+=t+"\\n";el.scrollTop=el.scrollHeight}
+function arr(v){return String(v??'').split(',').map(x=>x.trim()).filter(Boolean)}
+function boolYes(v){return ['yes','true','1','y'].includes(String(v??'').trim().toLowerCase())}
+function n(v,fallback=null){if(v===null||v===undefined||v==='')return fallback;const x=Number(v);return Number.isFinite(x)?x:fallback}
+function fileExt(name){const p=name.split('.');return (p.length>1?p.pop():'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}
+function imageSort(a,b){
+  const an=parseInt((a.name.match(/(\d+)/)||[])[1]||'999999',10);
+  const bn=parseInt((b.name.match(/(\d+)/)||[])[1]||'999999',10);
+  return an-bn || a.name.localeCompare(b.name);
+}
+async function adminOK(user){
+  if(!user)return false;
+  const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
+  return !error&&!!data;
+}
+function showAuthed(user){$('loginCard').classList.add('hidden');$('importCard').classList.remove('hidden');$('logout').classList.remove('hidden');$('who').textContent=user.email||'Admin'}
+function showLoggedOut(){$('loginCard').classList.remove('hidden');$('importCard').classList.add('hidden');$('previewCard').classList.add('hidden');$('progressCard').classList.add('hidden');$('logout').classList.add('hidden');$('who').textContent='Not signed in'}
+
+$('login').onclick=async()=>{
+  clear($('loginMsg'));
+  const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error){msg($('loginMsg'),error.message,'error');return}
+  if(!(await adminOK(data.user))){await sb.auth.signOut();msg($('loginMsg'),'This account is not authorized as an admin.','error');return}
+  showAuthed(data.user);
+};
+$('logout').onclick=async()=>{await sb.auth.signOut();showLoggedOut()};
+
+$('analyze').onclick=async()=>{
+  clear($('analyzeMsg'));$('previewCard').classList.add('hidden');
+  const xf=$('xlsxFile').files[0], zf=$('zipFile').files[0];
+  if(!xf||!zf){msg($('analyzeMsg'),'Please select both the Excel file and ZIP file.','error');return}
+  $('analyze').disabled=true;$('analyze').textContent='Analyzing...';
+  try{
+    const wb=XLSX.read(await xf.arrayBuffer(),{type:'array',cellDates:false});
+    if(!wb.SheetNames.includes('Products'))throw new Error('Excel sheet "Products" was not found.');
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets['Products'],{defval:null,raw:true});
+    parsedProducts=rows.filter(r=>/^STK\d{3}$/i.test(String(r.sku||'').trim())).map(r=>({...r,sku:String(r.sku).trim().toUpperCase()}));
+    const skus=new Set();
+    const dupes=[];
+    parsedProducts.forEach(p=>{if(skus.has(p.sku))dupes.push(p.sku);skus.add(p.sku)});
+    if(dupes.length)throw new Error('Duplicate SKU(s) in Excel: '+[...new Set(dupes)].join(', '));
+
+    zipObject=await JSZip.loadAsync(await zf.arrayBuffer());
+    zipImagesBySku=new Map();
+    Object.values(zipObject.files).forEach(entry=>{
+      if(entry.dir)return;
+      const m=entry.name.match(/^Product\/(STK\d{3})\/([^/]+\.(?:jpe?g|png|webp|gif))$/i);
+      if(!m)return;
+      const sku=m[1].toUpperCase();
+      if(!zipImagesBySku.has(sku))zipImagesBySku.set(sku,[]);
+      zipImagesBySku.get(sku).push({entry,name:m[2]});
+    });
+    for(const list of zipImagesBySku.values())list.sort(imageSort);
+
+    validation=[];
+    const problems=[];
+    for(const p of parsedProducts){
+      const imgs=zipImagesBySku.get(p.sku)||[];
+      const excelCount=n(p.imageCount,0)||0;
+      const actual=imgs.length;
+      const notes=[];
+      if(!actual)notes.push('NO IMAGES');
+      if(excelCount!==actual)notes.push(`count ${excelCount}→${actual}`);
+      validation.push({sku:p.sku,name:p.nameEn||'',excelCount,actual,notes});
+      if(!actual)problems.push(p.sku);
+    }
+    const extras=[...zipImagesBySku.keys()].filter(s=>!skus.has(s));
+    extras.forEach(s=>problems.push(s+' (not in Excel)'));
+
+    $('sProducts').textContent=parsedProducts.length;
+    $('sFolders').textContent=zipImagesBySku.size;
+    $('sImages').textContent=[...zipImagesBySku.values()].reduce((a,b)=>a+b.length,0);
+    $('sProblems').textContent=problems.length;
+    $('previewBody').innerHTML=validation.map(v=>`<tr><td><b>${v.sku}</b></td><td>${String(v.name).replace(/</g,'&lt;')}</td><td>${v.excelCount}</td><td>${v.actual}</td><td>${v.notes.length?'⚠ '+v.notes.join(', '):'✓'}</td></tr>`).join('');
+    if(problems.length)msg($('validationMsg'),'Some SKUs have missing folders/files. Import is disabled until these are fixed: '+problems.join(', '),'error');
+    else {
+      const mismatches=validation.filter(v=>v.excelCount!==v.actual);
+      if(mismatches.length)msg($('validationMsg'),`Files are complete. ${mismatches.length} Excel imageCount value(s) differ from the folders, but the importer will safely use the actual ZIP files.`,'warn');
+      else msg($('validationMsg'),'Validation passed. Every Excel SKU has a matching image folder.','ok');
+    }
+    $('startImport').disabled=problems.length>0;
+    $('previewCard').classList.remove('hidden');
+  }catch(e){console.error(e);msg($('analyzeMsg'),e.message||String(e),'error')}
+  finally{$('analyze').disabled=false;$('analyze').textContent='Analyze Files'}
+};
+
+function productPayload(r){
+  return {
+    sku:r.sku,
+    name_en:String(r.nameEn??'').trim(),
+    name_ar:String(r.nameAr??'').trim(),
+    description_en:String(r.descEn??'').trim(),
+    description_ar:String(r.descAr??'').trim(),
+    price_syp:n(r.priceSYP,0)||0,
+    old_price_syp:n(r.oldPriceSYP,null),
+    category:String(r.category??'').trim(),
+    brand:String(r.brand??'').trim(),
+    availability:String(r.availability??'In Stock').trim()||'In Stock',
+    stock_qty:Math.max(0,Math.trunc(n(r.stockQty,0)||0)),
+    featured:boolYes(r.featured),
+    badge_en:String(r.badgeEn??'').trim(),
+    badge_ar:String(r.badgeAr??'').trim(),
+    sizes:arr(r.sizes),
+    colors:arr(r.colors),
+    material_en:String(r.materialEn??'').trim(),
+    material_ar:String(r.materialAr??'').trim(),
+    dimensions:String(r.dimensions??'').trim(),
+    weight:String(r.weight??'').trim(),
+    delivery_time_en:String(r.deliveryTimeEn??'').trim(),
+    delivery_time_ar:String(r.deliveryTimeAr??'').trim(),
+    special_notes_en:String(r.specialNotesEn??'').trim(),
+    special_notes_ar:String(r.specialNotesAr??'').trim(),
+    collection:String(r.collection??'').trim(),
+    tags:arr(r.tags),
+    related_skus:arr(r.relatedSkus),
+    rating:n(r.rating,null),
+    review_count:Math.max(0,Math.trunc(n(r.reviewCount,0)||0)),
+    is_active:true
+  };
+}
+
+async function clearExistingImages(productId){
+  const {data:old,error}=await sb.from('product_images').select('id,storage_path').eq('product_id',productId);
+  if(error)throw error;
+  const paths=(old||[]).map(x=>x.storage_path).filter(Boolean);
+  if(paths.length){
+    const {error:se}=await sb.storage.from('product-images').remove(paths);
+    if(se)throw se;
+  }
+  const {error:de}=await sb.from('product_images').delete().eq('product_id',productId);
+  if(de)throw de;
+}
+
+async function importOne(r,index,total){
+  const payload=productPayload(r);
+  log(`[${index}/${total}] ${r.sku} — saving product`);
+  const {data:p,error:pe}=await sb.from('products').upsert(payload,{onConflict:'sku'}).select('id,sku').single();
+  if(pe)throw pe;
+  await clearExistingImages(p.id);
+
+  const imgs=zipImagesBySku.get(r.sku)||[];
+  let order=1;
+  for(const item of imgs){
+    const bytes=await item.entry.async('blob');
+    const ext=fileExt(item.name);
+    const path=`${r.sku}/${String(order).padStart(2,'0')}.${ext}`;
+    log(`    image ${order}/${imgs.length}: ${item.name}`);
+    const {error:ue}=await sb.storage.from('product-images').upload(path,bytes,{upsert:true,contentType:bytes.type||undefined,cacheControl:'3600'});
+    if(ue)throw ue;
+    const {data:u}=sb.storage.from('product-images').getPublicUrl(path);
+    const {error:ie}=await sb.from('product_images').insert({product_id:p.id,image_url:u.publicUrl,storage_path:path,sort_order:order});
+    if(ie)throw ie;
+    order++;
+  }
+}
+
+$('startImport').onclick=async()=>{
+  if(!parsedProducts.length||!zipObject)return;
+  if(!confirm(`Import/update ${parsedProducts.length} products now? Existing products with the same SKU will be updated and their images replaced.`))return;
+  $('startImport').disabled=true;$('progressCard').classList.remove('hidden');$('log').textContent='';$('finishMsg').innerHTML='';
+  let ok=0,failed=[];
+  const total=parsedProducts.length;
+  for(let i=0;i<total;i++){
+    const r=parsedProducts[i];
+    $('progressText').textContent=`Importing ${i+1} of ${total}: ${r.sku}`;
+    $('bar').style.width=`${Math.round((i/total)*100)}%`;
+    try{await importOne(r,i+1,total);ok++}
+    catch(e){console.error(e);failed.push({sku:r.sku,error:e.message||String(e)});log(`    ERROR: ${e.message||e}`)}
+  }
+  $('bar').style.width='100%';$('progressText').textContent=`Finished: ${ok}/${total} products imported`;
+  if(failed.length){
+    msg($('finishMsg'),`${ok} products imported. ${failed.length} failed: ${failed.map(x=>x.sku).join(', ')}. You can safely run the importer again after fixing the issue; matching SKUs are updated, not duplicated.`,'error');
+    log('\\nFAILED:\\n'+failed.map(x=>`${x.sku}: ${x.error}`).join('\\n'));
+  }else{
+    msg($('finishMsg'),`SUCCESS — all ${ok} products and their images were imported. You may now refresh the customer website.`,'ok');
+  }
+  $('startImport').disabled=false;
+};
+
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  const user=data?.session?.user;
+  if(user&&await adminOK(user))showAuthed(user); else showLoggedOut();
+})();
+</script>
+</body>
+</html>
