@@ -4193,6 +4193,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         "Green, Gold": "أخضر وذهبي",
         "Cream White": "أبيض كريمي",
         "Sage Green": "أخضر سيج",
+        "No Specific Color": "لا يوجد لون محدد",
         "Accessories": "إكسسوارات",
         "Stanstail": "ستانلس ستيل",
         "Stainless Steel": "ستانلس ستيل"
@@ -4459,9 +4460,10 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                             <input type="tel" class="form-input" id="custPhone" placeholder="WhatsApp Phone Number" required>
                             <textarea class="form-input" id="custAddress" rows="3" placeholder="Delivery Address (Damascus, Syria...)" required></textarea>
                             <textarea class="form-input" id="custNotes" rows="2" placeholder="Special delivery notes..."></textarea>
+                            <p id="checkoutDeliveryNote" style="margin:8px 0 0;text-align:center;color:#777;font-size:.82rem;">Delivery charge will be added while confirming your order.</p>
                             <button type="submit" class="btn-gold" style="width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px;">
                                 <i class="fab fa-whatsapp"></i>
-                                <span data-tr="checkout_wa">Order via WhatsApp</span>
+                                <span id="checkoutWhatsAppLabel" data-tr="checkout_wa">Send Enquiry via WhatsApp</span>
                             </button>
                         </form>
                     </div>
@@ -4864,7 +4866,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 total_items: "Total Items",
                 est_total: "Estimated Total",
                 deliv_info: "Delivery details",
-                checkout_wa: "Order via WhatsApp",
+                checkout_wa: "Send Enquiry via WhatsApp",
                 about_title: "Crafting Premium Shopping Experiences",
                 contact_title: "Get In Touch With Us",
                 back: "Back to Catalog",
@@ -4889,7 +4891,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 total_items: "إجمالي القطع",
                 est_total: "المجموع التقديري",
                 deliv_info: "تفاصيل عنوان التوصيل",
-                checkout_wa: "الطلب عبر الواتساب",
+                checkout_wa: "إرسال استفسار عبر الواتساب",
                 about_title: "صياغة تجارب تسوق استثنائية",
                 contact_title: "تواصل معنا مباشرة",
                 back: "العودة إلى الكتالوج الرئيسي",
@@ -5445,6 +5447,12 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             if(!countLabel) return;
             let finalValue = parseInt(countLabel.innerText) + stepValue;
             if(finalValue < 1) finalValue = 1;
+            const product = productsDatabase.find(p => p.id === productId);
+            const stockLimit = getProductStockLimit(product);
+            if(stockLimit !== null && finalValue > stockLimit) {
+                showStockLimitMessage(product);
+                finalValue = Math.max(1, stockLimit);
+            }
             countLabel.innerText = finalValue;
         }
 
@@ -5647,6 +5655,38 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             chipNode.classList.add('active');
         }
 
+        function getProductStockLimit(product) {
+            if(product?.stockQty === null || product?.stockQty === undefined || product?.stockQty === '') return null;
+            const stock = Number(product.stockQty);
+            return Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : null;
+        }
+
+        function getCartQuantityForProduct(productId) {
+            return shoppingCart.filter(line => line.product.id === productId).reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
+        }
+
+        function showStockLimitMessage(product) {
+            const stock = getProductStockLimit(product) ?? 0;
+            const name = currentLanguage === 'ar' ? product.nameAr : product.nameEn;
+            alert(currentLanguage === 'ar'
+                ? `المتوفر فقط ${stock} قطعة من ${name}. يرجى تقليل الكمية.`
+                : `Only ${stock} piece${stock === 1 ? '' : 's'} available for ${name}. Please reduce the quantity.`);
+        }
+
+        function validateCartStock() {
+            const checked = new Set();
+            for(const line of shoppingCart) {
+                if(checked.has(line.product.id)) continue;
+                checked.add(line.product.id);
+                const stockLimit = getProductStockLimit(line.product);
+                if(stockLimit !== null && getCartQuantityForProduct(line.product.id) > stockLimit) {
+                    showStockLimitMessage(line.product);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // Shopping Bag Actions Pipeline Array Layer Push Execution
         function pushToBagAction(productId, isFromDetailsPage, sourceButton) {
             const product = productsDatabase.find(p => p.id === productId);
@@ -5675,6 +5715,12 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 item.size === chosenSize && 
                 item.color === chosenColor
             );
+
+            const stockLimit = getProductStockLimit(product);
+            if(stockLimit !== null && getCartQuantityForProduct(productId) + purchaseUnitsCount > stockLimit) {
+                showStockLimitMessage(product);
+                return;
+            }
 
             if(existingLineItem) {
                 existingLineItem.quantity += purchaseUnitsCount;
@@ -5784,18 +5830,21 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         const costSum = line.product.price * line.quantity;
         grossFinalCalculationPrice += costSum;
 
-        itemizedManifestBlockStr += `${index + 1}. [${line.product.sku}] ${nameReference}\n   Options: Size ${line.size} / Color ${line.color}\n   Qty Units: ${line.quantity} @ ${formatPrice(line.product.price)} each -> Total: ${formatPrice(costSum)}\n\n`;
+        const colorReference = currentLanguage === 'ar' ? saverDetailValue(line.color) : line.color;
+        itemizedManifestBlockStr += `${index + 1}. [${line.product.sku}] ${nameReference}\n   Options: Size ${line.size} / Color ${colorReference}\n   Qty Units: ${line.quantity} @ ${formatPrice(line.product.price)} each -> Total: ${formatPrice(costSum)}\n\n`;
     });
 
     // 3. Create the WhatsApp Message
-    const finalMessage = `*New Order Received*\n\n` +
+    const isRegisteredCustomer = !!window.saverCustomerCurrentUser?.();
+    const finalMessage = `${isRegisteredCustomer ? '*New Order Received*' : '*Product Enquiry*'}\n\n` +
                          `*Customer Name:* ${clientNameInput}\n` +
                          `*Phone:* ${clientPhoneInput}\n` +
                          `*Address:* ${clientAddrInput}\n` +
                          `*Notes:* ${clientNotesInput}\n\n` +
                          `--- Items ---\n` +
                          `${itemizedManifestBlockStr}` +
-                         `*Grand Total: ${formatPrice(grossFinalCalculationPrice)}*`;
+                         `*Items Subtotal: ${formatPrice(grossFinalCalculationPrice)}*\n` +
+                         `${isRegisteredCustomer ? '*Delivery charge will be added while confirming the order.*' : '*This is an enquiry only. Please confirm availability and the delivery charge.*'}`;
 
     // 4. Send directly to WhatsApp
     // Note: 963 is the country code for Syria. 
@@ -6971,6 +7020,7 @@ aboutSlides[current].classList.add("active");
         "Green": "أخضر",
         "Blue": "أزرق",
         "Red": "أحمر",
+        "No Specific Color": "لا يوجد لون محدد",
         "Accessories": "إكسسوارات",
         "Stanstail": "ستانلس ستيل",
         "Stainless Steel": "ستانلس ستيل"
@@ -8094,14 +8144,21 @@ document.addEventListener("DOMContentLoaded", function () {
   function token(){ return getSession()?.access_token || ''; }
 
   function updateAccountIndicators(){
+    const signedIn=!!currentUser();
     const dot=document.getElementById('saverAccountDot');
-    if(dot) dot.classList.toggle('signed-in', !!currentUser());
+    if(dot) dot.classList.toggle('signed-in', signedIn);
     const note=document.getElementById('saverCartAccountNote');
     if(note){
-      note.innerHTML=currentUser()
+      note.innerHTML=signedIn
         ? `<i class="fas fa-cloud"></i> ${currentLanguage==='ar'?'سلتك محفوظة في حسابك ويمكن الوصول إليها من أجهزتك.':'Your cart is saved to your account and available across your devices.'}`
-        : `<i class="fas fa-user"></i> ${currentLanguage==='ar'?'يمكنك إكمال الطلب كضيف، أو تسجيل الدخول لحفظ السلة والطلبات.':'You can order as a guest, or sign in to save your cart and order history.'}`;
+        : `<i class="fas fa-user"></i> ${currentLanguage==='ar'?'يمكنك إرسال استفسار كضيف، أو تسجيل الدخول لتقديم طلب.':'You can send an enquiry as a guest, or sign in to place an order.'}`;
     }
+    const checkoutLabel=document.getElementById('checkoutWhatsAppLabel');
+    if(checkoutLabel) checkoutLabel.textContent=signedIn
+      ? (currentLanguage==='ar'?'الطلب عبر الواتساب':'Order via WhatsApp')
+      : (currentLanguage==='ar'?'إرسال استفسار عبر الواتساب':'Send Enquiry via WhatsApp');
+    const deliveryNote=document.getElementById('checkoutDeliveryNote');
+    if(deliveryNote) deliveryNote.textContent=currentLanguage==='ar'?'تُضاف رسوم التوصيل عند تأكيد الطلب.':'Delivery charge will be added while confirming your order.';
   }
 
   async function authRequest(path, body){
@@ -8129,7 +8186,7 @@ document.addEventListener("DOMContentLoaded", function () {
       root.innerHTML=`<div class="saver-account-shell">
         <div class="saver-account-card">
           <h3>${currentLanguage==='ar'?'مرحباً بك':'Welcome'}</h3>
-          <p>${currentLanguage==='ar'?'إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.':'Creating an account is optional. You can always shop as a guest.'}</p>
+          <p>${currentLanguage==='ar'?'يمكنك تصفح المنتجات وإرسال استفسار كضيف. سجّل الدخول لتقديم طلب.':'You can browse products and send an enquiry as a guest. Sign in to place an order.'}</p>
           <div class="saver-auth-tabs">
             <button class="saver-auth-tab ${authTab==='login'?'active':''}" type="button" onclick="saverSetAuthTab('login')">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
             <button class="saver-auth-tab ${authTab==='signup'?'active':''}" type="button" onclick="saverSetAuthTab('signup')">${currentLanguage==='ar'?'إنشاء حساب':'Sign Up'}</button>
@@ -8233,7 +8290,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function loadOrders(){
     const root=document.getElementById('saverOrdersList'); if(!root||!currentUser())return;
     try{
-      const orders=await rest(`orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,total_syp,created_at&order=created_at.desc`);
+      const orders=await rest(`orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,subtotal_syp,delivery_fee_syp,total_syp,created_at&order=created_at.desc`);
       if(!orders?.length){root.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'لا توجد طلبات بعد.':'No orders yet.'}</div>`;return}
       root.innerHTML=orders.map(o=>`<button type="button" class="saver-order-row" onclick="saverShowOrderDetails(${Number(o.id)})" style="width:100%;text-align:inherit;cursor:pointer"><div><strong>${o.order_number}</strong><small>${new Date(o.created_at).toLocaleDateString()} · ${formatPrice(Number(o.total_syp||0))}</small></div><span class="saver-order-status">${String(o.status||'pending')}</span></button>`).join('');
     }catch(e){root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`}
@@ -8242,9 +8299,10 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverShowOrderDetails=async function(orderId){
     const root=document.getElementById('saverOrdersList');if(!root)return;
     try{
-      const items=await rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`);
+      const [items,orders]=await Promise.all([rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`),rest(`orders?id=eq.${Number(orderId)}&select=subtotal_syp,delivery_fee_syp,total_syp,status`)]);
+      const order=orders?.[0]||{};
       const previous=root.innerHTML;
-      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}</div>`;
+      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}<div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'المجموع الفرعي':'Subtotal'}</strong><small>${currentLanguage==='ar'?'رسوم التوصيل':'Delivery charge'}: ${formatPrice(Number(order.delivery_fee_syp||0))}</small></div><strong>${formatPrice(Number(order.subtotal_syp||0))}</strong></div><div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'الإجمالي النهائي':'Final total'}</strong></div><strong>${formatPrice(Number(order.total_syp||0))}</strong></div></div>`;
       document.getElementById('saverBackOrders').onclick=loadOrders;
     }catch(e){console.warn(e)}
   };
@@ -8313,7 +8371,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Correct variant-safe quantity editing and nicer cart rendering.
   window.alterCartLineItemQuantity=function(lineIndex,step){
-    const i=Number(lineIndex);const line=shoppingCart[i];if(!line)return;line.quantity=Math.max(0,Number(line.quantity||1)+Number(step||0));if(line.quantity<=0)shoppingCart.splice(i,1);refreshCartDisplayEngine();
+    const i=Number(lineIndex);const line=shoppingCart[i];if(!line)return;
+    const change=Number(step||0),stockLimit=getProductStockLimit(line.product);
+    if(change>0&&stockLimit!==null&&getCartQuantityForProduct(line.product.id)+change>stockLimit){showStockLimitMessage(line.product);return}
+    line.quantity=Math.max(0,Number(line.quantity||1)+change);if(line.quantity<=0)shoppingCart.splice(i,1);refreshCartDisplayEngine();
   };
   window.purgeCartLineItem=function(lineIndex){const i=Number(lineIndex);if(i>=0&&i<shoppingCart.length)shoppingCart.splice(i,1);refreshCartDisplayEngine();};
 
@@ -8324,7 +8385,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const title=currentLanguage==='ar'?line.product.nameAr:line.product.nameEn;
       const sizeLabel=currentLanguage==='ar'?'المقاس':'Size',colorLabel=currentLanguage==='ar'?'اللون':'Color';
       const row=document.createElement('div');row.className='cart-item';
-      row.innerHTML=`<img class="cart-item-img" src="${line.product.images[0]}" alt="${String(title).replace(/"/g,'&quot;')}"><div class="cart-item-details"><h4 class="cart-item-title">${title}</h4><span class="cart-item-meta">SKU: ${line.product.sku} · ${sizeLabel}: ${line.size||'Standard'} · ${colorLabel}: ${line.color||'Default'}</span><div class="cart-item-unit-price">${formatPrice(line.product.price)} × ${line.quantity}</div><div class="cart-item-price">${formatPrice(line.product.price*line.quantity)}</div></div><div class="cart-line-controls"><div class="qty-select-wrapper"><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},-1)" aria-label="Decrease quantity">−</button><span class="qty-val">${line.quantity}</span><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},1)" aria-label="Increase quantity">+</button></div></div><button class="saver-cart-remove" type="button" onclick="purgeCartLineItem(${i})" aria-label="Remove item"><i class="far fa-trash-alt"></i></button>`;
+      row.innerHTML=`<img class="cart-item-img" src="${line.product.images[0]}" alt="${String(title).replace(/"/g,'&quot;')}"><div class="cart-item-details"><h4 class="cart-item-title">${title}</h4><span class="cart-item-meta">SKU: ${line.product.sku} · ${sizeLabel}: ${line.size||'Standard'} · ${colorLabel}: ${saverDetailValue(line.color||'Default')}</span><div class="cart-item-unit-price">${formatPrice(line.product.price)} × ${line.quantity}</div><div class="cart-item-price">${formatPrice(line.product.price*line.quantity)}</div></div><div class="cart-line-controls"><div class="qty-select-wrapper"><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},-1)" aria-label="Decrease quantity">−</button><span class="qty-val">${line.quantity}</span><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},1)" aria-label="Increase quantity">+</button></div></div><button class="saver-cart-remove" type="button" onclick="purgeCartLineItem(${i})" aria-label="Remove item"><i class="far fa-trash-alt"></i></button>`;
       list.appendChild(row);
     });
     if(!shoppingCart.length) list.innerHTML=`<div class="saver-cart-empty"><i class="fas fa-bag-shopping"></i><strong>${currentLanguage==='ar'?'سلة التسوق فارغة':'Your cart is empty'}</strong><span>${currentLanguage==='ar'?'أضف بعض المنتجات للمتابعة.':'Add some products to continue.'}</span></div>`;
@@ -8336,10 +8397,11 @@ document.addEventListener("DOMContentLoaded", function () {
   try{alterCartLineItemQuantity=window.alterCartLineItemQuantity;purgeCartLineItem=window.purgeCartLineItem}catch(e){}
 
   // Quantity selector for Quick View (cards and full details already have selectors).
-  window.saverQuickQty=function(id,step){const n=document.getElementById(`qty-val-quick-${id}`);if(!n)return;let v=Math.max(1,(parseInt(n.textContent)||1)+step);n.textContent=v};
+  window.saverQuickQty=function(id,step){const n=document.getElementById(`qty-val-quick-${id}`),p=productsDatabase.find(x=>x.id===id);if(!n||!p)return;let v=Math.max(1,(parseInt(n.textContent)||1)+step),limit=getProductStockLimit(p);if(limit!==null&&v>limit){showStockLimitMessage(p);v=Math.max(1,limit)}n.textContent=v};
   window.saverAddQuickToCart=function(id,button){
     const n=document.getElementById(`qty-val-quick-${id}`),qty=Math.max(1,parseInt(n?.textContent)||1),p=productsDatabase.find(x=>x.id===id);if(!p)return;
     const size=p.sizes?.[0]||'Standard',color=p.colors?.[0]||'Default',line=shoppingCart.find(x=>x.product.id===id&&x.size===size&&x.color===color);
+    const limit=getProductStockLimit(p);if(limit!==null&&getCartQuantityForProduct(id)+qty>limit){showStockLimitMessage(p);return}
     if(line)line.quantity+=qty;else shoppingCart.push({product:p,quantity:qty,size,color});if(n)n.textContent='1';refreshCartDisplayEngine();if(typeof animateProductToCart==='function')animateProductToCart(p,button);
   };
   const oldOpenQuick=window.openQuickView;
@@ -8349,6 +8411,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const originalCheckout=window.handleCheckout || (typeof handleCheckout==='function'?handleCheckout:null);
   window.handleCheckout=async function(event){
     event.preventDefault();if(!shoppingCart.length){alert(currentLanguage==='ar'?'سلة التسوق فارغة.':'Your shopping cart is empty.');return}
+    if(!validateCartStock())return;
     const name=document.getElementById('custName').value.trim(),phone=document.getElementById('custPhone').value.trim(),address=document.getElementById('custAddress').value.trim(),notes=document.getElementById('custNotes').value.trim()||'None';
     const total=shoppingCart.reduce((s,l)=>s+l.product.price*l.quantity,0);
     // Open WhatsApp while this function is still handling the user's click.
@@ -8409,7 +8472,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const user=window.saverCustomerCurrentUser();
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
-        <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
+        <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('You can browse products and send an enquiry as a guest. Sign in to place an order.','يمكنك تصفح المنتجات وإرسال استفسار كضيف. سجّل الدخول لتقديم طلب.')}</p>
           <div class="saver-auth-tabs"><button type="button" class="saver-auth-tab active" data-auth-tab="login">${lang('Login','تسجيل الدخول')}</button><button type="button" class="saver-auth-tab" data-auth-tab="signup">${lang('Sign Up','إنشاء حساب')}</button></div>
           <form id="saverLoginForm" class="saver-auth-form" onsubmit="saverLogin(event)"><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverLoginEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverLoginPassword" type="password" minlength="6" required><button class="saver-account-primary" type="submit">${lang('Login','تسجيل الدخول')}</button></form>
 <form id="saverSignupForm" class="saver-auth-form" style="display:none" onsubmit="saverSignup(event)"><label>${lang('Full name','الاسم الكامل')}</label><input class="form-input" id="saverSignupName" required><label>${lang('Phone number','رقم الهاتف')}</label><input class="form-input" id="saverSignupPhone" type="tel" required><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverSignupEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverSignupPassword" type="password" minlength="10" required><button class="saver-account-primary" type="submit">${lang('Create Account','إنشاء الحساب')}</button></form><div class="saver-auth-message" id="saverAuthMessage"></div>

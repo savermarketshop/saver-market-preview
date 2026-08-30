@@ -251,7 +251,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
         <div class="field"><label>Badge Arabic</label><input id="badgeAr" dir="rtl"></div>
 
         <div class="field"><label>Sizes (comma separated)</label><input id="sizes" placeholder="S, M, L"></div>
-        <div class="field"><label>Colors (comma separated)</label><input id="colors" placeholder="Gold, Silver"></div>
+        <div class="field"><label>Colors (comma separated)</label><input id="colors" placeholder="No Specific Color, Gold"><small>Use “No Specific Color” when the product has no fixed color.</small></div>
 
         <div class="field"><label>Material English</label><input id="materialEn"></div>
         <div class="field"><label>Material Arabic</label><input id="materialAr" dir="rtl"></div>
@@ -498,10 +498,21 @@ window.viewOrder=id=>{
       <div class="detail-card"><h4>Customer</h4><div class="detail-line"><b>${esc(o.customer_name)}</b></div><div class="detail-line">Phone: ${esc(o.customer_phone)}</div><div class="detail-line">Email: ${esc(o.customer_email||'—')}</div><div class="detail-line">Account: ${o.user_id?'Registered':'Guest'}</div></div>
       <div class="detail-card"><h4>Delivery</h4><div class="detail-line">${esc(o.delivery_address||'—')}</div><div class="detail-line">Payment: ${esc(o.payment_method||'cash_on_delivery')}</div><div class="detail-line">Notes: ${esc(o.notes||'—')}</div></div>
       <div class="detail-card"><h4>Order</h4><div class="detail-line">Order #: ${esc(o.order_number)}</div><div class="detail-line">Date: ${esc(orderDate(o.created_at))}</div><div class="detail-line">Status: <b>${esc(o.status)}</b></div></div>
-      <div class="detail-card"><h4>Totals</h4><div class="detail-line">Subtotal: ${money(o.subtotal_syp)}</div><div class="detail-line">Delivery: ${money(o.delivery_fee_syp)}</div><div class="detail-line"><b>Total: ${money(o.total_syp)}</b></div></div>
+      <div class="detail-card"><h4>Totals</h4><div class="detail-line">Subtotal: ${money(o.subtotal_syp)}</div><div class="detail-line">Delivery: ${money(o.delivery_fee_syp)}</div><div class="detail-line"><b>Total: ${money(o.total_syp)}</b></div><div class="field" style="margin-top:10px"><label for="deliveryFeeInput-${o.id}">Delivery charge</label><input id="deliveryFeeInput-${o.id}" type="number" min="0" step="1" value="${Number(o.delivery_fee_syp||0)}"></div><button class="btn btn-primary" type="button" onclick="updateOrderDeliveryFee(${o.id})">Save Delivery Charge</button></div>
     </div>
     <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
   $('orderModal').classList.remove('hidden');
+};
+
+window.updateOrderDeliveryFee=async id=>{
+  const order=allOrders.find(o=>o.id===id);if(!order)return;
+  const input=$(`deliveryFeeInput-${id}`),fee=Number(input?.value);
+  if(!Number.isFinite(fee)||fee<0){alert('Enter a valid delivery charge of 0 or more.');return}
+  const subtotal=Number(order.subtotal_syp||0),delivery=Math.round(fee),total=subtotal+Math.round(fee);
+  const {error}=await sb.from('orders').update({delivery_fee_syp:delivery,total_syp:total,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert('Could not update delivery charge: '+error.message);return}
+  order.delivery_fee_syp=delivery;order.total_syp=total;updateOrderStats();renderOrders();viewOrder(id);
+  alert('Delivery charge and final total updated.');
 };
 
 
