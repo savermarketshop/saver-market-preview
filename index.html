@@ -8351,6 +8351,9 @@ document.addEventListener("DOMContentLoaded", function () {
     event.preventDefault();if(!shoppingCart.length){alert(currentLanguage==='ar'?'سلة التسوق فارغة.':'Your shopping cart is empty.');return}
     const name=document.getElementById('custName').value.trim(),phone=document.getElementById('custPhone').value.trim(),address=document.getElementById('custAddress').value.trim(),notes=document.getElementById('custNotes').value.trim()||'None';
     const total=shoppingCart.reduce((s,l)=>s+l.product.price*l.quantity,0);
+    // Open WhatsApp while this function is still handling the user's click.
+    // Waiting for the database first allows browsers to block the new tab.
+    const checkoutResult=originalCheckout?originalCheckout(event):null;
     if(currentUser()){
       try{
         const orderNo=`SM-${Date.now().toString().slice(-10)}`;
@@ -8358,8 +8361,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const order=orders?.[0];if(order){const lines=shoppingCart.map(l=>({order_id:order.id,product_id:Number(l.product.id),sku:l.product.sku,product_name:currentLanguage==='ar'?l.product.nameAr:l.product.nameEn,price_syp:l.product.price,quantity:l.quantity}));await rest('order_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(lines)});}
       }catch(e){console.warn('[Saver Market] Order history save failed; WhatsApp checkout continues.',e)}
     }
-    // Preserve the exact existing WhatsApp ordering workflow.
-    if(originalCheckout) return originalCheckout(event);
+    return checkoutResult;
   };
   try{handleCheckout=window.handleCheckout}catch(e){}
 
@@ -8465,8 +8467,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const oldCheckout=window.handleCheckout;
   if(typeof oldCheckout==='function'&&!oldCheckout.__savedAddressEnhanced){
-    const enhanced=async function(){
-      const u=window.saverCustomerCurrentUser(); if(u){try{const a=await saverFetchAddresses();const d=a.find(x=>x.is_default)||a[0];const p=await saverFetchProfile();const n=document.getElementById('custName'),ph=document.getElementById('custPhone'),ad=document.getElementById('custAddress');if(n&&!n.value)n.value=d?.recipient_name||p.full_name||'';if(ph&&!ph.value)ph.value=d?.phone||p.phone||'';if(ad&&!ad.value)ad.value=d?.address||''}catch(e){}}
+    const enhanced=function(event){
+      // Prevent the browser's normal form navigation synchronously. Profile and
+      // default-address fields are already populated when the account loads.
+      event?.preventDefault();
       return oldCheckout.apply(this,arguments);
     }; enhanced.__savedAddressEnhanced=true;window.handleCheckout=enhanced;try{handleCheckout=window.handleCheckout}catch(e){}
   }
