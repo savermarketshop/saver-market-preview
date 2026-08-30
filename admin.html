@@ -40,6 +40,9 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 /* Admin Orders */
 .orders-table{width:100%;border-collapse:collapse;min-width:1050px}.orders-table th,.orders-table td{padding:12px 10px;border-bottom:1px solid #edf0ea;text-align:left;vertical-align:top}.orders-table th{font-size:.82rem;color:#687268;text-transform:uppercase;letter-spacing:.04em}.order-number{font-weight:800;color:var(--sage)}.order-customer{font-weight:700}.order-meta{font-size:.82rem;color:var(--muted);margin-top:3px}.order-total{font-weight:800;white-space:nowrap}.status-select{min-width:130px;padding:8px 10px;border-radius:10px}.order-view-btn{white-space:nowrap}.order-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.detail-card{border:1px solid #e4e9e1;border-radius:14px;padding:14px;background:#fbfcf9}.detail-card h4{margin:0 0 9px;color:var(--sage)}.detail-line{margin:5px 0;word-break:break-word}.order-items-list{display:grid;gap:10px}.order-item-row{display:grid;grid-template-columns:1fr auto;gap:12px;border:1px solid #e7ebe4;border-radius:12px;padding:12px}.order-item-name{font-weight:700}.order-item-sub{font-size:.84rem;color:var(--muted);margin-top:4px}.orders-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.stat-box{background:#fff;border:1px solid #e4e9e1;border-radius:15px;padding:14px}.stat-box b{display:block;font-size:1.35rem;color:var(--sage);margin-top:4px}.stat-box span{font-size:.78rem;color:var(--muted)}
 @media(max-width:760px){.dashboard{grid-template-columns:1fr}.sidebar{position:static;height:auto;display:flex;overflow:auto;gap:6px;padding:10px}.sidebar h2{display:none}.nav-btn{white-space:nowrap;width:auto;margin:0}.main{padding:15px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.search{min-width:0;width:100%}.topbar{align-items:flex-start}.orders-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.order-detail-grid{grid-template-columns:1fr}}
+
+/* Media Manager */
+.media-toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:18px}.media-toolbar .field{margin:0;min-width:180px}.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.media-card{background:#fff;border:1px solid #e2e7df;border-radius:16px;padding:10px;box-shadow:0 4px 14px rgba(0,0,0,.03)}.media-card img{width:100%;height:150px;object-fit:cover;border-radius:12px;background:#f2f4ef}.media-card.logo-card img{object-fit:contain}.media-meta{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px}.media-type{font-size:.78rem;color:var(--muted)}.media-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.media-actions .btn{padding:7px 10px;font-size:.8rem}.media-help{background:#f8faf5;border:1px solid #e3e9df;border-radius:14px;padding:12px 14px;color:var(--muted);font-size:.88rem;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -63,6 +66,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
     <button class="nav-btn" data-page="products">Products</button>
     <button class="nav-btn" data-page="orders">Orders</button>
     <button class="nav-btn" data-page="customers">Customers</button>
+    <button class="nav-btn" data-page="media">Media</button>
   </aside>
 
   <main class="main">
@@ -150,6 +154,20 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
             <tbody id="customersBody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <section id="page-media" class="page hidden">
+      <div class="card">
+        <div class="media-help"><b>Website Media Manager</b><br>Upload and manage the public website logo, desktop/mobile hero banners and About Us images. Changes are stored in Supabase and appear on the public site automatically.</div>
+        <div class="media-toolbar">
+          <div class="field"><label>Media type</label><select id="mediaType"><option value="hero_desktop">Hero — Desktop</option><option value="hero_mobile">Hero — Mobile</option><option value="about_desktop">About — Desktop</option><option value="about_mobile">About — Mobile</option><option value="logo">Logo</option></select></div>
+          <div class="field" style="flex:1;min-width:240px"><label>Choose image</label><input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <button id="uploadMediaBtn" class="btn btn-primary">Upload Image</button>
+          <button id="refreshMediaBtn" class="btn btn-light">Refresh</button>
+        </div>
+        <div id="mediaMessage" class="subtle" style="margin-bottom:12px"></div>
+        <div id="mediaGrid" class="media-grid"></div>
       </div>
     </section>
   </main>
@@ -277,10 +295,11 @@ document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
   document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
   $('page-'+btn.dataset.page).classList.remove('hidden');
-  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='customers'?'Customers':'Admin Dashboard';
+  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='customers'?'Customers':btn.dataset.page==='media'?'Media Manager':'Admin Dashboard';
   if(btn.dataset.page==='products')loadProducts();
   if(btn.dataset.page==='orders')loadOrders();
   if(btn.dataset.page==='customers')loadCustomers();
+  if(btn.dataset.page==='media')loadMedia();
 });
 
 async function loadProducts(){
@@ -508,6 +527,63 @@ window.viewCustomer=userId=>{
 };
 $('closeCustomerModal').onclick=()=>$('customerModal').classList.add('hidden');
 $('customerModal').addEventListener('click',e=>{if(e.target===$('customerModal'))$('customerModal').classList.add('hidden')});
+
+
+
+const MEDIA_BUCKET='site-media';
+const MEDIA_LABELS={hero_desktop:'Hero — Desktop',hero_mobile:'Hero — Mobile',about_desktop:'About — Desktop',about_mobile:'About — Mobile',logo:'Logo'};
+let allMedia=[];
+function mediaEsc(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
+async function loadMedia(){
+  $('mediaMessage').textContent='Loading media...';
+  const {data,error}=await sb.from('site_media').select('*').order('media_type').order('sort_order',{ascending:true}).order('id',{ascending:true});
+  if(error){$('mediaMessage').textContent='Error: '+error.message;return}
+  allMedia=data||[];$('mediaMessage').textContent=allMedia.length+' media item(s)';renderMedia();
+}
+function renderMedia(){
+  const filter=$('mediaType').value;
+  const rows=allMedia.filter(m=>m.media_type===filter);
+  $('mediaGrid').innerHTML=rows.length?rows.map((m,i)=>`<div class="media-card ${m.media_type==='logo'?'logo-card':''}"><img src="${mediaEsc(m.image_url)}" alt=""><div class="media-meta"><b>${mediaEsc(MEDIA_LABELS[m.media_type]||m.media_type)}</b><span class="media-type">#${i+1}</span></div><div class="media-actions">${m.media_type!=='logo'?`<button class="btn btn-light" onclick="moveMedia(${m.id},-1)">↑</button><button class="btn btn-light" onclick="moveMedia(${m.id},1)">↓</button>`:''}<button class="btn btn-danger" onclick="deleteMedia(${m.id})">Delete</button></div></div>`).join(''):'<div class="empty">No images in this section yet. The website will continue using the existing GitHub images until you upload one here.</div>';
+}
+$('mediaType').onchange=renderMedia;
+$('refreshMediaBtn').onclick=loadMedia;
+$('uploadMediaBtn').onclick=async()=>{
+  const file=$('mediaFile').files?.[0], type=$('mediaType').value;
+  if(!file){alert('Choose an image first.');return}
+  if(file.size>10*1024*1024){alert('Please use an image smaller than 10 MB.');return}
+  $('uploadMediaBtn').disabled=true;$('mediaMessage').textContent='Uploading...';
+  try{
+    if(type==='logo'){
+      const olds=allMedia.filter(m=>m.media_type==='logo');
+      if(olds.length){await sb.storage.from(MEDIA_BUCKET).remove(olds.map(m=>m.storage_path).filter(Boolean));await sb.from('site_media').delete().eq('media_type','logo')}
+    }
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const path=`${type}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const up=await sb.storage.from(MEDIA_BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+    if(up.error)throw up.error;
+    const publicUrl=sb.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+    const same=allMedia.filter(m=>m.media_type===type);
+    const nextOrder=type==='logo'?0:(same.length?Math.max(...same.map(m=>Number(m.sort_order||0)))+1:0);
+    const ins=await sb.from('site_media').insert({media_type:type,image_url:publicUrl,storage_path:path,sort_order:nextOrder,is_active:true});
+    if(ins.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);throw ins.error}
+    $('mediaFile').value='';await loadMedia();$('mediaMessage').textContent='Image uploaded successfully.';
+  }catch(e){$('mediaMessage').textContent='Upload failed: '+(e.message||e)}finally{$('uploadMediaBtn').disabled=false}
+};
+window.deleteMedia=async id=>{
+  const m=allMedia.find(x=>x.id===id);if(!m||!confirm('Delete this image from the website media library?'))return;
+  const del=await sb.from('site_media').delete().eq('id',id);if(del.error){alert(del.error.message);return}
+  if(m.storage_path)await sb.storage.from(MEDIA_BUCKET).remove([m.storage_path]);
+  await loadMedia();
+};
+window.moveMedia=async(id,dir)=>{
+  const m=allMedia.find(x=>x.id===id);if(!m)return;
+  const same=allMedia.filter(x=>x.media_type===m.media_type).sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||a.id-b.id);
+  const idx=same.findIndex(x=>x.id===id), other=same[idx+dir];if(!other)return;
+  const a=Number(m.sort_order||idx), b=Number(other.sort_order||idx+dir);
+  const u1=await sb.from('site_media').update({sort_order:b}).eq('id',m.id);if(u1.error){alert(u1.error.message);return}
+  const u2=await sb.from('site_media').update({sort_order:a}).eq('id',other.id);if(u2.error){alert(u2.error.message);return}
+  await loadMedia();
+};
 
 $('closeOrderModal').onclick=()=>$('orderModal').classList.add('hidden');
 $('orderModal').addEventListener('click',e=>{if(e.target===$('orderModal'))$('orderModal').classList.add('hidden')});
