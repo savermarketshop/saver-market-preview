@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Saver Market Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--sage:#556B2F;--sage2:#71854a;--light:#eef3e9;--bg:#f6f7f3;--text:#293238;--muted:#6d756f;--danger:#b83b3b;--gold:#d4af37}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}
+.hidden{display:none!important}.shell{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#fffdf9,#f3f6ef)}
+.login-card{width:min(100%,430px);background:#fff;border-radius:28px;padding:34px;box-shadow:0 18px 50px rgba(0,0,0,.1)}
+.brand{text-align:center;margin-bottom:26px}.brand h1{margin:0;color:var(--sage)}.brand p{color:var(--muted)}
+.field{margin-bottom:15px}.field label{display:block;font-weight:700;margin-bottom:7px;font-size:.9rem}
+input,textarea,select{width:100%;border:1px solid #d9dfd4;border-radius:12px;padding:11px 12px;background:white;outline:none}
+textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus{border-color:var(--sage2);box-shadow:0 0 0 3px rgba(113,133,74,.12)}
+.btn{border:0;border-radius:12px;padding:11px 15px;cursor:pointer;font-weight:700}.btn-primary{background:var(--sage);color:#fff}.btn-light{background:#fff;border:1px solid #dfe5dc;color:var(--text)}
+.btn-danger{background:#fff0f0;color:var(--danger);border:1px solid #efd0d0}.btn:disabled{opacity:.55;cursor:not-allowed}
+.message{display:none;margin-top:14px;border-radius:12px;padding:10px 12px}.message.error{display:block;background:#fff0f0;color:#8d2c2c}.message.success{display:block;background:#edf7ea;color:#3d642b}
+.dashboard{min-height:100vh;display:grid;grid-template-columns:240px 1fr}.sidebar{background:#21341f;color:#fff;padding:24px 16px;position:sticky;top:0;height:100vh}
+.sidebar h2{margin:0 0 28px}.nav-btn{width:100%;text-align:left;background:transparent;color:#fff;border:0;padding:12px 14px;border-radius:11px;cursor:pointer;margin-bottom:6px}
+.nav-btn.active,.nav-btn:hover{background:rgba(255,255,255,.12)}.main{padding:28px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}
+.topbar h1{margin:0}.subtle{color:var(--muted);font-size:.9rem}.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 7px 25px rgba(0,0,0,.05)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}.toolbar-left{display:flex;gap:10px;flex-wrap:wrap}
+.search{min-width:280px}.table-wrap{overflow:auto}.products-table{width:100%;border-collapse:collapse;min-width:920px}.products-table th,.products-table td{padding:12px 10px;border-bottom:1px solid #edf0ea;text-align:left;vertical-align:middle}
+.products-table th{font-size:.82rem;color:#687268;text-transform:uppercase;letter-spacing:.04em}.thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;background:var(--light)}
+.status{display:inline-block;padding:6px 9px;border-radius:999px;font-size:.78rem;font-weight:700;background:var(--light);color:var(--sage)}.inactive{background:#f4eaea;color:#9a4b4b}
+.actions{display:flex;gap:7px}.empty{text-align:center;padding:45px 10px;color:var(--muted)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,25,20,.55);display:grid;place-items:center;padding:18px;z-index:1000}.modal{width:min(100%,980px);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;padding:24px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modal-head h2{margin:0}.close{border:0;background:#f2f3ef;border-radius:50%;width:38px;height:38px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}.check-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.check-row label{display:flex;gap:7px;align-items:center}.check-row input{width:auto}
+.image-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:12px}.image-box{position:relative;border:1px solid #e1e5dd;border-radius:14px;padding:8px;background:#fafbf8}
+.image-box img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px}.image-box button{position:absolute;right:5px;top:5px;width:30px;height:30px;border:0;border-radius:50%;background:#fff0f0;color:var(--danger);cursor:pointer}
+.save-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.dashboard-home h3{margin-top:0;color:var(--sage)}
+@media(max-width:760px){.dashboard{grid-template-columns:1fr}.sidebar{position:static;height:auto;display:flex;overflow:auto;gap:6px;padding:10px}.sidebar h2{display:none}.nav-btn{white-space:nowrap;width:auto;margin:0}.main{padding:15px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.search{min-width:0;width:100%}.topbar{align-items:flex-start}}
+</style>
+</head>
+<body>
+
+<section id="loginView" class="shell">
+  <div class="login-card">
+    <div class="brand"><h1>Saver Market</h1><p>Admin Panel</p></div>
+    <form id="loginForm">
+      <div class="field"><label>Admin Email</label><input id="loginEmail" type="email" required autocomplete="username"></div>
+      <div class="field"><label>Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div>
+      <button id="loginBtn" class="btn btn-primary" style="width:100%" type="submit">Sign In</button>
+      <div id="loginMessage" class="message"></div>
+    </form>
+  </div>
+</section>
+
+<section id="dashboardView" class="dashboard hidden">
+  <aside class="sidebar">
+    <h2>Saver Market</h2>
+    <button class="nav-btn active" data-page="home">Dashboard</button>
+    <button class="nav-btn" data-page="products">Products</button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><h1 id="pageTitle">Admin Dashboard</h1><div id="adminEmail" class="subtle"></div></div>
+      <button id="logoutBtn" class="btn btn-danger">Log Out</button>
+    </div>
+
+    <section id="page-home" class="page">
+      <div class="card dashboard-home">
+        <h3>Admin connected successfully</h3>
+        <p>You can now manage Saver Market products directly from Supabase.</p>
+      </div>
+    </section>
+
+    <section id="page-products" class="page hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input id="productSearch" class="search" placeholder="Search SKU or product name...">
+            <select id="activeFilter" style="width:auto">
+              <option value="all">All products</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
+          </div>
+          <button id="addProductBtn" class="btn btn-primary">+ Add Product</button>
+        </div>
+        <div id="productStatus" class="subtle" style="margin-bottom:10px"></div>
+        <div class="table-wrap">
+          <table class="products-table">
+            <thead><tr><th>Image</th><th>SKU</th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</section>
+
+<div id="productModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modalTitle">Add Product</h2><button id="closeModal" class="close">×</button></div>
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <div class="form-grid">
+        <div class="field"><label>SKU *</label><input id="sku" required placeholder="STK133"></div>
+        <div class="field"><label>Category</label><input id="category"></div>
+
+        <div class="field"><label>English Name *</label><input id="nameEn" required></div>
+        <div class="field"><label>Arabic Name *</label><input id="nameAr" required dir="rtl"></div>
+
+        <div class="field full"><label>English Description</label><textarea id="descEn"></textarea></div>
+        <div class="field full"><label>Arabic Description</label><textarea id="descAr" dir="rtl"></textarea></div>
+
+        <div class="field"><label>Price (SYP) *</label><input id="price" type="number" min="0" step="0.01" required></div>
+        <div class="field"><label>Old Price (SYP)</label><input id="oldPrice" type="number" min="0" step="0.01"></div>
+
+        <div class="field"><label>Brand</label><input id="brand"></div>
+        <div class="field"><label>Collection</label><input id="collection"></div>
+
+        <div class="field"><label>Availability</label>
+          <select id="availability"><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option><option>Backorder</option><option>Coming Soon</option></select>
+        </div>
+        <div class="field"><label>Stock Quantity</label><input id="stockQty" type="number" min="0" value="0"></div>
+
+        <div class="field"><label>Badge English</label><input id="badgeEn"></div>
+        <div class="field"><label>Badge Arabic</label><input id="badgeAr" dir="rtl"></div>
+
+        <div class="field"><label>Sizes (comma separated)</label><input id="sizes" placeholder="S, M, L"></div>
+        <div class="field"><label>Colors (comma separated)</label><input id="colors" placeholder="Gold, Silver"></div>
+
+        <div class="field"><label>Material English</label><input id="materialEn"></div>
+        <div class="field"><label>Material Arabic</label><input id="materialAr" dir="rtl"></div>
+
+        <div class="field"><label>Dimensions</label><input id="dimensions"></div>
+        <div class="field"><label>Weight</label><input id="weight"></div>
+
+        <div class="field"><label>Delivery Time English</label><input id="deliveryEn"></div>
+        <div class="field"><label>Delivery Time Arabic</label><input id="deliveryAr" dir="rtl"></div>
+
+        <div class="field full"><label>Special Notes English</label><textarea id="notesEn"></textarea></div>
+        <div class="field full"><label>Special Notes Arabic</label><textarea id="notesAr" dir="rtl"></textarea></div>
+
+        <div class="field"><label>Tags (comma separated)</label><input id="tags"></div>
+        <div class="field"><label>Related SKUs (comma separated)</label><input id="relatedSkus"></div>
+
+        <div class="field"><label>Rating</label><input id="rating" type="number" min="0" max="5" step="0.01"></div>
+        <div class="field"><label>Review Count</label><input id="reviewCount" type="number" min="0" value="0"></div>
+
+        <div class="field full">
+          <div class="check-row">
+            <label><input id="featured" type="checkbox"> Featured</label>
+            <label><input id="isActive" type="checkbox" checked> Active on website</label>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Product Images</label>
+          <input id="images" type="file" accept="image/*" multiple>
+          <div class="subtle">You can select multiple images at once.</div>
+          <div id="existingImages" class="image-preview-grid"></div>
+        </div>
+      </div>
+
+      <div id="formMessage" class="message"></div>
+      <div class="save-row"><button type="button" id="cancelModal" class="btn btn-light">Cancel</button><button id="saveProductBtn" type="submit" class="btn btn-primary">Save Product</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL="https://zjfdedemugnfplrkojax.supabase.co";
+const SUPABASE_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let allProducts=[], currentProductImages=[];
+
+const $=id=>document.getElementById(id);
+function csvToArray(v){return String(v||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function arrayToCsv(v){return Array.isArray(v)?v.join(', '):''}
+function money(v){return new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(Number(v||0))+' SYP'}
+function showMsg(el,text,type='error'){el.textContent=text;el.className='message '+type}
+function clearMsg(el){el.textContent='';el.className='message'}
+
+async function isAdmin(user){
+  if(!user)return false;
+  const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
+  return !error && !!data;
+}
+function showLogin(){$('dashboardView').classList.add('hidden');$('loginView').classList.remove('hidden')}
+function showDashboard(user){$('loginView').classList.add('hidden');$('dashboardView').classList.remove('hidden');$('adminEmail').textContent=user.email||''}
+
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault(); clearMsg($('loginMessage')); $('loginBtn').disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});
+  $('loginBtn').disabled=false;
+  if(error){showMsg($('loginMessage'),error.message);return}
+  if(!(await isAdmin(data.user))){await sb.auth.signOut();showMsg($('loginMessage'),'This account is not authorized as an administrator.');return}
+  showDashboard(data.user);
+});
+$('logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin()};
+
+document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+  document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
+  $('page-'+btn.dataset.page).classList.remove('hidden');
+  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':'Admin Dashboard';
+  if(btn.dataset.page==='products')loadProducts();
+});
+
+async function loadProducts(){
+  $('productStatus').textContent='Loading products...';
+  const {data,error}=await sb.from('products').select('*, product_images(id,image_url,storage_path,sort_order)').order('created_at',{ascending:false});
+  if(error){$('productStatus').textContent='Error: '+error.message;return}
+  allProducts=data||[];$('productStatus').textContent=allProducts.length+' product(s)';
+  renderProducts();
+}
+function renderProducts(){
+  const q=$('productSearch').value.trim().toLowerCase(), f=$('activeFilter').value;
+  const rows=allProducts.filter(p=>{
+    const matches=!q||[p.sku,p.name_en,p.name_ar].join(' ').toLowerCase().includes(q);
+    const active=f==='all'||(f==='active'&&p.is_active)||(f==='inactive'&&!p.is_active);
+    return matches&&active;
+  });
+  $('productsBody').innerHTML=rows.length?rows.map(p=>{
+    const imgs=(p.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order);
+    const first=imgs[0]?.image_url||'';
+    return `<tr>
+      <td>${first?`<img class="thumb" src="${first}" alt="">`:`<div class="thumb"></div>`}</td>
+      <td><strong>${p.sku}</strong></td><td>${p.name_en}<div class="subtle">${p.name_ar||''}</div></td>
+      <td>${money(p.price_syp)}</td><td>${p.stock_qty??0}</td>
+      <td><span class="status ${p.is_active?'':'inactive'}">${p.is_active?'Active':'Inactive'}</span></td>
+      <td><div class="actions"><button class="btn btn-light" onclick="editProduct(${p.id})">Edit</button><button class="btn btn-danger" onclick="deleteProduct(${p.id})">Delete</button></div></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="7" class="empty">No products found.</td></tr>`;
+}
+$('productSearch').oninput=renderProducts;$('activeFilter').onchange=renderProducts;
+
+function openModal(product=null){
+  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];clearMsg($('formMessage'));$('existingImages').innerHTML='';
+  $('modalTitle').textContent=product?'Edit Product':'Add Product';
+  if(product){
+    $('productId').value=product.id;$('sku').value=product.sku||'';$('category').value=product.category||'';
+    $('nameEn').value=product.name_en||'';$('nameAr').value=product.name_ar||'';$('descEn').value=product.description_en||'';$('descAr').value=product.description_ar||'';
+    $('price').value=product.price_syp??'';$('oldPrice').value=product.old_price_syp??'';$('brand').value=product.brand||'';$('collection').value=product.collection||'';
+    $('availability').value=product.availability||'In Stock';$('stockQty').value=product.stock_qty??0;$('featured').checked=!!product.featured;$('isActive').checked=!!product.is_active;
+    $('badgeEn').value=product.badge_en||'';$('badgeAr').value=product.badge_ar||'';$('sizes').value=arrayToCsv(product.sizes);$('colors').value=arrayToCsv(product.colors);
+    $('materialEn').value=product.material_en||'';$('materialAr').value=product.material_ar||'';$('dimensions').value=product.dimensions||'';$('weight').value=product.weight||'';
+    $('deliveryEn').value=product.delivery_time_en||'';$('deliveryAr').value=product.delivery_time_ar||'';$('notesEn').value=product.special_notes_en||'';$('notesAr').value=product.special_notes_ar||'';
+    $('tags').value=arrayToCsv(product.tags);$('relatedSkus').value=arrayToCsv(product.related_skus);$('rating').value=product.rating??'';$('reviewCount').value=product.review_count??0;
+    currentProductImages=(product.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order);renderExistingImages();
+  }
+  $('productModal').classList.remove('hidden');
+}
+function closeModal(){$('productModal').classList.add('hidden')}
+$('addProductBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;
+
+window.editProduct=id=>{const p=allProducts.find(x=>x.id===id);if(p)openModal(p)}
+function renderExistingImages(){
+  $('existingImages').innerHTML=currentProductImages.map(img=>`<div class="image-box"><img src="${img.image_url}" alt=""><button type="button" onclick="removeImage(${img.id})">×</button></div>`).join('');
+}
+window.removeImage=async id=>{
+  const img=currentProductImages.find(x=>x.id===id);if(!img)return;
+  if(!confirm('Delete this image?'))return;
+  if(img.storage_path){const {error:se}=await sb.storage.from('product-images').remove([img.storage_path]);if(se){alert(se.message);return}}
+  const {error}=await sb.from('product_images').delete().eq('id',id);if(error){alert(error.message);return}
+  currentProductImages=currentProductImages.filter(x=>x.id!==id);renderExistingImages();
+};
+
+async function uploadImages(productId,sku,files,startOrder){
+  let order=startOrder;
+  for(const file of files){
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const safeSku=sku.replace(/[^a-zA-Z0-9_-]/g,'_');
+    const path=`${safeSku}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const {error:upErr}=await sb.storage.from('product-images').upload(path,file,{cacheControl:'3600',upsert:false});
+    if(upErr)throw upErr;
+    const {data:urlData}=sb.storage.from('product-images').getPublicUrl(path);
+    const {error:dbErr}=await sb.from('product_images').insert({product_id:productId,image_url:urlData.publicUrl,storage_path:path,sort_order:order++});
+    if(dbErr)throw dbErr;
+  }
+}
+$('productForm').addEventListener('submit',async e=>{
+  e.preventDefault();clearMsg($('formMessage'));$('saveProductBtn').disabled=true;$('saveProductBtn').textContent='Saving...';
+  try{
+    const payload={
+      sku:$('sku').value.trim(),name_en:$('nameEn').value.trim(),name_ar:$('nameAr').value.trim(),
+      description_en:$('descEn').value.trim(),description_ar:$('descAr').value.trim(),
+      price_syp:Number($('price').value||0),old_price_syp:$('oldPrice').value?Number($('oldPrice').value):null,
+      category:$('category').value.trim(),brand:$('brand').value.trim(),collection:$('collection').value.trim(),
+      availability:$('availability').value,stock_qty:Number($('stockQty').value||0),featured:$('featured').checked,
+      badge_en:$('badgeEn').value.trim(),badge_ar:$('badgeAr').value.trim(),sizes:csvToArray($('sizes').value),colors:csvToArray($('colors').value),
+      material_en:$('materialEn').value.trim(),material_ar:$('materialAr').value.trim(),dimensions:$('dimensions').value.trim(),weight:$('weight').value.trim(),
+      delivery_time_en:$('deliveryEn').value.trim(),delivery_time_ar:$('deliveryAr').value.trim(),special_notes_en:$('notesEn').value.trim(),special_notes_ar:$('notesAr').value.trim(),
+      tags:csvToArray($('tags').value),related_skus:csvToArray($('relatedSkus').value),rating:$('rating').value?Number($('rating').value):null,
+      review_count:Number($('reviewCount').value||0),is_active:$('isActive').checked
+    };
+    let productId=Number($('productId').value||0);
+    if(productId){
+      const {error}=await sb.from('products').update(payload).eq('id',productId);if(error)throw error;
+    }else{
+      const {data,error}=await sb.from('products').insert(payload).select('id').single();if(error)throw error;productId=data.id;
+    }
+    const files=[...$('images').files];
+    if(files.length)await uploadImages(productId,payload.sku,files,currentProductImages.length+1);
+    showMsg($('formMessage'),'Product saved successfully.','success');await loadProducts();setTimeout(closeModal,650);
+  }catch(err){console.error(err);showMsg($('formMessage'),err.message||'Could not save product.')}
+  finally{$('saveProductBtn').disabled=false;$('saveProductBtn').textContent='Save Product'}
+});
+
+window.deleteProduct=async id=>{
+  const p=allProducts.find(x=>x.id===id);if(!p||!confirm(`Delete ${p.sku} permanently?`))return;
+  const imgs=p.product_images||[];const paths=imgs.map(x=>x.storage_path).filter(Boolean);
+  if(paths.length){const {error}=await sb.storage.from('product-images').remove(paths);if(error){alert('Storage delete failed: '+error.message);return}}
+  const {error}=await sb.from('products').delete().eq('id',id);if(error){alert(error.message);return}
+  await loadProducts();
+};
+
+(async()=>{
+  const {data}=await sb.auth.getSession();const user=data?.session?.user;
+  if(user&&await isAdmin(user))showDashboard(user);else showLogin();
+})();
+</script>
+</body>
+</html>
