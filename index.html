@@ -4636,7 +4636,33 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
 
     <script src="settings.js"></script>
     <script src="hero-data.js"></script>
+    <!-- Keep the old local product file as an automatic emergency fallback. -->
     <script src="products-data.js"></script>
+
+    <script>
+        // Saver Market live catalog connection (Supabase)
+        const SAVER_SUPABASE_URL = "https://zjfdedemugnfplrkojax.supabase.co";
+        const SAVER_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
+
+        async function loadSaverProductsFromSupabase() {
+            const endpoint = `${SAVER_SUPABASE_URL}/rest/v1/products?select=*,product_images(*)&is_active=eq.true&order=created_at.desc`;
+            const response = await fetch(endpoint, {
+                headers: {
+                    apikey: SAVER_SUPABASE_PUBLISHABLE_KEY,
+                    Authorization: `Bearer ${SAVER_SUPABASE_PUBLISHABLE_KEY}`
+                }
+            });
+
+            if (!response.ok) {
+                const message = await response.text().catch(() => "");
+                throw new Error(`Supabase products request failed (${response.status}) ${message}`);
+            }
+
+            const rows = await response.json();
+            return Array.isArray(rows) ? rows : [];
+        }
+
+    </script>
 
     <script>
         // Global Application Database Array Stores populated from products-data.js
@@ -4707,57 +4733,84 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
         };
 
         // Automatic Production DB Mapper Configuration Logic Engine
-        function generateCoreProductDatabases() {
-            // Check if user variable data script successfully imported offline
-            const dynamicSource = (typeof CUSTOM_PRODUCTS_DATA !== 'undefined') ? CUSTOM_PRODUCTS_DATA : [];
-            
-            // Extract Unique Categories list from configuration source dynamically
+        async function generateCoreProductDatabases() {
+            productsDatabase.length = 0;
+            backorderDatabase.length = 0;
+
+            let dynamicSource = [];
+            let usingSupabase = false;
+
+            try {
+                dynamicSource = await loadSaverProductsFromSupabase();
+                usingSupabase = true;
+                console.info(`[Saver Market] Loaded ${dynamicSource.length} live product(s) from Supabase.`);
+            } catch (error) {
+                console.warn('[Saver Market] Supabase unavailable. Using products-data.js fallback.', error);
+                dynamicSource = (typeof CUSTOM_PRODUCTS_DATA !== 'undefined') ? CUSTOM_PRODUCTS_DATA : [];
+            }
+
             const uniqueCats = new Set();
 
             dynamicSource.forEach((item, index) => {
-                if(item.category) uniqueCats.add(item.category);
+                const category = usingSupabase ? (item.category || '') : (item.category || '');
+                if (category) uniqueCats.add(category);
 
-                // Setup unified image assets structure framework array pointers maps safely
-                // Images are discovered automatically after products load.
-                const itemImages = [`images/products/${item.sku}/1.jpg`];
+                const dbImages = usingSupabase && Array.isArray(item.product_images)
+                    ? [...item.product_images]
+                        .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+                        .map(img => img.image_url)
+                        .filter(Boolean)
+                    : [];
+
+                const rawSku = String(item.sku || '').replace(/^#/, '');
+                const localImages = [`images/products/${rawSku}/1.jpg`];
+                const itemImages = dbImages.length ? dbImages : localImages;
+
+                const availability = usingSupabase
+                    ? (item.availability || (Number(item.stock_qty) > 0 ? 'In Stock' : 'Out of Stock'))
+                    : (item.availability || 'In Stock');
 
                 const formattedProduct = {
-                    id: `stk-${index + 1}`,
-                    sku: `#${item.sku}`,
-                    nameEn: item.nameEn,
-                    nameAr: item.nameAr,
-                    price: parseFloat(item.price),
-                    category: item.category,
-                    descEn: item.descEn,
-                    descAr: item.descAr,
+                    id: usingSupabase ? String(item.id) : `stk-${index + 1}`,
+                    sku: `#${rawSku}`,
+                    nameEn: usingSupabase ? (item.name_en || '') : item.nameEn,
+                    nameAr: usingSupabase ? (item.name_ar || item.name_en || '') : item.nameAr,
+                    price: parseFloat(usingSupabase ? item.price_syp : item.price) || 0,
+                    category,
+                    descEn: usingSupabase ? (item.description_en || '') : item.descEn,
+                    descAr: usingSupabase ? (item.description_ar || item.description_en || '') : item.descAr,
                     sizes: item.sizes || sizesArray,
                     colors: item.colors || colorsArray,
-                    deliveryTime: item.deliveryTime || "Damascus area within 24-48 Hours.",
-                    specialNotes: item.specialNotes || item.specialNotesEn || "",
-                    specialNotesAr: item.specialNotesAr || item.specialNotes || "",
-                    brand: item.brand || "",
-                    oldPrice: item.oldPrice ? parseFloat(item.oldPrice) : null,
-                    badgeEn: item.badgeEn || (item.featured ? "Featured" : "New"),
-                    badgeAr: item.badgeAr || (item.featured ? "مميز" : "جديد"),
-                    availability: item.availability || "In Stock",
-                    stockQty: Number.isFinite(Number(item.stockQty)) ? Number(item.stockQty) : null,
-                    materialEn: item.materialEn || "",
-                    materialAr: item.materialAr || item.materialEn || "",
-                    dimensions: item.dimensions || "",
-                    weight: item.weight || "",
-                    featured: item.featured === true || String(item.featured).toLowerCase() === "yes",
-                    collection: item.collection || "",
-                    tags: Array.isArray(item.tags) ? item.tags : String(item.tags || "").split(",").map(v => v.trim()).filter(Boolean),
-                    relatedSkus: Array.isArray(item.relatedSkus) ? item.relatedSkus : String(item.relatedSkus || "").split(",").map(v => v.trim()).filter(Boolean),
-                    dateAdded: item.dateAdded || "",
-                    imageCount: Math.max(1, Number(item.imageCount) || 1),
+                    deliveryTime: usingSupabase ? (item.delivery_time_en || item.delivery_time_ar || 'Damascus area within 24-48 Hours.') : (item.deliveryTime || 'Damascus area within 24-48 Hours.'),
+                    deliveryTimeAr: usingSupabase ? (item.delivery_time_ar || '') : (item.deliveryTimeAr || ''),
+                    specialNotes: usingSupabase ? (item.special_notes_en || '') : (item.specialNotes || item.specialNotesEn || ''),
+                    specialNotesAr: usingSupabase ? (item.special_notes_ar || item.special_notes_en || '') : (item.specialNotesAr || item.specialNotes || ''),
+                    brand: item.brand || '',
+                    oldPrice: (usingSupabase ? item.old_price_syp : item.oldPrice) ? parseFloat(usingSupabase ? item.old_price_syp : item.oldPrice) : null,
+                    badgeEn: usingSupabase ? (item.badge_en || (item.featured ? 'Featured' : 'New')) : (item.badgeEn || (item.featured ? 'Featured' : 'New')),
+                    badgeAr: usingSupabase ? (item.badge_ar || (item.featured ? 'مميز' : 'جديد')) : (item.badgeAr || (item.featured ? 'مميز' : 'جديد')),
+                    availability,
+                    stockQty: Number.isFinite(Number(usingSupabase ? item.stock_qty : item.stockQty)) ? Number(usingSupabase ? item.stock_qty : item.stockQty) : null,
+                    materialEn: usingSupabase ? (item.material_en || '') : (item.materialEn || ''),
+                    materialAr: usingSupabase ? (item.material_ar || item.material_en || '') : (item.materialAr || item.materialEn || ''),
+                    dimensions: item.dimensions || '',
+                    weight: item.weight || '',
+                    featured: item.featured === true || String(item.featured).toLowerCase() === 'yes',
+                    collection: item.collection || '',
+                    tags: Array.isArray(item.tags) ? item.tags : String(item.tags || '').split(',').map(v => v.trim()).filter(Boolean),
+                    relatedSkus: Array.isArray(usingSupabase ? item.related_skus : item.relatedSkus) ? (usingSupabase ? item.related_skus : item.relatedSkus) : String((usingSupabase ? item.related_skus : item.relatedSkus) || '').split(',').map(v => v.trim()).filter(Boolean),
+                    dateAdded: usingSupabase ? (item.created_at || '') : (item.dateAdded || ''),
+                    rating: Number(item.rating || 0),
+                    reviewCount: Number(usingSupabase ? item.review_count : item.reviewCount) || 0,
+                    imageCount: Math.max(1, itemImages.length),
                     images: itemImages,
                     currentImgIndex: 0,
-                    imagesDiscovered: false
+                    imagesDiscovered: dbImages.length > 0,
+                    usesRemoteImages: dbImages.length > 0
                 };
 
-                if (item.availability === "Backorder" || item.availability === "Coming Soon") {
-                    formattedProduct.expectedArrival = item.deliveryTime || "Coming Soon";
+                if (availability === 'Backorder' || availability === 'Coming Soon') {
+                    formattedProduct.expectedArrival = formattedProduct.deliveryTime || 'Coming Soon';
                     backorderDatabase.push(formattedProduct);
                 } else {
                     productsDatabase.push(formattedProduct);
@@ -4765,10 +4818,9 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
             });
 
             categories = Array.from(uniqueCats);
-            
-            // Populating filter category layout options selector view component nodes
             const catSelector = document.getElementById('filterCategory');
-            if(catSelector) {
+            if (catSelector) {
+                [...catSelector.options].slice(1).forEach(opt => opt.remove());
                 categories.forEach(cat => {
                     const opt = document.createElement('option');
                     opt.value = cat;
@@ -4786,8 +4838,8 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
         let activeBackorderPage = 1;
 
         // LifeCycle Core Initialization Trigger Pipeline
-        window.addEventListener('DOMContentLoaded', () => {
-            generateCoreProductDatabases();
+        window.addEventListener('DOMContentLoaded', async () => {
+            await generateCoreProductDatabases();
             // Set state pointers initially
             currentFilteredProducts = [...productsDatabase];
             currentFilteredBackorders = [...backorderDatabase];
@@ -6672,6 +6724,16 @@ aboutSlides[current].classList.add("active");
     }
 
     async function discoverProductImages(product) {
+        // Supabase already gives us the real public image URLs; never replace them with local paths.
+        if (product.usesRemoteImages && Array.isArray(product.images) && product.images.length) {
+            product.imageCount = product.images.length;
+            product.currentImgIndex = 0;
+            product.detailImgIndex = 0;
+            product.quickIndex = 0;
+            product.imagesDiscovered = true;
+            return;
+        }
+
         const sku = String(product.sku || "").replace("#", "");
         const foundImages = [];
         let missingNumbers = 0;
