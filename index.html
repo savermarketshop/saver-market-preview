@@ -4000,6 +4000,33 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
 </style>
 
 <style id="saver-customer-upgrade-styles">
+
+/* Saver Market account summary + saved addresses + mobile About CTA */
+.saver-mobile-about-action{display:none}
+.saver-account-summary{display:grid;gap:12px;margin-top:14px}
+.saver-account-summary-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:14px 15px;border:1px solid rgba(85,107,47,.12);border-radius:16px;background:rgba(247,250,247,.72)}
+.saver-account-summary-row small{display:block;color:#7b817b;margin-top:3px;line-height:1.45}
+.saver-account-summary-row i{color:var(--sage-dark);margin-top:3px}
+.saver-account-section-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.saver-address-list{display:grid;gap:10px;margin-top:12px}
+.saver-address-card{border:1px solid rgba(85,107,47,.12);border-radius:16px;padding:14px 15px;background:rgba(247,250,247,.72)}
+.saver-address-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.saver-address-label{font-weight:800;color:var(--charcoal)}
+.saver-address-default{font-size:.7rem;font-weight:800;background:var(--sage-light);color:var(--sage-dark);padding:5px 8px;border-radius:999px}
+.saver-address-text{font-size:.86rem;color:#687068;line-height:1.5}
+.saver-address-card-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.saver-mini-btn{border:1px solid rgba(85,107,47,.18);background:#fff;color:var(--sage-dark);border-radius:10px;padding:7px 10px;font-size:.75rem;font-weight:700;cursor:pointer}
+.saver-account-editor{margin-top:14px;padding-top:14px;border-top:1px solid rgba(85,107,47,.12)}
+.saver-hidden{display:none!important}
+@media(max-width:768px){
+  .saver-mobile-about-action{display:block;margin:10px 0 4px}
+  .saver-mobile-about-btn{width:100%;min-height:48px;justify-content:center;border-radius:14px!important;padding:12px 20px!important}
+  .saver-account-card{padding:18px;border-radius:20px}
+  .saver-account-summary-row{padding:12px 13px;border-radius:14px}
+  .saver-account-section-actions .saver-account-primary,.saver-account-section-actions .saver-account-secondary{flex:1;min-width:0}
+}
+html[data-theme="dark"] .saver-account-summary-row,html[data-theme="dark"] .saver-address-card{background:#202629;border-color:rgba(255,255,255,.08)}
+html[data-theme="dark"] .saver-mini-btn{background:#252d30;color:#f2f4ef;border-color:rgba(255,255,255,.09)}
 /* Saver Market customer account + cart upgrade. Existing site styling is untouched. */
 .saver-account-trigger{position:relative}
 .saver-account-dot{position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#a8ada8;border:2px solid var(--sage-light)}
@@ -4283,6 +4310,10 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 <div class="home-showcase-action">
                     <button class="btn btn-primary home-shop-now" onclick="switchView('products')"
                             data-en="Shop Now →" data-ar="تسوق الآن ←">Shop Now →</button>
+                </div>
+                <div class="saver-mobile-about-action">
+                    <button class="btn btn-primary saver-mobile-about-btn" onclick="switchView('about')"
+                            data-en="Know More About Us →" data-ar="اعرف المزيد عنا ←">Know More About Us →</button>
                 </div>
                 <div class="mobile-home-socials" aria-label="Saver Market social media">
                     <span class="mobile-social-label"
@@ -8347,5 +8378,93 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener('load',()=>{initializeCustomerFeatures().catch(console.warn)});
 })();
 </script>\n
+
+<script>
+(function(){
+  "use strict";
+
+  function lang(en,ar){return currentLanguage==='ar'?ar:en}
+  function escapeHtml(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]))}
+
+  async function saverFetchProfile(){
+    const u=currentUser(); if(!u)return {};
+    const rows=await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}&select=*`);
+    return rows?.[0]||{};
+  }
+  async function saverFetchAddresses(){
+    const u=currentUser(); if(!u)return [];
+    return await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}&select=id,label,recipient_name,phone,city,address,is_default,created_at&order=is_default.desc,created_at.asc`);
+  }
+
+  window.saverRenderAccountView=async function(){
+    const root=document.getElementById('saverAccountRoot'); if(!root)return;
+    const user=currentUser();
+    if(!user){
+      root.innerHTML=`<div class="saver-account-shell">
+        <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
+          <div class="saver-auth-tabs"><button type="button" class="saver-auth-tab active" data-auth-tab="login">${lang('Login','تسجيل الدخول')}</button><button type="button" class="saver-auth-tab" data-auth-tab="signup">${lang('Sign Up','إنشاء حساب')}</button></div>
+          <form id="saverLoginForm" class="saver-auth-form" onsubmit="saverLogin(event)"><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverLoginEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverLoginPassword" type="password" minlength="6" required><button class="saver-account-primary" type="submit">${lang('Login','تسجيل الدخول')}</button></form>
+          <form id="saverSignupForm" class="saver-auth-form" style="display:none" onsubmit="saverSignup(event)"><label>${lang('Full name','الاسم الكامل')}</label><input class="form-input" id="saverSignupName" required><label>${lang('Phone number','رقم الهاتف')}</label><input class="form-input" id="saverSignupPhone" type="tel" required><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverSignupEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverSignupPassword" type="password" minlength="6" required><button class="saver-account-primary" type="submit">${lang('Create Account','إنشاء الحساب')}</button></form><div class="saver-auth-message" id="saverAuthMessage"></div>
+        </div>
+        <div class="saver-account-card"><h3>${lang('Account benefits','مزايا الحساب')}</h3><p>${lang('When signed in, your cart, wishlist, delivery details and orders can be kept with your account.','بعد تسجيل الدخول، سنحفظ سلتك والمفضلة وبيانات التوصيل والطلبات في حسابك.')}</p><div class="saver-orders-list"><div class="saver-order-row"><div><strong>${lang('Saved cart','سلة محفوظة')}</strong><small>${lang('Continue shopping on another device','تابع التسوق من جهاز آخر')}</small></div><i class="fas fa-cart-shopping"></i></div><div class="saver-order-row"><div><strong>${lang('My Orders','طلباتي')}</strong><small>${lang('View orders and their details','شاهد الطلبات وتفاصيلها')}</small></div><i class="fas fa-receipt"></i></div><div class="saver-order-row"><div><strong>${lang('Saved addresses','العناوين المحفوظة')}</strong><small>${lang('Keep Home, Work or another address','احفظ عنوان المنزل أو العمل أو عنواناً آخر')}</small></div><i class="fas fa-location-dot"></i></div></div></div>
+      </div>`;
+      document.querySelectorAll('.saver-auth-tab').forEach(b=>b.onclick=function(){document.querySelectorAll('.saver-auth-tab').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('saverLoginForm').style.display=this.dataset.authTab==='login'?'grid':'none';document.getElementById('saverSignupForm').style.display=this.dataset.authTab==='signup'?'grid':'none';});
+      return;
+    }
+
+    root.innerHTML=`<div class="saver-account-shell">
+      <div class="saver-account-card" id="saverProfileCard"><h3>${lang('My Profile','ملفي الشخصي')}</h3><p>${escapeHtml(user.email||'')}</p><div id="saverProfileSummary">${lang('Loading profile...','جاري تحميل الملف...')}</div></div>
+      <div class="saver-account-card"><h3>${lang('My Orders','طلباتي')}</h3><p>${lang('Orders linked to your account will appear here.','ستظهر الطلبات المرتبطة بحسابك هنا.')}</p><div class="saver-orders-list" id="saverOrdersList"><div style="color:#888">${lang('Loading...','جاري التحميل...')}</div></div></div>
+    </div>`;
+    await Promise.all([saverRenderProfileSummary(),loadOrders()]);
+  };
+
+  window.saverRenderProfileSummary=async function(){
+    const root=document.getElementById('saverProfileSummary'); if(!root)return;
+    try{
+      const [p,addresses]=await Promise.all([saverFetchProfile(),saverFetchAddresses()]);
+      const def=addresses.find(a=>a.is_default)||addresses[0];
+      root.innerHTML=`<div class="saver-account-summary">
+        <div class="saver-account-summary-row"><div><strong>${escapeHtml(p.full_name||lang('Name not added','لم تتم إضافة الاسم'))}</strong><small>${escapeHtml(p.phone||lang('Phone not added','لم تتم إضافة الهاتف'))}</small></div><i class="fas fa-user"></i></div>
+        <div class="saver-account-summary-row"><div><strong>${def?escapeHtml(def.label):lang('No saved address','لا يوجد عنوان محفوظ')}</strong><small>${def?escapeHtml(`${def.address}${def.city?', '+def.city:''}`):lang('Add Home, Work or another delivery address','أضف عنوان المنزل أو العمل أو عنوان توصيل آخر')}</small></div><i class="fas fa-location-dot"></i></div>
+      </div><div class="saver-account-section-actions"><button class="saver-account-primary" type="button" onclick="saverShowProfileEditor()">${lang('Edit Profile','تعديل الملف')}</button><button class="saver-account-secondary" type="button" onclick="saverShowAddressManager()">${lang('Manage Addresses','إدارة العناوين')}</button><button class="saver-account-secondary" type="button" onclick="saverLogout()">${lang('Logout','تسجيل الخروج')}</button></div><div id="saverAccountEditor"></div>`;
+      const checkoutName=document.getElementById('custName'), checkoutPhone=document.getElementById('custPhone'), checkoutAddress=document.getElementById('custAddress');
+      if(checkoutName&&!checkoutName.value)checkoutName.value=p.full_name||def?.recipient_name||''; if(checkoutPhone&&!checkoutPhone.value)checkoutPhone.value=p.phone||def?.phone||''; if(checkoutAddress&&!checkoutAddress.value&&def)checkoutAddress.value=def.address||'';
+    }catch(e){root.innerHTML=`<div class="saver-auth-message error">${escapeHtml(e.message)}</div>`}
+  };
+
+  window.saverShowProfileEditor=async function(){
+    const ed=document.getElementById('saverAccountEditor'); if(!ed)return; const p=await saverFetchProfile();
+    ed.innerHTML=`<div class="saver-account-editor"><form class="saver-auth-form" onsubmit="saverSaveCompactProfile(event)"><div class="saver-profile-grid"><div><label>${lang('Full name','الاسم الكامل')}</label><input class="form-input" id="saverProfileName" value="${escapeHtml(p.full_name||'')}"></div><div><label>${lang('Phone','الهاتف')}</label><input class="form-input" id="saverProfilePhone" type="tel" value="${escapeHtml(p.phone||'')}"></div></div><div class="saver-account-actions"><button class="saver-account-primary" type="submit">${lang('Save Profile','حفظ الملف')}</button><button class="saver-account-secondary" type="button" onclick="saverRenderProfileSummary()">${lang('Cancel','إلغاء')}</button></div><div class="saver-auth-message" id="saverAuthMessage"></div></form></div>`;
+  };
+  window.saverSaveCompactProfile=async function(e){e.preventDefault();const u=currentUser();if(!u)return;try{await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({full_name:document.getElementById('saverProfileName').value.trim(),phone:document.getElementById('saverProfilePhone').value.trim(),updated_at:new Date().toISOString()})});await saverRenderProfileSummary()}catch(err){authMessage(err.message,'error')}};
+
+  window.saverShowAddressManager=async function(){
+    const ed=document.getElementById('saverAccountEditor'); if(!ed)return; let addresses=[];
+    try{addresses=await saverFetchAddresses()}catch(e){ed.innerHTML=`<div class="saver-auth-message error">${escapeHtml(e.message)}</div>`;return}
+    ed.innerHTML=`<div class="saver-account-editor"><div class="saver-address-list">${addresses.length?addresses.map(a=>`<div class="saver-address-card"><div class="saver-address-card-head"><span class="saver-address-label">${escapeHtml(a.label||'Address')}</span>${a.is_default?`<span class="saver-address-default">${lang('Default','افتراضي')}</span>`:''}</div><div class="saver-address-text">${escapeHtml(a.recipient_name||'')} ${a.phone?`· ${escapeHtml(a.phone)}`:''}<br>${escapeHtml(a.address||'')}${a.city?`, ${escapeHtml(a.city)}`:''}</div><div class="saver-address-card-actions"><button class="saver-mini-btn" type="button" onclick="saverEditAddress(${Number(a.id)})">${lang('Edit','تعديل')}</button>${!a.is_default?`<button class="saver-mini-btn" type="button" onclick="saverMakeDefaultAddress(${Number(a.id)})">${lang('Make default','تعيين افتراضي')}</button>`:''}<button class="saver-mini-btn" type="button" onclick="saverDeleteAddress(${Number(a.id)})">${lang('Delete','حذف')}</button></div></div>`).join(''):`<div style="color:#888">${lang('No saved addresses yet.','لا توجد عناوين محفوظة بعد.')}</div>`}</div><div class="saver-account-actions"><button class="saver-account-primary" type="button" onclick="saverEditAddress()">${lang('Add Address','إضافة عنوان')}</button><button class="saver-account-secondary" type="button" onclick="saverRenderProfileSummary()">${lang('Done','تم')}</button></div><div id="saverAddressFormHost"></div></div>`;
+  };
+
+  window.saverEditAddress=async function(id){
+    const host=document.getElementById('saverAddressFormHost')||document.getElementById('saverAccountEditor');if(!host)return;let a={};if(id){const rows=await rest(`customer_addresses?id=eq.${Number(id)}&select=*`);a=rows?.[0]||{}}
+    host.innerHTML=`<form class="saver-auth-form saver-account-editor" onsubmit="saverSaveAddress(event,${id?Number(id):'null'})"><div class="saver-profile-grid"><div><label>${lang('Label','اسم العنوان')}</label><select class="form-input" id="saverAddressLabel"><option value="Home" ${a.label==='Home'?'selected':''}>${lang('Home','المنزل')}</option><option value="Work" ${a.label==='Work'?'selected':''}>${lang('Work','العمل')}</option><option value="Other" ${a.label==='Other'?'selected':''}>${lang('Other','أخرى')}</option></select></div><div><label>${lang('Recipient name','اسم المستلم')}</label><input class="form-input" id="saverAddressName" value="${escapeHtml(a.recipient_name||'')}"></div><div><label>${lang('Phone','الهاتف')}</label><input class="form-input" id="saverAddressPhone" type="tel" value="${escapeHtml(a.phone||'')}"></div><div><label>${lang('City','المدينة')}</label><input class="form-input" id="saverAddressCity" value="${escapeHtml(a.city||'Damascus')}"></div><div class="full"><label>${lang('Address','العنوان')}</label><textarea class="form-input" id="saverAddressText" rows="3">${escapeHtml(a.address||'')}</textarea></div><div class="full"><label style="display:flex;align-items:center;gap:8px"><input id="saverAddressDefault" type="checkbox" ${a.is_default?'checked':''}> ${lang('Use as default delivery address','استخدم كعنوان التوصيل الافتراضي')}</label></div></div><div class="saver-account-actions"><button class="saver-account-primary" type="submit">${lang('Save Address','حفظ العنوان')}</button><button class="saver-account-secondary" type="button" onclick="saverShowAddressManager()">${lang('Cancel','إلغاء')}</button></div><div class="saver-auth-message" id="saverAuthMessage"></div></form>`;
+  };
+
+  window.saverSaveAddress=async function(e,id){
+    e.preventDefault();const u=currentUser();if(!u)return;const payload={user_id:u.id,label:document.getElementById('saverAddressLabel').value,recipient_name:document.getElementById('saverAddressName').value.trim(),phone:document.getElementById('saverAddressPhone').value.trim(),city:document.getElementById('saverAddressCity').value.trim(),address:document.getElementById('saverAddressText').value.trim(),is_default:document.getElementById('saverAddressDefault').checked,updated_at:new Date().toISOString()};
+    try{if(payload.is_default)await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});if(id)await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});else await rest('customer_addresses',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});await saverShowAddressManager()}catch(err){authMessage(err.message,'error')}
+  };
+  window.saverMakeDefaultAddress=async function(id){const u=currentUser();if(!u)return;await rest(`customer_addresses?user_id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:false,updated_at:new Date().toISOString()})});await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({is_default:true,updated_at:new Date().toISOString()})});await saverShowAddressManager()};
+  window.saverDeleteAddress=async function(id){if(!confirm(lang('Delete this saved address?','حذف هذا العنوان المحفوظ؟')))return;await rest(`customer_addresses?id=eq.${Number(id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}});await saverShowAddressManager()};
+
+  const oldCheckout=window.handleCheckout;
+  if(typeof oldCheckout==='function'&&!oldCheckout.__savedAddressEnhanced){
+    const enhanced=async function(){
+      const u=currentUser(); if(u){try{const a=await saverFetchAddresses();const d=a.find(x=>x.is_default)||a[0];const p=await saverFetchProfile();const n=document.getElementById('custName'),ph=document.getElementById('custPhone'),ad=document.getElementById('custAddress');if(n&&!n.value)n.value=d?.recipient_name||p.full_name||'';if(ph&&!ph.value)ph.value=d?.phone||p.phone||'';if(ad&&!ad.value)ad.value=d?.address||''}catch(e){}}
+      return oldCheckout.apply(this,arguments);
+    }; enhanced.__savedAddressEnhanced=true;window.handleCheckout=enhanced;try{handleCheckout=window.handleCheckout}catch(e){}
+  }
+})();
+</script>
 </body>
 </html>
