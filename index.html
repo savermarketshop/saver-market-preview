@@ -4818,7 +4818,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         const SAVER_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
 
         async function loadSaverProductsFromSupabase() {
-            const endpoint = `${SAVER_SUPABASE_URL}/rest/v1/products?select=*,product_images(*)&is_active=eq.true&order=created_at.desc`;
+            const endpoint = `${SAVER_SUPABASE_URL}/rest/v1/products?select=*,product_images(*),product_variants(*)&is_active=eq.true&order=created_at.desc`;
             const response = await fetch(endpoint, {
                 headers: {
                     apikey: SAVER_SUPABASE_PUBLISHABLE_KEY,
@@ -4964,6 +4964,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                     badgeAr: usingSupabase ? (item.badge_ar || (item.featured ? 'مميز' : 'جديد')) : (item.badgeAr || (item.featured ? 'مميز' : 'جديد')),
                     availability,
                     stockQty: Number.isFinite(Number(usingSupabase ? item.stock_qty : item.stockQty)) ? Number(usingSupabase ? item.stock_qty : item.stockQty) : null,
+                    variants: usingSupabase ? (item.product_variants || []).map(v => ({id:Number(v.id),size:v.size||'Standard',color:v.color||'No Specific Color',stockQty:Math.max(0,Number(v.stock_qty)||0)})) : [],
                     materialEn: usingSupabase ? (item.material_en || '') : (item.materialEn || ''),
                     materialAr: usingSupabase ? (item.material_ar || item.material_en || '') : (item.materialAr || item.materialEn || ''),
                     dimensions: item.dimensions || '',
@@ -5655,7 +5656,15 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             chipNode.classList.add('active');
         }
 
-        function getProductStockLimit(product) {
+        function getProductVariant(product, size, color) {
+            return (product?.variants || []).find(v => v.size === size && v.color === color) || null;
+        }
+
+        function getProductStockLimit(product, size, color) {
+            if(product?.variants?.length) {
+                if(size !== undefined && color !== undefined) return getProductVariant(product,size,color)?.stockQty ?? 0;
+                return product.variants.reduce((sum,v)=>sum+(Number(v.stockQty)||0),0);
+            }
             if(product?.stockQty === null || product?.stockQty === undefined || product?.stockQty === '') return null;
             const stock = Number(product.stockQty);
             return Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : null;
@@ -5665,8 +5674,12 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             return shoppingCart.filter(line => line.product.id === productId).reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
         }
 
-        function showStockLimitMessage(product) {
-            const stock = getProductStockLimit(product) ?? 0;
+        function getCartQuantityForVariant(productId, size, color) {
+            return shoppingCart.filter(line => line.product.id === productId && line.size === size && line.color === color).reduce((sum,line)=>sum+(Number(line.quantity)||0),0);
+        }
+
+        function showStockLimitMessage(product, size, color) {
+            const stock = getProductStockLimit(product,size,color) ?? 0;
             const name = currentLanguage === 'ar' ? product.nameAr : product.nameEn;
             alert(currentLanguage === 'ar'
                 ? `المتوفر فقط ${stock} قطعة من ${name}. يرجى تقليل الكمية.`
@@ -5676,15 +5689,46 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         function validateCartStock() {
             const checked = new Set();
             for(const line of shoppingCart) {
-                if(checked.has(line.product.id)) continue;
-                checked.add(line.product.id);
-                const stockLimit = getProductStockLimit(line.product);
-                if(stockLimit !== null && getCartQuantityForProduct(line.product.id) > stockLimit) {
-                    showStockLimitMessage(line.product);
+                const usesVariants=!!line.product.variants?.length;
+                const key=usesVariants?`${line.product.id}\u0000${line.size}\u0000${line.color}`:line.product.id;
+                if(checked.has(key)) continue;
+                checked.add(key);
+                const stockLimit=getProductStockLimit(line.product,...(usesVariants?[line.size,line.color]:[]));
+                const cartQty=usesVariants?getCartQuantityForVariant(line.product.id,line.size,line.color):getCartQuantityForProduct(line.product.id);
+                if(stockLimit !== null && cartQty > stockLimit) {
+                    showStockLimitMessage(line.product,...(usesVariants?[line.size,line.color]:[]));
                     return false;
                 }
             }
             return true;
+        }
+
+        function productOptionCombinations(product) {
+            if(product.variants?.length) return product.variants.map(v=>({size:v.size,color:v.color,stock:v.stockQty}));
+            const sizes=product.sizes?.length?product.sizes:['Standard'];
+            const colors=product.colors?.length?product.colors:['No Specific Color'];
+            const combinations=[];sizes.forEach(size=>colors.forEach(color=>combinations.push({size,color,stock:getProductStockLimit(product)})));
+            return combinations;
+        }
+
+        function addSelectedProductToCart(product, quantity, size, color, sourceButton) {
+            const usesVariants=!!product.variants?.length;
+            const stockLimit=getProductStockLimit(product,...(usesVariants?[size,color]:[]));
+            const inCart=usesVariants?getCartQuantityForVariant(product.id,size,color):getCartQuantityForProduct(product.id);
+            if(stockLimit!==null&&inCart+quantity>stockLimit){showStockLimitMessage(product,...(usesVariants?[size,color]:[]));return false}
+            const existing=shoppingCart.find(item=>item.product.id===product.id&&item.size===size&&item.color===color);
+            if(existing)existing.quantity+=quantity;else shoppingCart.push({product,quantity,size,color});
+            refreshCartDisplayEngine();animateProductToCart(product,sourceButton);return true;
+        }
+
+        function openProductOptionsModal(product, quantity, sourceButton) {
+            const choices=productOptionCombinations(product),showSize=new Set(choices.map(v=>v.size)).size>1||choices[0]?.size!=='Standard',showColor=new Set(choices.map(v=>v.color)).size>1||!['No Specific Color','Default'].includes(choices[0]?.color);
+            const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:5000;background:rgba(20,25,27,.62);display:flex;align-items:center;justify-content:center;padding:18px';
+            const panel=document.createElement('div');panel.style.cssText='width:min(520px,100%);max-height:85vh;overflow:auto;background:var(--white);color:var(--charcoal);border-radius:20px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.3)';
+            panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px"><h3 style="margin:0">${currentLanguage==='ar'?'اختر الخيارات':'Select Options'}</h3><button type="button" class="saver-option-close" style="font-size:1.5rem;background:transparent">×</button></div><p style="margin:0 0 14px;color:#777">${currentLanguage==='ar'?'اختر المقاس أو اللون قبل الإضافة إلى السلة.':'Choose the size or color before adding this item to your cart.'}</p><div class="saver-option-choices" style="display:grid;gap:9px"></div>`;
+            const host=panel.querySelector('.saver-option-choices');
+            choices.forEach(choice=>{const available=Number(choice.stock)||0,used=product.variants?.length?getCartQuantityForVariant(product.id,choice.size,choice.color):getCartQuantityForProduct(product.id),remaining=Math.max(0,available-used),button=document.createElement('button');button.type='button';button.className='saver-account-secondary';button.disabled=remaining<quantity;button.style.cssText='display:flex;justify-content:space-between;gap:12px;text-align:start;opacity:'+(button.disabled?'.5':'1');button.innerHTML=`<span>${showSize?`${currentLanguage==='ar'?'المقاس':'Size'}: ${saverDetailValue(choice.size)}`:''}${showSize&&showColor?' · ':''}${showColor?`${currentLanguage==='ar'?'اللون':'Color'}: ${saverDetailValue(choice.color)}`:''}</span><strong>${currentLanguage==='ar'?`متوفر ${remaining}`:`${remaining} available`}</strong>`;button.onclick=()=>{if(addSelectedProductToCart(product,quantity,choice.size,choice.color,sourceButton))overlay.remove()};host.appendChild(button)});
+            panel.querySelector('.saver-option-close').onclick=()=>overlay.remove();overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};overlay.appendChild(panel);document.body.appendChild(overlay);
         }
 
         // Shopping Bag Actions Pipeline Array Layer Push Execution
@@ -5696,48 +5740,10 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             const elementValNode = document.getElementById(`qty-val-${lookupQtyId}`);
             const purchaseUnitsCount = elementValNode ? parseInt(elementValNode.innerText) : 1;
 
-            // Extract chosen variants if from details page setup, otherwise default
-            let chosenSize = "Standard";
-            let chosenColor = "Default";
-
-            if(isFromDetailsPage) {
-                const activeSizeNode = document.querySelector('#productDetailsContent .option-group:nth-of-type(1) .option-chip.active');
-                const activeColorNode = document.querySelector('#productDetailsContent .option-group:nth-of-type(2) .option-chip.active');
-                if(activeSizeNode) chosenSize = activeSizeNode.innerText;
-                if(activeColorNode) chosenColor = activeColorNode.innerText;
-            } else {
-                if(product.sizes && product.sizes.length) chosenSize = product.sizes[0];
-                if(product.colors && product.colors.length) chosenColor = product.colors[0];
-            }
-
-            const existingLineItem = shoppingCart.find(item => 
-                item.product.id === productId && 
-                item.size === chosenSize && 
-                item.color === chosenColor
-            );
-
-            const stockLimit = getProductStockLimit(product);
-            if(stockLimit !== null && getCartQuantityForProduct(productId) + purchaseUnitsCount > stockLimit) {
-                showStockLimitMessage(product);
-                return;
-            }
-
-            if(existingLineItem) {
-                existingLineItem.quantity += purchaseUnitsCount;
-            } else {
-                shoppingCart.push({
-                    product: product,
-                    quantity: purchaseUnitsCount,
-                    size: chosenSize,
-                    color: chosenColor
-                });
-            }
-
-            // Reset selector element label count counter back to 1
-            if(elementValNode) elementValNode.innerText = 1;
-
-            refreshCartDisplayEngine();
-            animateProductToCart(product, sourceButton);
+            const choices=productOptionCombinations(product);
+            if(choices.length>1){openProductOptionsModal(product,purchaseUnitsCount,sourceButton);return}
+            const choice=choices[0]||{size:'Standard',color:'No Specific Color'};
+            if(addSelectedProductToCart(product,purchaseUnitsCount,choice.size,choice.color,sourceButton)&&elementValNode)elementValNode.innerText=1;
         }
 
         function alterCartLineItemQuantity(productId, stepValue) {
@@ -8299,10 +8305,10 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverShowOrderDetails=async function(orderId){
     const root=document.getElementById('saverOrdersList');if(!root)return;
     try{
-      const [items,orders]=await Promise.all([rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`),rest(`orders?id=eq.${Number(orderId)}&select=subtotal_syp,delivery_fee_syp,total_syp,status`)]);
+      const [items,orders]=await Promise.all([rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity,size,color`),rest(`orders?id=eq.${Number(orderId)}&select=subtotal_syp,delivery_fee_syp,total_syp,status`)]);
       const order=orders?.[0]||{};
       const previous=root.innerHTML;
-      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}<div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'المجموع الفرعي':'Subtotal'}</strong><small>${currentLanguage==='ar'?'رسوم التوصيل':'Delivery charge'}: ${formatPrice(Number(order.delivery_fee_syp||0))}</small></div><strong>${formatPrice(Number(order.subtotal_syp||0))}</strong></div><div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'الإجمالي النهائي':'Final total'}</strong></div><strong>${formatPrice(Number(order.total_syp||0))}</strong></div></div>`;
+      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'المقاس':'Size'}: ${saverDetailValue(i.size||'Standard')} · ${currentLanguage==='ar'?'اللون':'Color'}: ${saverDetailValue(i.color||'No Specific Color')} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}<div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'المجموع الفرعي':'Subtotal'}</strong><small>${currentLanguage==='ar'?'رسوم التوصيل':'Delivery charge'}: ${formatPrice(Number(order.delivery_fee_syp||0))}</small></div><strong>${formatPrice(Number(order.subtotal_syp||0))}</strong></div><div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'الإجمالي النهائي':'Final total'}</strong></div><strong>${formatPrice(Number(order.total_syp||0))}</strong></div></div>`;
       document.getElementById('saverBackOrders').onclick=loadOrders;
     }catch(e){console.warn(e)}
   };
@@ -8372,8 +8378,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Correct variant-safe quantity editing and nicer cart rendering.
   window.alterCartLineItemQuantity=function(lineIndex,step){
     const i=Number(lineIndex);const line=shoppingCart[i];if(!line)return;
-    const change=Number(step||0),stockLimit=getProductStockLimit(line.product);
-    if(change>0&&stockLimit!==null&&getCartQuantityForProduct(line.product.id)+change>stockLimit){showStockLimitMessage(line.product);return}
+    const change=Number(step||0),usesVariants=!!line.product.variants?.length,stockLimit=getProductStockLimit(line.product,...(usesVariants?[line.size,line.color]:[])),inCart=usesVariants?getCartQuantityForVariant(line.product.id,line.size,line.color):getCartQuantityForProduct(line.product.id);
+    if(change>0&&stockLimit!==null&&inCart+change>stockLimit){showStockLimitMessage(line.product,...(usesVariants?[line.size,line.color]:[]));return}
     line.quantity=Math.max(0,Number(line.quantity||1)+change);if(line.quantity<=0)shoppingCart.splice(i,1);refreshCartDisplayEngine();
   };
   window.purgeCartLineItem=function(lineIndex){const i=Number(lineIndex);if(i>=0&&i<shoppingCart.length)shoppingCart.splice(i,1);refreshCartDisplayEngine();};
@@ -8400,9 +8406,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverQuickQty=function(id,step){const n=document.getElementById(`qty-val-quick-${id}`),p=productsDatabase.find(x=>x.id===id);if(!n||!p)return;let v=Math.max(1,(parseInt(n.textContent)||1)+step),limit=getProductStockLimit(p);if(limit!==null&&v>limit){showStockLimitMessage(p);v=Math.max(1,limit)}n.textContent=v};
   window.saverAddQuickToCart=function(id,button){
     const n=document.getElementById(`qty-val-quick-${id}`),qty=Math.max(1,parseInt(n?.textContent)||1),p=productsDatabase.find(x=>x.id===id);if(!p)return;
-    const size=p.sizes?.[0]||'Standard',color=p.colors?.[0]||'Default',line=shoppingCart.find(x=>x.product.id===id&&x.size===size&&x.color===color);
-    const limit=getProductStockLimit(p);if(limit!==null&&getCartQuantityForProduct(id)+qty>limit){showStockLimitMessage(p);return}
-    if(line)line.quantity+=qty;else shoppingCart.push({product:p,quantity:qty,size,color});if(n)n.textContent='1';refreshCartDisplayEngine();if(typeof animateProductToCart==='function')animateProductToCart(p,button);
+    const choices=productOptionCombinations(p);if(choices.length>1){openProductOptionsModal(p,qty,button);return}const choice=choices[0]||{size:'Standard',color:'No Specific Color'};if(addSelectedProductToCart(p,qty,choice.size,choice.color,button)&&n)n.textContent='1';
   };
   const oldOpenQuick=window.openQuickView;
   if(oldOpenQuick){window.openQuickView=function(id){oldOpenQuick(id);const p=productsDatabase.find(x=>x.id===id);const content=document.getElementById('quickViewContent');if(!p||!content)return;const add=content.querySelector('.btn-premium');if(add){const wrap=document.createElement('div');wrap.className='qty-select-wrapper';wrap.style.margin='14px 0';wrap.innerHTML=`<button class="qty-btn" type="button" onclick="saverQuickQty('${id}',-1)">−</button><span class="qty-val" id="qty-val-quick-${id}">1</span><button class="qty-btn" type="button" onclick="saverQuickQty('${id}',1)">+</button>`;add.parentElement.insertBefore(wrap,add);add.setAttribute('onclick',`saverAddQuickToCart('${id}',this)`);}};}
@@ -8421,7 +8425,7 @@ document.addEventListener("DOMContentLoaded", function () {
       try{
         const orderNo=`SM-${Date.now().toString().slice(-10)}`;
         const orders=await rest('orders',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({order_number:orderNo,user_id:currentUser().id,customer_name:name,customer_phone:phone,customer_email:currentUser().email||null,delivery_address:address,status:'pending',payment_method:'cash_on_delivery',subtotal_syp:total,delivery_fee_syp:0,total_syp:total,notes})});
-        const order=orders?.[0];if(order){const lines=shoppingCart.map(l=>({order_id:order.id,product_id:Number(l.product.id),sku:l.product.sku,product_name:currentLanguage==='ar'?l.product.nameAr:l.product.nameEn,price_syp:l.product.price,quantity:l.quantity}));await rest('order_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(lines)});}
+        const order=orders?.[0];if(order){const lines=shoppingCart.map(l=>({order_id:order.id,product_id:Number(l.product.id),sku:l.product.sku,product_name:currentLanguage==='ar'?l.product.nameAr:l.product.nameEn,price_syp:l.product.price,quantity:l.quantity,size:l.size||'Standard',color:l.color||'No Specific Color'}));await rest('order_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(lines)});}
       }catch(e){console.warn('[Saver Market] Order history save failed; WhatsApp checkout continues.',e)}
     }
     return checkoutResult;

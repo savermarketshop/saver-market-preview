@@ -284,6 +284,15 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
           <div class="subtle">You can select multiple images at once.</div>
           <div id="existingImages" class="image-preview-grid"></div>
         </div>
+
+        <div class="field full hidden" id="variantInventorySection">
+          <h3 style="margin:8px 0">Variant Inventory</h3>
+          <div class="subtle">Set a separate available quantity for every size and color combination. These quantities are changed only by an administrator.</div>
+          <div class="actions" style="margin:12px 0"><button type="button" class="btn btn-light" id="generateVariantsBtn">Generate Size/Color Combinations</button></div>
+          <div id="variantInventoryGrid" style="display:grid;gap:9px"></div>
+          <div class="actions" style="margin-top:12px"><button type="button" class="btn btn-primary" id="saveVariantsBtn">Save Variant Quantities</button></div>
+          <div id="variantMessage" class="message"></div>
+        </div>
       </div>
 
       <div id="formMessage" class="message"></div>
@@ -296,7 +305,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 const SUPABASE_URL="https://zjfdedemugnfplrkojax.supabase.co";
 const SUPABASE_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let allProducts=[], currentProductImages=[];
+let allProducts=[], currentProductImages=[], currentProductVariants=[];
 let allOrders=[];
 let allCustomers=[];
 
@@ -366,7 +375,7 @@ function renderProducts(){
 $('productSearch').oninput=renderProducts;$('activeFilter').onchange=renderProducts;
 
 function openModal(product=null){
-  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];clearMsg($('formMessage'));$('existingImages').innerHTML='';
+  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];currentProductVariants=[];clearMsg($('formMessage'));clearMsg($('variantMessage'));$('existingImages').innerHTML='';$('variantInventoryGrid').innerHTML='';$('variantInventorySection').classList.add('hidden');
   $('modalTitle').textContent=product?'Edit Product':'Add Product';
   if(product){
     $('productId').value=product.id;$('sku').value=product.sku||'';$('category').value=product.category||'';
@@ -378,6 +387,7 @@ function openModal(product=null){
     $('deliveryEn').value=product.delivery_time_en||'';$('deliveryAr').value=product.delivery_time_ar||'';$('notesEn').value=product.special_notes_en||'';$('notesAr').value=product.special_notes_ar||'';
     $('tags').value=arrayToCsv(product.tags);$('relatedSkus').value=arrayToCsv(product.related_skus);$('rating').value=product.rating??'';$('reviewCount').value=product.review_count??0;
     currentProductImages=(product.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order);renderExistingImages();
+    $('variantInventorySection').classList.remove('hidden');loadVariantInventory(product.id);
   }
   $('productModal').classList.remove('hidden');
 }
@@ -385,6 +395,39 @@ function closeModal(){$('productModal').classList.add('hidden')}
 $('addProductBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;
 
 window.editProduct=id=>{const p=allProducts.find(x=>x.id===id);if(p)openModal(p)}
+
+function variantOptions(){
+  const sizes=csvToArray($('sizes').value);if(!sizes.length)sizes.push('Standard');
+  const colors=csvToArray($('colors').value);if(!colors.length)colors.push('No Specific Color');
+  return {sizes:[...new Set(sizes)],colors:[...new Set(colors)]};
+}
+async function loadVariantInventory(productId){
+  clearMsg($('variantMessage'));
+  const {data,error}=await sb.from('product_variants').select('id,size,color,stock_qty').eq('product_id',productId).order('size').order('color');
+  if(error){showMsg($('variantMessage'),error.message);return}
+  currentProductVariants=data||[];renderVariantInventory();
+}
+function renderVariantInventory(){
+  const {sizes,colors}=variantOptions(),existing=new Map(currentProductVariants.map(v=>[`${v.size}\u0000${v.color}`,Number(v.stock_qty||0)]));
+  const rows=[];sizes.forEach(size=>colors.forEach(color=>rows.push({size,color,stock:existing.get(`${size}\u0000${color}`)??0})));
+  $('variantInventoryGrid').innerHTML=rows.map((v,i)=>`<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px;gap:10px;align-items:end;border:1px solid #e4e9e1;border-radius:12px;padding:10px"><div><small>Size</small><b style="display:block">${esc(v.size)}</b></div><div><small>Color</small><b style="display:block">${esc(v.color)}</b></div><div class="field"><label>Available Qty</label><input class="variant-stock-input" type="number" min="0" step="1" value="${v.stock}" data-size="${esc(v.size)}" data-color="${esc(v.color)}"></div></div>`).join('');
+}
+$('generateVariantsBtn').onclick=renderVariantInventory;
+$('saveVariantsBtn').onclick=async()=>{
+  const productId=Number($('productId').value||0);if(!productId){showMsg($('variantMessage'),'Save the product before configuring variants.');return}
+  const inputs=[...document.querySelectorAll('.variant-stock-input')];if(!inputs.length){showMsg($('variantMessage'),'Generate the size/color combinations first.');return}
+  const rows=inputs.map(input=>({product_id:productId,size:input.dataset.size,color:input.dataset.color,stock_qty:Math.max(0,Math.floor(Number(input.value)||0))}));
+  $('saveVariantsBtn').disabled=true;clearMsg($('variantMessage'));
+  try{
+    const {error:upsertError}=await sb.from('product_variants').upsert(rows,{onConflict:'product_id,size,color'});if(upsertError)throw upsertError;
+    const keep=new Set(rows.map(v=>`${v.size}\u0000${v.color}`)),stale=currentProductVariants.filter(v=>!keep.has(`${v.size}\u0000${v.color}`)).map(v=>v.id);
+    if(stale.length){const {error:deleteError}=await sb.from('product_variants').delete().in('id',stale);if(deleteError)throw deleteError}
+    const total=rows.reduce((sum,v)=>sum+v.stock_qty,0),options=variantOptions();
+    const {error:productError}=await sb.from('products').update({sizes:options.sizes,colors:options.colors,stock_qty:total,updated_at:new Date().toISOString()}).eq('id',productId);if(productError)throw productError;
+    $('stockQty').value=total;currentProductVariants=rows;showMsg($('variantMessage'),`Variant quantities saved. Total stock: ${total}.`,'success');await loadProducts();await loadVariantInventory(productId);
+  }catch(err){showMsg($('variantMessage'),err.message||'Could not save variant quantities.')}
+  finally{$('saveVariantsBtn').disabled=false}
+};
 function renderExistingImages(){
   $('existingImages').innerHTML=currentProductImages.map(img=>`<div class="image-box"><img src="${img.image_url}" alt=""><button type="button" onclick="removeImage(${img.id})">×</button></div>`).join('');
 }
@@ -451,7 +494,7 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function orderDate(v){try{return new Date(v).toLocaleString()}catch{return v||''}}
 async function loadOrders(){
   $('orderStatusMessage').textContent='Loading orders...';
-  const {data,error}=await sb.from('orders').select('*, order_items(id,product_id,sku,product_name,price_syp,quantity)').order('created_at',{ascending:false});
+  const {data,error}=await sb.from('orders').select('*, order_items(id,product_id,sku,product_name,price_syp,quantity,size,color)').order('created_at',{ascending:false});
   if(error){$('orderStatusMessage').textContent='Error: '+error.message;return}
   allOrders=data||[];
   $('orderStatusMessage').textContent=allOrders.length+' order(s)';
@@ -500,7 +543,7 @@ window.viewOrder=id=>{
       <div class="detail-card"><h4>Order</h4><div class="detail-line">Order #: ${esc(o.order_number)}</div><div class="detail-line">Date: ${esc(orderDate(o.created_at))}</div><div class="detail-line">Status: <b>${esc(o.status)}</b></div></div>
       <div class="detail-card"><h4>Totals</h4><div class="detail-line">Subtotal: ${money(o.subtotal_syp)}</div><div class="detail-line">Delivery: ${money(o.delivery_fee_syp)}</div><div class="detail-line"><b>Total: ${money(o.total_syp)}</b></div><div class="field" style="margin-top:10px"><label for="deliveryFeeInput-${o.id}">Delivery charge</label><input id="deliveryFeeInput-${o.id}" type="number" min="0" step="1" value="${Number(o.delivery_fee_syp||0)}"></div><button class="btn btn-primary" type="button" onclick="updateOrderDeliveryFee(${o.id})">Save Delivery Charge</button></div>
     </div>
-    <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
+    <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · Size: ${esc(i.size||'Standard')} · Color: ${esc(i.color||'No Specific Color')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
   $('orderModal').classList.remove('hidden');
 };
 
