@@ -3998,6 +3998,86 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
 }
 
 </style>
+
+<style id="saver-customer-upgrade-styles">
+/* Saver Market customer account + cart upgrade. Existing site styling is untouched. */
+.saver-account-trigger{position:relative}
+.saver-account-dot{position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#a8ada8;border:2px solid var(--sage-light)}
+.saver-account-dot.signed-in{background:#27ae60}
+.saver-account-subtitle{max-width:620px;margin:0 auto;color:#707770}
+.saver-account-shell{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:24px;align-items:start}
+.saver-account-card{background:var(--white);border:1px solid rgba(85,107,47,.10);border-radius:24px;padding:26px;box-shadow:0 10px 30px var(--shadow-light)}
+.saver-account-card h3{font-family:var(--font-display);font-size:1.35rem;margin-bottom:8px;color:var(--charcoal)}
+.saver-account-card p{color:#747b74;font-size:.9rem;margin-bottom:18px}
+.saver-auth-tabs{display:flex;gap:7px;padding:5px;background:var(--sage-light);border-radius:15px;margin-bottom:18px}
+.saver-auth-tab{flex:1;padding:10px 12px;border-radius:11px;background:transparent;cursor:pointer;font-weight:700;color:var(--sage-dark)}
+.saver-auth-tab.active{background:var(--white);box-shadow:0 3px 10px rgba(0,0,0,.06)}
+.saver-auth-form{display:grid;gap:12px}
+.saver-auth-form label{font-size:.78rem;font-weight:700;color:var(--sage-dark);margin-bottom:-6px}
+.saver-account-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.saver-account-primary{background:var(--sage-dark);color:#fff;border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;min-height:44px}
+.saver-account-secondary{background:var(--sage-light);color:var(--sage-dark);border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;min-height:44px}
+.saver-auth-message{min-height:20px;font-size:.82rem;margin-top:8px}
+.saver-auth-message.error{color:#a13737}.saver-auth-message.success{color:#35633b}
+.saver-profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.saver-profile-grid .full{grid-column:1/-1}
+.saver-orders-list{display:grid;gap:10px;margin-top:12px}
+.saver-order-row{border:1px solid rgba(85,107,47,.11);border-radius:14px;padding:14px;display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--cream)}
+.saver-order-row strong{display:block;color:var(--charcoal)}
+.saver-order-row small{color:#777}
+.saver-order-status{padding:5px 9px;border-radius:20px;background:var(--sage-light);color:var(--sage-dark);font-size:.72rem;font-weight:800;white-space:nowrap}
+
+/* Improved shopping cart */
+#view-cart .section-header{margin-bottom:30px}
+#view-cart .cart-grid{gap:28px}
+#view-cart .cart-items-list{gap:14px}
+#view-cart .cart-item{position:relative;display:grid;grid-template-columns:108px minmax(0,1fr) auto auto;gap:18px;padding:18px;border:1px solid rgba(85,107,47,.09);border-radius:22px;box-shadow:0 7px 22px rgba(0,0,0,.045);transition:.2s ease}
+#view-cart .cart-item:hover{border-color:rgba(85,107,47,.18);box-shadow:0 10px 28px rgba(85,107,47,.09)}
+#view-cart .cart-item-img{width:108px;height:108px;border-radius:16px;background:var(--sage-light)}
+#view-cart .cart-item-details{min-width:0;align-self:center}
+#view-cart .cart-item-title{font-size:1.02rem;margin-bottom:5px}
+#view-cart .cart-item-meta{display:block;line-height:1.5;color:#7a807a}
+#view-cart .cart-item-unit-price{font-size:.76rem;color:#8a908a;margin-top:4px}
+#view-cart .cart-item-price{font-size:1.02rem;margin-top:8px}
+#view-cart .cart-line-controls{display:flex;align-items:center;gap:12px}
+#view-cart .qty-select-wrapper{height:44px;border-radius:14px;background:var(--cream)}
+#view-cart .qty-btn{width:38px;font-size:1.05rem}
+#view-cart .qty-val{width:34px}
+.saver-cart-remove{width:42px;height:42px;border-radius:13px;background:#fff2f2;color:#b84242;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:center}
+#view-cart .cart-summary-card{position:sticky;top:112px;border-radius:24px;border:1px solid rgba(85,107,47,.09);box-shadow:0 12px 32px rgba(85,107,47,.08)}
+.saver-cart-empty{background:var(--white);border:1px dashed rgba(85,107,47,.22);border-radius:22px;padding:54px 24px;text-align:center;color:#8a908a}
+.saver-cart-empty i{font-size:2rem;color:var(--sage-medium);margin-bottom:12px}
+.saver-cart-empty strong{display:block;color:var(--charcoal);font-size:1.05rem;margin-bottom:4px}
+.saver-cart-login-note{font-size:.78rem;color:#777;background:var(--sage-light);border-radius:12px;padding:10px 12px;margin-top:12px}
+
+/* Quantity selector must remain visible on product cards on phones too. */
+@media(max-width:768px){
+  .product-card .qty-select-wrapper{display:flex !important;height:34px;border-radius:10px;margin-top:6px;width:max-content;max-width:100%}
+  .product-card .qty-btn{width:27px;font-size:.82rem}
+  .product-card .qty-val{width:25px;font-size:.75rem}
+  .product-card .price-row{display:flex !important;align-items:flex-end;justify-content:space-between;gap:5px}
+  .saver-account-shell{grid-template-columns:1fr}
+  .saver-profile-grid{grid-template-columns:1fr}
+  .saver-profile-grid .full{grid-column:auto}
+  #view-cart .cart-grid{gap:18px}
+  #view-cart .cart-item{grid-template-columns:82px minmax(0,1fr) auto;gap:12px;padding:12px;border-radius:18px}
+  #view-cart .cart-item-img{width:82px;height:82px;border-radius:13px}
+  #view-cart .cart-line-controls{grid-column:2/4;justify-content:flex-start}
+  #view-cart .saver-cart-remove{position:absolute;top:10px;right:10px;width:36px;height:36px}
+  html[dir="rtl"] #view-cart .saver-cart-remove{right:auto;left:10px}
+  #view-cart .cart-item-details{padding-right:28px}
+  html[dir="rtl"] #view-cart .cart-item-details{padding-right:0;padding-left:28px}
+  #view-cart .cart-summary-card{position:static;padding:20px}
+}
+@media(max-width:390px){
+  .product-card .price-row{align-items:flex-start;flex-direction:column}
+  .product-card .qty-select-wrapper{margin-top:2px}
+}
+html[data-theme="dark"] .saver-account-card,html[data-theme="dark"] #view-cart .cart-item{background:#232a2d;border-color:rgba(255,255,255,.08)}
+html[data-theme="dark"] .saver-account-card h3,html[data-theme="dark"] .saver-order-row strong{color:#f4f4f1}
+html[data-theme="dark"] .saver-order-row{background:#1d2426;border-color:rgba(255,255,255,.08)}
+html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
+</style>
 </head>
 <body>
 
@@ -4085,6 +4165,10 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
                 <div class="icon-btn" onclick="showWishlistProducts()" title="Wishlist">
                     <i class="fas fa-heart"></i>
                     <span class="badge" id="wishlistBadgeCount">0</span>
+                </div>
+                <div class="icon-btn saver-account-trigger" onclick="switchView('account'); saverRenderAccountView();" title="Account" aria-label="Account">
+                    <i class="fas fa-user"></i>
+                    <span class="saver-account-dot" id="saverAccountDot"></span>
                 </div>
                 <div class="icon-btn" onclick="switchView('cart')">
                     <i class="fas fa-shopping-bag"></i>
@@ -4292,6 +4376,7 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
                             <span data-tr="est_total">Estimated Total</span>
                             <span id="summaryTotalPrice">$0.00</span>
                         </div>
+                        <div class="saver-cart-login-note" id="saverCartAccountNote"></div>
                         <form class="checkout-form" id="checkoutForm" onsubmit="handleCheckout(event)">
                             <h4 style="font-size:0.9rem; color:var(--sage-dark);" data-tr="deliv_info">Delivery details</h4>
                             <input type="text" class="form-input" id="custName" placeholder="Full Name" required>
@@ -4305,6 +4390,17 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
                         </form>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="view-account" class="app-view">
+            <div class="container">
+                <div class="section-header saver-account-heading">
+                    <h2 class="section-title" data-en="My Account" data-ar="حسابي">My Account</h2>
+                    <div class="section-divider"></div>
+                    <p class="saver-account-subtitle" data-en="Sign in to save your cart, wishlist and view your orders on any device." data-ar="سجّل الدخول لحفظ سلة التسوق والمفضلة ومشاهدة طلباتك من أي جهاز.">Sign in to save your cart, wishlist and view your orders on any device.</p>
+                </div>
+                <div id="saverAccountContent"></div>
             </div>
         </section>
 
@@ -7892,5 +7988,320 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 </script>
 
+\n<script id="saver-customer-upgrade-script">
+(function(){
+  "use strict";
+
+  const AUTH_KEY = 'saverMarketCustomerSession';
+  const GUEST_CART_KEY = 'saverMarketGuestCart';
+  let saverSession = null;
+  let authTab = 'login';
+  let syncTimer = null;
+
+  const apiHeaders = (token, extra={}) => Object.assign({
+    'apikey': SAVER_SUPABASE_PUBLISHABLE_KEY,
+    'Content-Type':'application/json'
+  }, token ? {'Authorization':'Bearer '+token} : {}, extra);
+
+  function safeJsonParse(value, fallback){ try{return JSON.parse(value)}catch(e){return fallback} }
+  function getSession(){
+    if(saverSession) return saverSession;
+    saverSession = safeJsonParse(localStorage.getItem(AUTH_KEY), null);
+    return saverSession;
+  }
+  function setSession(session){
+    saverSession=session||null;
+    if(session) localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+    else localStorage.removeItem(AUTH_KEY);
+    updateAccountIndicators();
+  }
+  function currentUser(){ return getSession()?.user || null; }
+  function token(){ return getSession()?.access_token || ''; }
+
+  function updateAccountIndicators(){
+    const dot=document.getElementById('saverAccountDot');
+    if(dot) dot.classList.toggle('signed-in', !!currentUser());
+    const note=document.getElementById('saverCartAccountNote');
+    if(note){
+      note.innerHTML=currentUser()
+        ? `<i class="fas fa-cloud"></i> ${currentLanguage==='ar'?'سلتك محفوظة في حسابك ويمكن الوصول إليها من أجهزتك.':'Your cart is saved to your account and available across your devices.'}`
+        : `<i class="fas fa-user"></i> ${currentLanguage==='ar'?'يمكنك إكمال الطلب كضيف، أو تسجيل الدخول لحفظ السلة والطلبات.':'You can order as a guest, or sign in to save your cart and order history.'}`;
+    }
+  }
+
+  async function authRequest(path, body){
+    const r=await fetch(`${SAVER_SUPABASE_URL}/auth/v1/${path}`,{method:'POST',headers:apiHeaders('',{}),body:JSON.stringify(body)});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(data.msg||data.message||data.error_description||'Authentication failed');
+    return data;
+  }
+
+  async function refreshSessionIfNeeded(){
+    const s=getSession(); if(!s?.refresh_token) return null;
+    try{
+      const data=await authRequest('token?grant_type=refresh_token',{refresh_token:s.refresh_token});
+      if(data.access_token){ setSession(data); return data; }
+    }catch(e){ setSession(null); }
+    return null;
+  }
+
+  window.saverSetAuthTab=function(tab){ authTab=tab; saverRenderAccountView(); };
+
+  window.saverRenderAccountView=async function(){
+    const root=document.getElementById('saverAccountContent'); if(!root)return;
+    const user=currentUser();
+    if(!user){
+      root.innerHTML=`<div class="saver-account-shell">
+        <div class="saver-account-card">
+          <h3>${currentLanguage==='ar'?'مرحباً بك':'Welcome'}</h3>
+          <p>${currentLanguage==='ar'?'إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.':'Creating an account is optional. You can always shop as a guest.'}</p>
+          <div class="saver-auth-tabs">
+            <button class="saver-auth-tab ${authTab==='login'?'active':''}" type="button" onclick="saverSetAuthTab('login')">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
+            <button class="saver-auth-tab ${authTab==='signup'?'active':''}" type="button" onclick="saverSetAuthTab('signup')">${currentLanguage==='ar'?'إنشاء حساب':'Sign Up'}</button>
+          </div>
+          ${authTab==='signup'?`<form class="saver-auth-form" onsubmit="saverSignup(event)">
+            <label>${currentLanguage==='ar'?'الاسم الكامل':'Full name'}</label><input class="form-input" id="saverSignupName" required autocomplete="name">
+            <label>${currentLanguage==='ar'?'رقم الهاتف':'Phone number'}</label><input class="form-input" id="saverSignupPhone" type="tel" required autocomplete="tel">
+            <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverSignupEmail" type="email" required autocomplete="email">
+            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label><input class="form-input" id="saverSignupPassword" type="password" minlength="6" required autocomplete="new-password">
+            <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'إنشاء الحساب':'Create Account'}</button>
+          </form>`:`<form class="saver-auth-form" onsubmit="saverLogin(event)">
+            <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverLoginEmail" type="email" required autocomplete="email">
+            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label><input class="form-input" id="saverLoginPassword" type="password" required autocomplete="current-password">
+            <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
+          </form>`}
+          <div class="saver-auth-message" id="saverAuthMessage"></div>
+        </div>
+        <div class="saver-account-card">
+          <h3>${currentLanguage==='ar'?'مزايا الحساب':'Account benefits'}</h3>
+          <p>${currentLanguage==='ar'?'بعد تسجيل الدخول، سنحفظ سلتك والمفضلة وبيانات التوصيل والطلبات في حسابك.':'When signed in, your cart, wishlist, delivery details and orders can be kept with your account.'}</p>
+          <div class="saver-orders-list">
+            <div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'سلة محفوظة':'Saved cart'}</strong><small>${currentLanguage==='ar'?'تابع التسوق من أي جهاز':'Continue shopping on another device'}</small></div><i class="fas fa-cart-shopping"></i></div>
+            <div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'طلباتي':'My Orders'}</strong><small>${currentLanguage==='ar'?'عرض الطلبات وتفاصيلها':'View orders and their details'}</small></div><i class="fas fa-receipt"></i></div>
+            <div class="saver-order-row"><div><strong>${currentLanguage==='ar'?'بيانات التوصيل':'Delivery details'}</strong><small>${currentLanguage==='ar'?'احفظ الاسم والهاتف والعنوان':'Save name, phone and address'}</small></div><i class="fas fa-location-dot"></i></div>
+          </div>
+        </div>
+      </div>`;
+      return;
+    }
+
+    root.innerHTML=`<div class="saver-account-shell">
+      <div class="saver-account-card">
+        <h3>${currentLanguage==='ar'?'الملف الشخصي':'Profile'}</h3>
+        <p>${user.email||''}</p>
+        <form class="saver-auth-form" onsubmit="saverSaveProfile(event)">
+          <div class="saver-profile-grid">
+            <div><label>${currentLanguage==='ar'?'الاسم الكامل':'Full name'}</label><input class="form-input" id="saverProfileName"></div>
+            <div><label>${currentLanguage==='ar'?'الهاتف':'Phone'}</label><input class="form-input" id="saverProfilePhone" type="tel"></div>
+            <div><label>${currentLanguage==='ar'?'المدينة':'City'}</label><input class="form-input" id="saverProfileCity"></div>
+            <div class="full"><label>${currentLanguage==='ar'?'عنوان التوصيل':'Delivery address'}</label><textarea class="form-input" id="saverProfileAddress" rows="3"></textarea></div>
+          </div>
+          <div class="saver-account-actions"><button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'حفظ البيانات':'Save Details'}</button><button class="saver-account-secondary" type="button" onclick="saverLogout()">${currentLanguage==='ar'?'تسجيل الخروج':'Logout'}</button></div>
+        </form><div class="saver-auth-message" id="saverAuthMessage"></div>
+      </div>
+      <div class="saver-account-card"><h3>${currentLanguage==='ar'?'طلباتي':'My Orders'}</h3><p>${currentLanguage==='ar'?'ستظهر الطلبات المرتبطة بحسابك هنا.':'Orders linked to your account will appear here.'}</p><div class="saver-orders-list" id="saverOrdersList"><div style="color:#888">${currentLanguage==='ar'?'جاري التحميل...':'Loading...'}</div></div></div>
+    </div>`;
+    await Promise.all([loadProfileIntoForm(),loadOrders()]);
+  };
+
+  function authMessage(text,type=''){ const n=document.getElementById('saverAuthMessage');if(n){n.textContent=text;n.className='saver-auth-message '+type;} }
+
+  window.saverSignup=async function(e){
+    e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري إنشاء الحساب...':'Creating account...');
+    try{
+      const data=await authRequest('signup',{email:document.getElementById('saverSignupEmail').value.trim(),password:document.getElementById('saverSignupPassword').value,data:{full_name:document.getElementById('saverSignupName').value.trim(),phone:document.getElementById('saverSignupPhone').value.trim()}});
+      if(data.access_token){ setSession(data); await mergeGuestCartIntoAccount(); await saverRenderAccountView(); }
+      else authMessage(currentLanguage==='ar'?'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب ثم سجّل الدخول.':'Account created. Check your email for confirmation, then log in.','success');
+    }catch(err){authMessage(err.message,'error')}
+  };
+
+  window.saverLogin=async function(e){
+    e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري تسجيل الدخول...':'Signing in...');
+    try{
+      const data=await authRequest('token?grant_type=password',{email:document.getElementById('saverLoginEmail').value.trim(),password:document.getElementById('saverLoginPassword').value});
+      setSession(data); await mergeGuestCartIntoAccount(); await loadAccountCart(); await syncWishlistFromAccount(); await saverRenderAccountView(); refreshCartDisplayEngine(); updateWishlistBadge();
+    }catch(err){authMessage(err.message,'error')}
+  };
+
+  window.saverLogout=async function(){
+    try{ if(token()) await fetch(`${SAVER_SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:apiHeaders(token())}); }catch(e){}
+    setSession(null); shoppingCart=[]; restoreGuestCart(); refreshCartDisplayEngine(); saverRenderAccountView();
+  };
+
+  async function rest(path, options={}){
+    const r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+    const text=await r.text(); let data=null; try{data=text?JSON.parse(text):null}catch(e){data=text}
+    if(!r.ok) throw new Error((data&&data.message)||text||`Request failed ${r.status}`);
+    return data;
+  }
+
+  async function loadProfileIntoForm(){
+    try{
+      const u=currentUser(); if(!u)return;
+      const rows=await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}&select=*`);
+      const p=rows?.[0]||{};
+      const set=(id,v)=>{const n=document.getElementById(id);if(n)n.value=v||''};
+      set('saverProfileName',p.full_name);set('saverProfilePhone',p.phone);set('saverProfileCity',p.city||'Damascus');set('saverProfileAddress',p.address);
+      const checkoutName=document.getElementById('custName'), checkoutPhone=document.getElementById('custPhone'), checkoutAddress=document.getElementById('custAddress');
+      if(checkoutName&&!checkoutName.value)checkoutName.value=p.full_name||''; if(checkoutPhone&&!checkoutPhone.value)checkoutPhone.value=p.phone||''; if(checkoutAddress&&!checkoutAddress.value)checkoutAddress.value=p.address||'';
+    }catch(e){console.warn('[Saver Market] Profile load',e)}
+  }
+
+  window.saverSaveProfile=async function(e){
+    e.preventDefault(); const u=currentUser(); if(!u)return; authMessage(currentLanguage==='ar'?'جاري الحفظ...':'Saving...');
+    try{
+      await rest(`customer_profiles?id=eq.${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({full_name:document.getElementById('saverProfileName').value.trim(),phone:document.getElementById('saverProfilePhone').value.trim(),city:document.getElementById('saverProfileCity').value.trim(),address:document.getElementById('saverProfileAddress').value.trim(),updated_at:new Date().toISOString()})});
+      authMessage(currentLanguage==='ar'?'تم حفظ بياناتك.':'Your details were saved.','success'); await loadProfileIntoForm();
+    }catch(err){authMessage(err.message,'error')}
+  };
+
+  async function loadOrders(){
+    const root=document.getElementById('saverOrdersList'); if(!root||!currentUser())return;
+    try{
+      const orders=await rest(`orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,total_syp,created_at&order=created_at.desc`);
+      if(!orders?.length){root.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'لا توجد طلبات بعد.':'No orders yet.'}</div>`;return}
+      root.innerHTML=orders.map(o=>`<button type="button" class="saver-order-row" onclick="saverShowOrderDetails(${Number(o.id)})" style="width:100%;text-align:inherit;cursor:pointer"><div><strong>${o.order_number}</strong><small>${new Date(o.created_at).toLocaleDateString()} · ${formatPrice(Number(o.total_syp||0))}</small></div><span class="saver-order-status">${String(o.status||'pending')}</span></button>`).join('');
+    }catch(e){root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`}
+  }
+
+  window.saverShowOrderDetails=async function(orderId){
+    const root=document.getElementById('saverOrdersList');if(!root)return;
+    try{
+      const items=await rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`);
+      const previous=root.innerHTML;
+      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}</div>`;
+      document.getElementById('saverBackOrders').onclick=loadOrders;
+    }catch(e){console.warn(e)}
+  };
+
+  function cartPayload(){
+    return shoppingCart.map(line=>({product_id:Number(line.product.id),quantity:Number(line.quantity),size:line.size||'Standard',color:line.color||'Default'})).filter(x=>Number.isFinite(x.product_id));
+  }
+  function saveGuestCart(){
+    if(currentUser())return;
+    const slim=shoppingCart.map(l=>({sku:l.product.sku.replace('#',''),quantity:l.quantity,size:l.size,color:l.color}));
+    localStorage.setItem(GUEST_CART_KEY,JSON.stringify(slim));
+  }
+  function restoreGuestCart(){
+    if(currentUser())return;
+    const rows=safeJsonParse(localStorage.getItem(GUEST_CART_KEY),[]);
+    shoppingCart=(rows||[]).map(r=>{const p=productsDatabase.find(x=>x.sku.replace('#','')===r.sku);return p?{product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'}:null}).filter(Boolean);
+  }
+  async function syncCartToAccount(){
+    const u=currentUser(); if(!u)return;
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(async()=>{
+      try{
+        await rest(`cart_items?user_id=eq.${encodeURIComponent(u.id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}});
+        const rows=cartPayload().map(x=>Object.assign({user_id:u.id},x));
+        if(rows.length) await rest('cart_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(rows)});
+      }catch(e){console.warn('[Saver Market] Cart sync',e)}
+    },250);
+  }
+  async function loadAccountCart(){
+    const u=currentUser(); if(!u)return;
+    try{
+      const rows=await rest(`cart_items?user_id=eq.${encodeURIComponent(u.id)}&select=product_id,quantity,size,color&order=id.asc`);
+      shoppingCart=(rows||[]).map(r=>{const p=productsDatabase.find(x=>Number(x.id)===Number(r.product_id));return p?{product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'}:null}).filter(Boolean);
+    }catch(e){console.warn('[Saver Market] Load cart',e)}
+  }
+  async function mergeGuestCartIntoAccount(){
+    const guest=safeJsonParse(localStorage.getItem(GUEST_CART_KEY),[]); if(!guest?.length||!currentUser())return;
+    await loadAccountCart();
+    guest.forEach(r=>{const p=productsDatabase.find(x=>x.sku.replace('#','')===r.sku);if(!p)return;const line=shoppingCart.find(l=>l.product.id===p.id&&(l.size||'Standard')===(r.size||'Standard')&&(l.color||'Default')===(r.color||'Default'));if(line)line.quantity+=Math.max(1,Number(r.quantity)||1);else shoppingCart.push({product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'});});
+    localStorage.removeItem(GUEST_CART_KEY); await syncCartToAccount();
+  }
+
+  async function syncWishlistFromAccount(){
+    const u=currentUser();if(!u)return;
+    try{
+      const rows=await rest(`wishlist_items?user_id=eq.${encodeURIComponent(u.id)}&select=product_id`);
+      (rows||[]).forEach(r=>{const p=productsDatabase.find(x=>Number(x.id)===Number(r.product_id));if(p)wishlistItems.add(p.sku.replace('#',''))});
+      localStorage.setItem('saverMarketWishlist',JSON.stringify([...wishlistItems]));
+    }catch(e){}
+  }
+
+  // Preserve existing wishlist UI behavior, then synchronize signed-in changes.
+  const originalWishlist=window.toggleWishlistState || (typeof toggleWishlistState==='function'?toggleWishlistState:null);
+  if(originalWishlist){
+    window.toggleWishlistState=function(productId,node,event){
+      const p=productsDatabase.find(x=>x.id===productId);const clean=p?.sku.replace('#','');const before=clean?wishlistItems.has(clean):false;
+      originalWishlist(productId,node,event);
+      if(currentUser()&&p){
+        const after=wishlistItems.has(clean);
+        if(after&&!before) rest('wishlist_items',{method:'POST',headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({user_id:currentUser().id,product_id:Number(p.id)})}).catch(()=>{});
+        if(!after&&before) rest(`wishlist_items?user_id=eq.${encodeURIComponent(currentUser().id)}&product_id=eq.${Number(p.id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}}).catch(()=>{});
+      }
+    };
+    try{toggleWishlistState=window.toggleWishlistState}catch(e){}
+  }
+
+  // Correct variant-safe quantity editing and nicer cart rendering.
+  window.alterCartLineItemQuantity=function(lineIndex,step){
+    const i=Number(lineIndex);const line=shoppingCart[i];if(!line)return;line.quantity=Math.max(0,Number(line.quantity||1)+Number(step||0));if(line.quantity<=0)shoppingCart.splice(i,1);refreshCartDisplayEngine();
+  };
+  window.purgeCartLineItem=function(lineIndex){const i=Number(lineIndex);if(i>=0&&i<shoppingCart.length)shoppingCart.splice(i,1);refreshCartDisplayEngine();};
+
+  window.refreshCartDisplayEngine=function(){
+    let units=0,total=0;const list=document.getElementById('cartItemsContainer');if(!list)return;list.innerHTML='';
+    shoppingCart.forEach((line,i)=>{
+      units+=Number(line.quantity)||0; total+=Number(line.product.price||0)*Number(line.quantity||0);
+      const title=currentLanguage==='ar'?line.product.nameAr:line.product.nameEn;
+      const sizeLabel=currentLanguage==='ar'?'المقاس':'Size',colorLabel=currentLanguage==='ar'?'اللون':'Color';
+      const row=document.createElement('div');row.className='cart-item';
+      row.innerHTML=`<img class="cart-item-img" src="${line.product.images[0]}" alt="${String(title).replace(/"/g,'&quot;')}"><div class="cart-item-details"><h4 class="cart-item-title">${title}</h4><span class="cart-item-meta">SKU: ${line.product.sku} · ${sizeLabel}: ${line.size||'Standard'} · ${colorLabel}: ${line.color||'Default'}</span><div class="cart-item-unit-price">${formatPrice(line.product.price)} × ${line.quantity}</div><div class="cart-item-price">${formatPrice(line.product.price*line.quantity)}</div></div><div class="cart-line-controls"><div class="qty-select-wrapper"><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},-1)" aria-label="Decrease quantity">−</button><span class="qty-val">${line.quantity}</span><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},1)" aria-label="Increase quantity">+</button></div></div><button class="saver-cart-remove" type="button" onclick="purgeCartLineItem(${i})" aria-label="Remove item"><i class="far fa-trash-alt"></i></button>`;
+      list.appendChild(row);
+    });
+    if(!shoppingCart.length) list.innerHTML=`<div class="saver-cart-empty"><i class="fas fa-bag-shopping"></i><strong>${currentLanguage==='ar'?'سلة التسوق فارغة':'Your cart is empty'}</strong><span>${currentLanguage==='ar'?'أضف بعض المنتجات للمتابعة.':'Add some products to continue.'}</span></div>`;
+    const badge=document.getElementById('cartBadgeCount'),mobile=document.getElementById('mobileCartBadge'),cnt=document.getElementById('summaryItemCount'),sum=document.getElementById('summaryTotalPrice');
+    if(badge)badge.textContent=units;if(mobile)mobile.textContent=units;if(cnt)cnt.textContent=units;if(sum)sum.textContent=formatPrice(total);
+    saveGuestCart(); if(currentUser())syncCartToAccount(); updateAccountIndicators();
+  };
+  try{refreshCartDisplayEngine=window.refreshCartDisplayEngine}catch(e){}
+  try{alterCartLineItemQuantity=window.alterCartLineItemQuantity;purgeCartLineItem=window.purgeCartLineItem}catch(e){}
+
+  // Quantity selector for Quick View (cards and full details already have selectors).
+  window.saverQuickQty=function(id,step){const n=document.getElementById(`qty-val-quick-${id}`);if(!n)return;let v=Math.max(1,(parseInt(n.textContent)||1)+step);n.textContent=v};
+  window.saverAddQuickToCart=function(id,button){
+    const n=document.getElementById(`qty-val-quick-${id}`),qty=Math.max(1,parseInt(n?.textContent)||1),p=productsDatabase.find(x=>x.id===id);if(!p)return;
+    const size=p.sizes?.[0]||'Standard',color=p.colors?.[0]||'Default',line=shoppingCart.find(x=>x.product.id===id&&x.size===size&&x.color===color);
+    if(line)line.quantity+=qty;else shoppingCart.push({product:p,quantity:qty,size,color});if(n)n.textContent='1';refreshCartDisplayEngine();if(typeof animateProductToCart==='function')animateProductToCart(p,button);
+  };
+  const oldOpenQuick=window.openQuickView;
+  if(oldOpenQuick){window.openQuickView=function(id){oldOpenQuick(id);const p=productsDatabase.find(x=>x.id===id);const content=document.getElementById('quickViewContent');if(!p||!content)return;const add=content.querySelector('.btn-premium');if(add){const wrap=document.createElement('div');wrap.className='qty-select-wrapper';wrap.style.margin='14px 0';wrap.innerHTML=`<button class="qty-btn" type="button" onclick="saverQuickQty('${id}',-1)">−</button><span class="qty-val" id="qty-val-quick-${id}">1</span><button class="qty-btn" type="button" onclick="saverQuickQty('${id}',1)">+</button>`;add.parentElement.insertBefore(wrap,add);add.setAttribute('onclick',`saverAddQuickToCart('${id}',this)`);}};}
+
+  // Save an order to Supabase for signed-in customers, while keeping WhatsApp checkout for everyone.
+  const originalCheckout=window.handleCheckout || (typeof handleCheckout==='function'?handleCheckout:null);
+  window.handleCheckout=async function(event){
+    event.preventDefault();if(!shoppingCart.length){alert(currentLanguage==='ar'?'سلة التسوق فارغة.':'Your shopping cart is empty.');return}
+    const name=document.getElementById('custName').value.trim(),phone=document.getElementById('custPhone').value.trim(),address=document.getElementById('custAddress').value.trim(),notes=document.getElementById('custNotes').value.trim()||'None';
+    const total=shoppingCart.reduce((s,l)=>s+l.product.price*l.quantity,0);
+    if(currentUser()){
+      try{
+        const orderNo=`SM-${Date.now().toString().slice(-10)}`;
+        const orders=await rest('orders',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({order_number:orderNo,user_id:currentUser().id,customer_name:name,customer_phone:phone,customer_email:currentUser().email||null,delivery_address:address,status:'pending',payment_method:'cash_on_delivery',subtotal_syp:total,delivery_fee_syp:0,total_syp:total,notes})});
+        const order=orders?.[0];if(order){const lines=shoppingCart.map(l=>({order_id:order.id,product_id:Number(l.product.id),sku:l.product.sku,product_name:currentLanguage==='ar'?l.product.nameAr:l.product.nameEn,price_syp:l.product.price,quantity:l.quantity}));await rest('order_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(lines)});}
+      }catch(e){console.warn('[Saver Market] Order history save failed; WhatsApp checkout continues.',e)}
+    }
+    // Preserve the exact existing WhatsApp ordering workflow.
+    if(originalCheckout) return originalCheckout(event);
+  };
+  try{handleCheckout=window.handleCheckout}catch(e){}
+
+  const originalToggleLanguage=window.toggleLanguage || (typeof toggleLanguage==='function'?toggleLanguage:null);
+  if(originalToggleLanguage){window.toggleLanguage=function(){originalToggleLanguage();updateAccountIndicators();if(document.getElementById('view-account')?.classList.contains('active'))saverRenderAccountView();refreshCartDisplayEngine();};try{toggleLanguage=window.toggleLanguage}catch(e){}}
+
+  async function initializeCustomerFeatures(){
+    let tries=0;while(!productsDatabase.length&&tries<80){await new Promise(r=>setTimeout(r,100));tries++}
+    if(getSession()){
+      // Refresh token when close to expiry.
+      try{const payload=JSON.parse(atob(token().split('.')[1]||''));if(payload.exp*1000<Date.now()+60000)await refreshSessionIfNeeded()}catch(e){}
+    }
+    if(currentUser()){await loadAccountCart();await syncWishlistFromAccount();await loadProfileIntoForm()}else restoreGuestCart();
+    refreshCartDisplayEngine();updateWishlistBadge();updateAccountIndicators();
+  }
+  window.addEventListener('load',()=>{initializeCustomerFeatures().catch(console.warn)});
+})();
+</script>\n
 </body>
 </html>
