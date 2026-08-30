@@ -4077,6 +4077,51 @@ html[data-theme="dark"] .saver-account-card,html[data-theme="dark"] #view-cart .
 html[data-theme="dark"] .saver-account-card h3,html[data-theme="dark"] .saver-order-row strong{color:#f4f4f1}
 html[data-theme="dark"] .saver-order-row{background:#1d2426;border-color:rgba(255,255,255,.08)}
 html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
+
+/* Mobile-only navigation + compact cart correction. Desktop remains unchanged. */
+@media(max-width:768px){
+  /* Keep only Wishlist in the mobile header; Account and Cart live in bottom nav. */
+  .saver-mobile-top-account,.saver-mobile-top-cart{display:none !important}
+
+  /* Account becomes the central bottom action. */
+  .mobile-bottom-nav .saver-mobile-account-nav{font-weight:700;color:var(--sage-dark)}
+  .saver-mobile-account-icon{width:34px;height:34px;margin-top:-12px;border-radius:50%;display:grid;place-items:center;background:var(--sage-dark);color:#fff;border:3px solid rgba(255,255,255,.98);box-shadow:0 4px 12px rgba(0,0,0,.14)}
+  .saver-mobile-account-nav.active .saver-mobile-account-icon{background:var(--gold-dark)}
+
+  /* Compact cart rows. The earlier mobile stylesheet hides generic qty selectors,
+     so explicitly restore the cart quantity stepper here. */
+  #view-cart .section-header{margin-bottom:14px}
+  #view-cart .cart-grid{gap:12px}
+  #view-cart .cart-items-list{gap:7px}
+  #view-cart .cart-item{
+    grid-template-columns:62px minmax(0,1fr) auto;
+    gap:8px;
+    padding:8px 9px;
+    border-radius:13px;
+    min-height:78px;
+    box-shadow:0 3px 10px rgba(0,0,0,.04)
+  }
+  #view-cart .cart-item-img{width:62px;height:62px;border-radius:10px}
+  #view-cart .cart-item-details{padding-right:22px;align-self:start}
+  html[dir="rtl"] #view-cart .cart-item-details{padding-right:0;padding-left:22px}
+  #view-cart .cart-item-title{font-size:.84rem;line-height:1.25;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  #view-cart .cart-item-meta{font-size:.61rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #view-cart .cart-item-unit-price{display:none}
+  #view-cart .cart-item-price{font-size:.79rem;margin-top:3px}
+  #view-cart .cart-line-controls{grid-column:2/4;justify-content:flex-start;margin-top:-2px}
+  #view-cart .qty-select-wrapper{display:flex !important;height:31px;border-radius:9px;width:max-content;max-width:100%}
+  #view-cart .qty-btn{width:29px;height:31px;font-size:.82rem}
+  #view-cart .qty-val{width:27px;font-size:.72rem}
+  #view-cart .saver-cart-remove{top:7px;right:7px;width:29px;height:29px;border-radius:9px;font-size:.74rem}
+  html[dir="rtl"] #view-cart .saver-cart-remove{right:auto;left:7px}
+  #view-cart .cart-summary-card{padding:14px;border-radius:15px}
+  #view-cart .summary-row{margin-bottom:9px;font-size:.82rem}
+  #view-cart .summary-total{padding-top:10px;font-size:1rem}
+  #view-cart .checkout-form{margin-top:14px;gap:8px}
+  #view-cart .form-input{padding:10px 12px}
+  .saver-cart-login-note{padding:8px 10px;margin-top:8px;font-size:.7rem}
+  .saver-cart-empty{padding:28px 16px;border-radius:15px}
+}
 </style>
 </head>
 <body>
@@ -4166,11 +4211,11 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                     <i class="fas fa-heart"></i>
                     <span class="badge" id="wishlistBadgeCount">0</span>
                 </div>
-                <div class="icon-btn saver-account-trigger" onclick="switchView('account'); saverRenderAccountView();" title="Account" aria-label="Account">
+                <div class="icon-btn saver-account-trigger saver-mobile-top-account" onclick="switchView('account'); saverRenderAccountView();" title="Account" aria-label="Account">
                     <i class="fas fa-user"></i>
                     <span class="saver-account-dot" id="saverAccountDot"></span>
                 </div>
-                <div class="icon-btn" onclick="switchView('cart')">
+                <div class="icon-btn saver-mobile-top-cart" onclick="switchView('cart')">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="badge" id="cartBadgeCount">0</span>
                 </div>
@@ -4669,10 +4714,9 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             <i class="fas fa-store"></i>
             <span data-en="Shop" data-ar="المتجر">Shop</span>
         </button>
-        <button class="mobile-nav-item" data-mobile-view="wishlist" onclick="showWishlistProducts()">
-            <i class="fas fa-heart"></i>
-            <span data-en="Wishlist" data-ar="المفضلة">Wishlist</span>
-            <span class="badge" id="mobileWishlistBadge">0</span>
+        <button class="mobile-nav-item saver-mobile-account-nav" data-mobile-view="account" onclick="switchView('account'); saverRenderAccountView();">
+            <span class="saver-mobile-account-icon"><i class="fas fa-user"></i></span>
+            <span data-en="Account" data-ar="حسابي">Account</span>
         </button>
         <button class="mobile-nav-item" data-mobile-view="cart" onclick="switchView('cart')">
             <i class="fas fa-bag-shopping"></i>
@@ -6149,10 +6193,10 @@ aboutSlides[current].classList.add("active");
             window.switchView = enhancedSwitchView;
         }
 
-        const wishlistButton = document.querySelector('[data-mobile-view="wishlist"]');
-        if (wishlistButton) {
-            wishlistButton.addEventListener('click', function () {
-                setMobileActiveView('wishlist');
+        const accountButton = document.querySelector('[data-mobile-view="account"]');
+        if (accountButton) {
+            accountButton.addEventListener('click', function () {
+                setMobileActiveView('account');
             });
         }
     });
