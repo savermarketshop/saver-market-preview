@@ -4046,6 +4046,33 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
     .saver-variant-add{width:100%}
 }
 
+
+/* Strict stock + product reviews */
+.saver-stock-disabled{opacity:.48!important;cursor:not-allowed!important;pointer-events:none}
+.saver-review-section{margin-top:48px}
+.saver-review-summary{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.saver-review-stars{color:#d4af37;letter-spacing:2px}
+.saver-review-list{display:grid;gap:14px}
+.saver-review-card{background:#fff;border:1px solid rgba(85,107,47,.10);border-radius:18px;padding:16px}
+.saver-review-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.saver-review-name{font-weight:800}.saver-review-date{color:#888;font-size:.78rem}
+.saver-review-title{font-weight:800;margin:8px 0 4px}
+.saver-review-text{color:#555;white-space:pre-wrap}
+.saver-review-images{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.saver-review-images img{width:92px;height:92px;object-fit:cover;border-radius:12px;cursor:pointer;border:1px solid #eee}
+.saver-review-form{background:#f8faf6;border:1px solid rgba(85,107,47,.12);border-radius:18px;padding:16px;margin:18px 0}
+.saver-review-form .form-input{margin-top:7px}
+.saver-star-picker{display:flex;gap:6px;margin:8px 0 14px;direction:ltr;justify-content:flex-start}
+html[dir="rtl"] .saver-star-picker{justify-content:flex-end}
+.saver-star-picker button{background:transparent;color:#c9c9c9;font-size:1.5rem;cursor:pointer}
+.saver-star-picker button.active{color:#d4af37}
+.saver-review-note{font-size:.82rem;color:#777;margin-top:8px}
+.saver-review-message{margin-top:10px;font-size:.86rem}
+.saver-review-message.ok{color:#35633b}.saver-review-message.error{color:#a13737}
+.saver-review-login{background:#fff7df;border:1px solid #eedb9a;border-radius:14px;padding:12px;margin:15px 0}
+.saver-review-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:7000;display:none;align-items:center;justify-content:center;padding:20px}
+.saver-review-modal.open{display:flex}.saver-review-modal img{max-width:95vw;max-height:90vh;object-fit:contain}
+
 </style>
 
 <style id="saver-customer-upgrade-styles">
@@ -8534,9 +8561,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Quantity selector for Quick View (cards and full details already have selectors).
   window.saverQuickQty=function(id,step){const n=document.getElementById(`qty-val-quick-${id}`);if(!n)return;let v=Math.max(1,(parseInt(n.textContent)||1)+step);n.textContent=v};
   window.saverAddQuickToCart=function(id,button){
-    const n=document.getElementById(`qty-val-quick-${id}`),qty=Math.max(1,parseInt(n?.textContent)||1),p=productsDatabase.find(x=>x.id===id);if(!p)return;
-    const size=p.sizes?.[0]||'Standard',color=p.colors?.[0]||'Default',line=shoppingCart.find(x=>x.product.id===id&&x.size===size&&x.color===color);
-    if(line)line.quantity+=qty;else shoppingCart.push({product:p,quantity:qty,size,color});if(n)n.textContent='1';refreshCartDisplayEngine();if(typeof animateProductToCart==='function')animateProductToCart(p,button);
+    const p=productsDatabase.find(x=>x.id===id);if(!p)return;
+    if(typeof window.pushToBagAction==='function')return window.pushToBagAction(id,false,button);
   };
   const oldOpenQuick=window.openQuickView;
   if(oldOpenQuick){window.openQuickView=function(id){oldOpenQuick(id);const p=productsDatabase.find(x=>x.id===id);const content=document.getElementById('quickViewContent');if(!p||!content)return;const add=content.querySelector('.btn-premium');if(add){const wrap=document.createElement('div');wrap.className='qty-select-wrapper';wrap.style.margin='14px 0';wrap.innerHTML=`<button class="qty-btn" type="button" onclick="saverQuickQty('${id}',-1)">−</button><span class="qty-val" id="qty-val-quick-${id}">1</span><button class="qty-btn" type="button" onclick="saverQuickQty('${id}',1)">+</button>`;add.parentElement.insertBefore(wrap,add);add.setAttribute('onclick',`saverAddQuickToCart('${id}',this)`);}};}
@@ -8803,6 +8829,270 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 
+
+<script>
+(function(){
+  "use strict";
+
+  function currentUserForReviews(){
+    try{
+      if(typeof window.saverCustomerCurrentUser==='function') return window.saverCustomerCurrentUser();
+    }catch(e){}
+    return null;
+  }
+
+  window.saverProductAvailableStock=function(product,size='Standard',color='Default'){
+    if(!product)return 0;
+    const variants=Array.isArray(product.variantStock)?product.variantStock:[];
+    if(variants.length){
+      const row=variants.find(v=>
+        String(v.size||'Standard')===String(size||'Standard') &&
+        String(v.color||'Default')===String(color||'Default')
+      );
+      return row?Math.max(0,Math.trunc(Number(row.quantity)||0)):0;
+    }
+    return Math.max(0,Math.trunc(Number(product.stockQty)||0));
+  };
+
+  window.saverCartQuantityFor=function(productId,size='Standard',color='Default'){
+    return (shoppingCart||[]).filter(x=>
+      String(x.product?.id)===String(productId) &&
+      String(x.size||'Standard')===String(size||'Standard') &&
+      String(x.color||'Default')===String(color||'Default')
+    ).reduce((n,x)=>n+Math.max(0,Number(x.quantity)||0),0);
+  };
+
+  window.saverCanAddQuantity=function(product,size,color,qty){
+    const available=window.saverProductAvailableStock(product,size,color);
+    const already=window.saverCartQuantityFor(product.id,size,color);
+    return {available,already,canAdd:Math.max(0,available-already),ok:(already+qty)<=available};
+  };
+
+  window.saverStockAlert=function(product,available){
+    alert(currentLanguage==='ar'
+      ? (available<=0?'هذا المنتج غير متوفر حالياً.':`الكمية المتوفرة فقط ${available}.`)
+      : (available<=0?'This product is currently out of stock.':`Only ${available} item(s) are available.`));
+  };
+
+  /* Simple products: replace old one-click add with strict stock checking. */
+  const previousPush=window.pushToBagAction || (typeof pushToBagAction==='function'?pushToBagAction:null);
+  window.saverStrictSimpleAdd=function(productId,isFromDetailsPage,sourceButton){
+    const product=productsDatabase.find(p=>String(p.id)===String(productId));if(!product)return;
+    const size=(product.sizes?.[0]||'Standard'),color=(product.colors?.[0]||'Default');
+    const qtyNode=document.getElementById(`qty-val-${isFromDetailsPage?'detail-page':productId}`);
+    const qty=Math.max(1,parseInt(qtyNode?.textContent)||1);
+    const check=window.saverCanAddQuantity(product,size,color,qty);
+    if(!check.ok){window.saverStockAlert(product,check.canAdd);return}
+    const line=shoppingCart.find(x=>String(x.product.id)===String(product.id)&&(x.size||'Standard')===size&&(x.color||'Default')===color);
+    if(line)line.quantity+=qty;else shoppingCart.push({product,quantity:qty,size,color});
+    if(qtyNode)qtyNode.textContent='1';
+    refreshCartDisplayEngine();
+    if(typeof animateProductToCart==='function')animateProductToCart(product,sourceButton);
+  };
+
+  /* Cart + button must never exceed current stock. Stock is never decremented here. */
+  window.alterCartLineItemQuantity=function(lineIndex,step){
+    const i=Number(lineIndex),line=shoppingCart[i];if(!line)return;
+    const available=window.saverProductAvailableStock(line.product,line.size||'Standard',line.color||'Default');
+    const next=Math.max(0,Number(line.quantity||1)+Number(step||0));
+    if(next>available){window.saverStockAlert(line.product,available);return}
+    if(next<=0)shoppingCart.splice(i,1);else line.quantity=next;
+    refreshCartDisplayEngine();
+  };
+  try{alterCartLineItemQuantity=window.alterCartLineItemQuantity}catch(e){}
+
+  /* Final checkout guard. Order creation DOES NOT alter product stock. */
+  const checkoutBeforeStock=window.handleCheckout || (typeof handleCheckout==='function'?handleCheckout:null);
+  if(checkoutBeforeStock){
+    window.handleCheckout=async function(event){
+      for(const line of shoppingCart){
+        const available=window.saverProductAvailableStock(line.product,line.size||'Standard',line.color||'Default');
+        if(Number(line.quantity||0)>available){
+          event?.preventDefault?.();
+          const name=currentLanguage==='ar'?line.product.nameAr:line.product.nameEn;
+          alert(currentLanguage==='ar'
+            ? `لا يمكن إكمال الطلب. الكمية المتوفرة من ${name} هي ${available} فقط.`
+            : `Cannot complete order. Only ${available} of ${name} are available.`);
+          return;
+        }
+      }
+      return checkoutBeforeStock.apply(this,arguments);
+    };
+    try{handleCheckout=window.handleCheckout}catch(e){}
+  }
+
+  /* ---------- Reviews ---------- */
+  let reviewRating=5;
+  function stars(n){return '★'.repeat(Math.max(0,Math.min(5,Number(n)||0)))+'☆'.repeat(5-Math.max(0,Math.min(5,Number(n)||0)))}
+  function reviewEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function apiHeaders(token=''){return {apikey:SAVER_SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token||SAVER_SUPABASE_PUBLISHABLE_KEY}`,'Content-Type':'application/json'}}
+  function customerToken(){
+    try{
+      const raw=localStorage.getItem('saverMarketSupabaseSession');
+      const parsed=raw?JSON.parse(raw):null;
+      return parsed?.access_token||'';
+    }catch(e){return ''}
+  }
+
+  async function reviewRest(path,options={}){
+    const t=customerToken();
+    const r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,{
+      ...options,
+      headers:{...apiHeaders(t),...(options.headers||{})}
+    });
+    const txt=await r.text();let data=null;try{data=txt?JSON.parse(txt):null}catch(e){data=txt}
+    if(!r.ok)throw new Error(data?.message||txt||`Request failed ${r.status}`);
+    return data;
+  }
+
+  async function compressReviewImage(file){
+    const bitmap=await createImageBitmap(file);
+    const max=1200,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    return await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.82));
+  }
+
+  window.saverSetReviewRating=function(n){
+    reviewRating=n;
+    document.querySelectorAll('.saver-star-picker button').forEach((b,i)=>b.classList.toggle('active',i<n));
+  };
+
+  async function fetchApprovedReviews(productId){
+    return await reviewRest(`product_reviews?product_id=eq.${Number(productId)}&status=eq.approved&select=id,customer_name,rating,review_title,review_text,created_at,review_images(id,image_url,sort_order)&order=created_at.desc`);
+  }
+
+  window.saverRenderReviews=async function(productId){
+    const host=document.getElementById('saverProductReviews');if(!host)return;
+    const user=currentUserForReviews();
+    let reviews=[];
+    try{reviews=await fetchApprovedReviews(productId)}catch(e){console.warn(e)}
+    const avg=reviews.length?(reviews.reduce((n,r)=>n+Number(r.rating||0),0)/reviews.length):0;
+    const product=productsDatabase.find(p=>String(p.id)===String(productId));
+    host.innerHTML=`
+      <section class="saver-review-section">
+        <h3 class="section-title" style="font-size:1.65rem">${currentLanguage==='ar'?'آراء العملاء':'Customer Reviews'}</h3>
+        <div class="saver-review-summary">
+          <span class="saver-review-stars">${stars(Math.round(avg))}</span>
+          <strong>${reviews.length?avg.toFixed(1):'0.0'} / 5</strong>
+          <span>${currentLanguage==='ar'?`${reviews.length} مراجعة`:`${reviews.length} review${reviews.length===1?'':'s'}`}</span>
+        </div>
+        ${user?`
+          <form class="saver-review-form" onsubmit="saverSubmitReview(event,'${productId}')">
+            <strong>${currentLanguage==='ar'?'اكتب مراجعتك':'Write your review'}</strong>
+            <div class="saver-star-picker">
+              ${[1,2,3,4,5].map(i=>`<button class="${i<=reviewRating?'active':''}" type="button" onclick="saverSetReviewRating(${i})">★</button>`).join('')}
+            </div>
+            <input id="saverReviewTitle" class="form-input" maxlength="100" placeholder="${currentLanguage==='ar'?'عنوان المراجعة (اختياري)':'Review title (optional)'}">
+            <textarea id="saverReviewText" class="form-input" rows="4" maxlength="1500" required placeholder="${currentLanguage==='ar'?'اكتب رأيك عن المنتج...':'Tell us what you think about this product...'}"></textarea>
+            <input id="saverReviewPhotos" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+            <div class="saver-review-note">${currentLanguage==='ar'?'حتى 3 صور. ستظهر المراجعة فقط بعد موافقة الإدارة.':'Up to 3 photos. Your review will appear only after admin approval.'}</div>
+            <button class="btn-premium" type="submit" style="margin-top:12px">${currentLanguage==='ar'?'إرسال المراجعة':'Submit Review'}</button>
+            <div id="saverReviewMessage" class="saver-review-message"></div>
+          </form>`:
+          `<div class="saver-review-login">${currentLanguage==='ar'?'سجّل الدخول لإضافة مراجعة وصور.':'Sign in to add a review and photos.'}</div>`
+        }
+        <div class="saver-review-list">
+          ${reviews.length?reviews.map(r=>`
+            <article class="saver-review-card">
+              <div class="saver-review-head">
+                <div><div class="saver-review-name">${reviewEsc(r.customer_name|| (currentLanguage==='ar'?'عميل Saver Market':'Saver Market Customer'))}</div><div class="saver-review-stars">${stars(r.rating)}</div></div>
+                <div class="saver-review-date">${new Date(r.created_at).toLocaleDateString(currentLanguage==='ar'?'ar-SY':'en-US')}</div>
+              </div>
+              ${r.review_title?`<div class="saver-review-title">${reviewEsc(r.review_title)}</div>`:''}
+              <div class="saver-review-text">${reviewEsc(r.review_text)}</div>
+              ${(r.review_images||[]).length?`<div class="saver-review-images">${r.review_images.sort((a,b)=>a.sort_order-b.sort_order).map(img=>`<img src="${reviewEsc(img.image_url)}" alt="" onclick="saverOpenReviewPhoto('${reviewEsc(img.image_url)}')">`).join('')}</div>`:''}
+            </article>`).join(''):
+            `<div style="color:#888">${currentLanguage==='ar'?'لا توجد مراجعات معتمدة بعد.':'No approved reviews yet.'}</div>`
+          }
+        </div>
+      </section>`;
+  };
+
+  window.saverSubmitReview=async function(e,productId){
+    e.preventDefault();
+    const msg=document.getElementById('saverReviewMessage');
+    const user=currentUserForReviews();if(!user)return;
+    const files=[...(document.getElementById('saverReviewPhotos')?.files||[])];
+    if(files.length>3){msg.textContent=currentLanguage==='ar'?'الحد الأقصى 3 صور.':'Maximum 3 photos.';msg.className='saver-review-message error';return}
+    msg.textContent=currentLanguage==='ar'?'جاري إرسال المراجعة...':'Submitting review...';msg.className='saver-review-message';
+    try{
+      const profile=await reviewRest(`customer_profiles?id=eq.${encodeURIComponent(user.id)}&select=full_name`);
+      const name=profile?.[0]?.full_name||user.email?.split('@')[0]||'Customer';
+      const rows=await reviewRest('product_reviews',{
+        method:'POST',
+        headers:{Prefer:'return=representation'},
+        body:JSON.stringify({
+          product_id:Number(productId),
+          user_id:user.id,
+          customer_name:name,
+          rating:reviewRating,
+          review_title:document.getElementById('saverReviewTitle').value.trim(),
+          review_text:document.getElementById('saverReviewText').value.trim(),
+          status:'pending'
+        })
+      });
+      const review=rows?.[0];if(!review)throw new Error('Review was not created.');
+
+      let order=1;
+      for(const file of files){
+        const blob=await compressReviewImage(file);
+        const path=`${user.id}/${review.id}/${Date.now()}-${order}.jpg`;
+        const up=await fetch(`${SAVER_SUPABASE_URL}/storage/v1/object/review-images/${path}`,{
+          method:'POST',
+          headers:{apikey:SAVER_SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${customerToken()}`,'Content-Type':'image/jpeg','x-upsert':'false'},
+          body:blob
+        });
+        if(!up.ok)throw new Error(await up.text());
+        const publicUrl=`${SAVER_SUPABASE_URL}/storage/v1/object/public/review-images/${path}`;
+        await reviewRest('review_images',{
+          method:'POST',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify({review_id:review.id,image_url:publicUrl,storage_path:path,sort_order:order})
+        });
+        order++;
+      }
+      msg.textContent=currentLanguage==='ar'?'تم إرسال مراجعتك للإدارة للموافقة عليها.':'Your review was sent to admin for approval.';
+      msg.className='saver-review-message ok';
+      e.target.reset();reviewRating=5;saverSetReviewRating(5);
+    }catch(err){
+      msg.textContent=(String(err.message||err).includes('duplicate')||String(err.message||err).includes('unique'))
+        ? (currentLanguage==='ar'?'يمكنك إرسال مراجعة واحدة فقط لكل منتج.':'You can submit only one review per product.')
+        : String(err.message||err);
+      msg.className='saver-review-message error';
+    }
+  };
+
+  window.saverOpenReviewPhoto=function(url){
+    let modal=document.getElementById('saverReviewPhotoModal');
+    if(!modal){
+      modal=document.createElement('div');modal.id='saverReviewPhotoModal';modal.className='saver-review-modal';
+      modal.innerHTML='<img alt="">';modal.onclick=()=>modal.classList.remove('open');document.body.appendChild(modal);
+    }
+    modal.querySelector('img').src=url;modal.classList.add('open');
+  };
+
+  /* Attach review section every time a dedicated product page opens. */
+  const oldDetailsReviews=window.displayDedicatedProductDetailsPage || (typeof displayDedicatedProductDetailsPage==='function'?displayDedicatedProductDetailsPage:null);
+  if(oldDetailsReviews){
+    window.displayDedicatedProductDetailsPage=function(id){
+      const result=oldDetailsReviews.apply(this,arguments);
+      setTimeout(()=>{
+        const root=document.getElementById('productDetailsContent');
+        if(root && !document.getElementById('saverProductReviews')){
+          const host=document.createElement('div');host.id='saverProductReviews';root.appendChild(host);
+        }
+        saverRenderReviews(id);
+      },80);
+      return result;
+    };
+    try{displayDedicatedProductDetailsPage=window.displayDedicatedProductDetailsPage}catch(e){}
+  }
+})();
+</script>
+
 <script>
 (function(){
   "use strict";
@@ -8887,9 +9177,13 @@ document.addEventListener("DOMContentLoaded", function () {
       note.textContent=ar()?'هذا الخيار غير متوفر حالياً.':'This option is currently out of stock.';
       add.disabled=true;
     }else{
-      note.textContent=ar()?`المتوفر لهذا الخيار: ${qty}`:`Available for this option: ${qty}`;
-      add.disabled=false;
-      if(pickerQty>qty) pickerQty=qty;
+      const already=typeof window.saverCartQuantityFor==='function'
+        ? window.saverCartQuantityFor(pickerProduct.id,pickerSize||'Standard',pickerColor||'Default')
+        : 0;
+      const remaining=Math.max(0,qty-already);
+      note.textContent=ar()?`المتوفر للإضافة: ${remaining}`:`Available to add: ${remaining}`;
+      add.disabled=remaining<=0;
+      if(pickerQty>remaining) pickerQty=Math.max(1,remaining);
     }
     document.getElementById('saverVariantQtyValue').textContent=pickerQty;
   }
@@ -8956,14 +9250,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const needColor=realColors(pickerProduct).length>0;
     if((needSize&&!pickerSize)||(needColor&&!pickerColor))return;
 
-    const max=selectedVariantQty();
+    const max=window.saverProductAvailableStock
+      ? window.saverProductAvailableStock(pickerProduct,pickerSize||'Standard',pickerColor||'Default')
+      : selectedVariantQty();
     const existing=shoppingCart.find(x=>
       x.product.id===pickerProduct.id &&
       (x.size||'Standard')===(pickerSize||'Standard') &&
       (x.color||'Default')===(pickerColor||'Default')
     );
     const already=existing?Number(existing.quantity||0):0;
-    if(max>0 && already+pickerQty>max){
+    if(max<=0 || already+pickerQty>max){
       const e=document.getElementById('saverVariantError');
       e.textContent=ar()
         ? `لا يمكن إضافة أكثر من ${max} من هذا الخيار.`
@@ -8992,8 +9288,15 @@ document.addEventListener("DOMContentLoaded", function () {
   window.pushToBagAction=function(productId,isFromDetailsPage,sourceButton){
     const product=productsDatabase.find(p=>p.id===productId);
     if(product && needsPicker(product)){
+      const totalStock=Array.isArray(product.variantStock)&&product.variantStock.length
+        ? product.variantStock.reduce((n,v)=>n+Math.max(0,Number(v.quantity)||0),0)
+        : Math.max(0,Number(product.stockQty)||0);
+      if(totalStock<=0){window.saverStockAlert(product,0);return}
       saverOpenVariantPicker(productId,sourceButton);
       return;
+    }
+    if(product && typeof window.saverStrictSimpleAdd==='function'){
+      return window.saverStrictSimpleAdd(productId,isFromDetailsPage,sourceButton);
     }
     if(originalPush)return originalPush(productId,isFromDetailsPage,sourceButton);
   };

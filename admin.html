@@ -75,6 +75,17 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 .variant-stock-row input{width:100%;padding:8px 9px;border:1px solid #d8dfd4;border-radius:9px}
 .variant-stock-help{font-size:.8rem;color:var(--muted);margin-top:8px}
 
+
+/* Review moderation */
+.reviews-table{width:100%;border-collapse:collapse;min-width:1050px}
+.reviews-table th,.reviews-table td{padding:12px 10px;border-bottom:1px solid #edf0ea;text-align:left;vertical-align:top}
+.reviews-table th{font-size:.82rem;color:#687268;text-transform:uppercase;letter-spacing:.04em}
+.review-stars{color:#d4af37;white-space:nowrap}
+.review-photo-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.review-photo-row img{width:58px;height:58px;object-fit:cover;border-radius:9px}
+.review-actions{display:flex;gap:6px;flex-wrap:wrap}
+.review-text-cell{max-width:360px;white-space:normal}
+
 </style>
 </head>
 <body>
@@ -98,6 +109,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
     <button class="nav-btn" data-page="products">Products</button>
     <button class="nav-btn" data-page="bulk">Bulk Import</button>
     <button class="nav-btn" data-page="orders">Orders</button>
+    <button class="nav-btn" data-page="reviews">Reviews</button>
     <button class="nav-btn" data-page="customers">Customers</button>
     <button class="nav-btn" data-page="media">Media</button>
     <button class="nav-btn" data-page="settings">Site Settings</button>
@@ -213,6 +225,31 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
       </div>
     </section>
 
+
+
+    <section id="page-reviews" class="page hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input id="reviewSearch" class="search" placeholder="Search product, customer or review...">
+            <select id="reviewStatusFilter" style="width:auto">
+              <option value="pending">Pending approval</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="all">All reviews</option>
+            </select>
+          </div>
+          <button id="refreshReviewsBtn" class="btn btn-light">Refresh</button>
+        </div>
+        <div id="reviewStatusMessage" class="subtle" style="margin-bottom:10px"></div>
+        <div class="table-wrap">
+          <table class="reviews-table">
+            <thead><tr><th>Product</th><th>Customer</th><th>Rating</th><th>Review</th><th>Photos</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="reviewsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
     <section id="page-customers" class="page hidden">
       <div class="card">
@@ -386,6 +423,7 @@ const SUPABASE_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let allProducts=[], currentProductImages=[];
 let allOrders=[];
+let allReviews=[];
 let allCustomers=[];
 
 const $=id=>document.getElementById(id);
@@ -417,10 +455,11 @@ document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
   document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
   $('page-'+btn.dataset.page).classList.remove('hidden');
-  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='bulk'?'Bulk Import':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='customers'?'Customers':btn.dataset.page==='media'?'Media Manager':btn.dataset.page==='settings'?'Site Settings':'Admin Dashboard';
+  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='bulk'?'Bulk Import':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='reviews'?'Reviews':btn.dataset.page==='customers'?'Customers':btn.dataset.page==='media'?'Media Manager':btn.dataset.page==='settings'?'Site Settings':'Admin Dashboard';
   if(btn.dataset.page==='products')loadProducts();
   if(btn.dataset.page==='bulk')bulkPreparePage();
   if(btn.dataset.page==='orders')loadOrders();
+  if(btn.dataset.page==='reviews')loadReviews();
   if(btn.dataset.page==='customers')loadCustomers();
   if(btn.dataset.page==='media')loadMedia();
   if(btn.dataset.page==='settings')loadSiteSettings();
@@ -683,6 +722,69 @@ window.viewOrder=id=>{
     <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
   $('orderModal').classList.remove('hidden');
 };
+
+
+async function loadReviews(){
+  $('reviewStatusMessage').textContent='Loading reviews...';
+  const {data,error}=await sb.from('product_reviews')
+    .select('id,product_id,user_id,customer_name,rating,review_title,review_text,status,created_at,review_images(id,image_url,storage_path,sort_order),products(sku,name_en,name_ar)')
+    .order('created_at',{ascending:false});
+  if(error){$('reviewStatusMessage').textContent='Error: '+error.message;return}
+  allReviews=data||[];
+  $('reviewStatusMessage').textContent=allReviews.length+' review(s)';
+  renderReviews();
+}
+
+function renderReviews(){
+  const q=$('reviewSearch').value.trim().toLowerCase();
+  const f=$('reviewStatusFilter').value;
+  const rows=allReviews.filter(r=>{
+    const p=r.products||{};
+    const hay=[p.sku,p.name_en,p.name_ar,r.customer_name,r.review_title,r.review_text].join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(f==='all'||r.status===f);
+  });
+  $('reviewsBody').innerHTML=rows.length?rows.map(r=>{
+    const p=r.products||{};
+    const photos=(r.review_images||[]).sort((a,b)=>a.sort_order-b.sort_order);
+    return `<tr>
+      <td><b>${esc(p.sku||'')}</b><div class="subtle">${esc(p.name_en||'')}</div></td>
+      <td>${esc(r.customer_name||'Customer')}<div class="subtle">${esc(orderDate(r.created_at))}</div></td>
+      <td><span class="review-stars">${'★'.repeat(Number(r.rating||0))}${'☆'.repeat(5-Number(r.rating||0))}</span></td>
+      <td class="review-text-cell">${r.review_title?`<b>${esc(r.review_title)}</b><br>`:''}${esc(r.review_text||'')}</td>
+      <td>${photos.length?`<div class="review-photo-row">${photos.map(x=>`<a href="${esc(x.image_url)}" target="_blank" rel="noopener"><img src="${esc(x.image_url)}" alt=""></a>`).join('')}</div>`:'—'}</td>
+      <td><span class="status ${r.status==='rejected'?'inactive':''}">${esc(r.status)}</span></td>
+      <td><div class="review-actions">
+        ${r.status!=='approved'?`<button class="btn btn-primary" onclick="setReviewStatus(${r.id},'approved')">Approve</button>`:''}
+        ${r.status!=='rejected'?`<button class="btn btn-light" onclick="setReviewStatus(${r.id},'rejected')">Reject</button>`:''}
+        ${r.status!=='pending'?`<button class="btn btn-light" onclick="setReviewStatus(${r.id},'pending')">Pending</button>`:''}
+        <button class="btn btn-danger" onclick="deleteReview(${r.id})">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="7" class="empty">No reviews found.</td></tr>`;
+}
+
+window.setReviewStatus=async(id,status)=>{
+  if(!['pending','approved','rejected'].includes(status))return;
+  const {error}=await sb.from('product_reviews').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert(error.message);return}
+  const r=allReviews.find(x=>x.id===id);if(r)r.status=status;renderReviews();
+};
+
+window.deleteReview=async id=>{
+  const r=allReviews.find(x=>x.id===id);if(!r||!confirm('Delete this review permanently?'))return;
+  const paths=(r.review_images||[]).map(x=>x.storage_path).filter(Boolean);
+  if(paths.length){
+    const {error:se}=await sb.storage.from('review-images').remove(paths);
+    if(se){alert('Could not delete review photos: '+se.message);return}
+  }
+  const {error}=await sb.from('product_reviews').delete().eq('id',id);
+  if(error){alert(error.message);return}
+  allReviews=allReviews.filter(x=>x.id!==id);renderReviews();
+};
+
+$('reviewSearch').oninput=renderReviews;
+$('reviewStatusFilter').onchange=renderReviews;
+$('refreshReviewsBtn').onclick=loadReviews;
 
 
 async function loadCustomers(){
