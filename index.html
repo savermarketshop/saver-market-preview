@@ -4403,7 +4403,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 </div>
 
                 <div class="home-showcase-action">
-                    <button class="btn btn-primary home-shop-now" onclick="switchView('products')"
+                    <button class="btn btn-primary home-shop-now" onclick="openAllProducts()"
                             data-en="Shop Now →" data-ar="تسوق الآن ←">Shop Now →</button>
                 </div>
                 <div class="saver-mobile-about-action">
@@ -4495,10 +4495,6 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                         <input class="filter-select price-filter" id="filterMaxPrice" type="number" min="0" step="1000" placeholder="Max price (SYP)" oninput="processFilters()">
                         <button type="button" class="clear-filter-btn" onclick="clearAllFilters()">
                             <i class="fas fa-rotate-left"></i><span>Clear</span>
-                        </button>
-                        <button type="button" class="wishlist-filter-btn" id="wishlistFilterBtn" onclick="toggleWishlistFilter()">
-                            <i class="fas fa-heart"></i>
-                            <span>Favorites Only</span>
                         </button>
                     </div>
                 </div>
@@ -5161,12 +5157,20 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         }
 
         function openAllProducts() {
+            // "Shop Now" must always open the complete catalog with no old filters.
             wishlistOnly = false;
-            const wishlistButton = document.getElementById('wishlistFilterBtn');
-            if(wishlistButton) wishlistButton.classList.remove('active');
 
-            const search = document.getElementById('searchInput');
+            const search = document.getElementById('catalogSearch');
             if(search) search.value = '';
+
+            const maxPrice = document.getElementById('filterMaxPrice');
+            if(maxPrice) maxPrice.value = '';
+
+            ['filterCategory','filterSort','filterAvailability','filterBrand','filterSize','filterColor','filterCollection']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.value = 'all';
+                });
 
             switchView('products');
             processFilters();
