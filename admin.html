@@ -64,6 +64,17 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 .bulk-msg{padding:12px 14px;border-radius:12px;margin-top:12px}.bulk-error{background:#fff0f0;color:#8e2f2f}.bulk-ok{background:#edf7ea;color:#376029}.bulk-warn{background:#fff8df;color:#735a00}
 @media(max-width:760px){.bulk-grid,.bulk-stats{grid-template-columns:1fr}}
 
+
+/* Variant stock editor */
+.variant-stock-box{margin-top:12px;border:1px solid #e1e7dd;border-radius:14px;background:#f8faf6;padding:14px}
+.variant-stock-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.variant-stock-head strong{color:var(--sage)}
+.variant-stock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}
+.variant-stock-row{display:grid;grid-template-columns:1fr 82px;gap:9px;align-items:center;background:white;border:1px solid #e7ece4;border-radius:12px;padding:9px 10px}
+.variant-stock-row span{font-size:.86rem;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.variant-stock-row input{width:100%;padding:8px 9px;border:1px solid #d8dfd4;border-radius:9px}
+.variant-stock-help{font-size:.8rem;color:var(--muted);margin-top:8px}
+
 </style>
 </head>
 <body>
@@ -313,6 +324,22 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
         <div class="field"><label>Sizes (comma separated)</label><input id="sizes" placeholder="S, M, L"></div>
         <div class="field"><label>Colors — English (comma separated)</label><input id="colors" placeholder="Gold, Silver, Light Blue"></div>
         <div class="field"><label>Colors — Arabic (optional, same order)</label><input id="colorsAr" dir="rtl" placeholder="ذهبي، فضي، أزرق فاتح"><div class="subtle">Leave blank to let the website translate the English color automatically.</div></div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Quantity by Color / Size</label>
+          <div class="variant-stock-box">
+            <div class="variant-stock-head">
+              <div>
+                <strong>Variant Quantities</strong>
+                <div class="subtle">Set a separate stock quantity for each color / size combination.</div>
+              </div>
+              <button id="generateVariantStockBtn" class="btn btn-light" type="button">Generate / Refresh Variants</button>
+            </div>
+            <div id="variantStockGrid" class="variant-stock-grid"></div>
+            <div class="variant-stock-help">
+              Example: Black / M = 3, Black / L = 2, White / M = 5. Total Stock Qty is automatically calculated from these quantities.
+            </div>
+          </div>
+        </div>
 
         <div class="field"><label>Material English</label><input id="materialEn"></div>
         <div class="field"><label>Material Arabic</label><input id="materialAr" dir="rtl"></div>
@@ -427,24 +454,114 @@ function renderProducts(){
 }
 $('productSearch').oninput=renderProducts;$('activeFilter').onchange=renderProducts;
 
+
+let editingVariantStock=[];
+
+function variantKey(size,color){return `${String(size||'Standard').trim()}|||${String(color||'Default').trim()}`}
+
+function getVariantAxes(){
+  const sizes=csvToArray($('sizes').value);
+  const colors=csvToArray($('colors').value);
+  return {
+    sizes:sizes.length?sizes:['Standard'],
+    colors:colors.length?colors:['Default']
+  };
+}
+
+function renderVariantStock(existing=null){
+  const grid=$('variantStockGrid'); if(!grid)return;
+  const axes=getVariantAxes();
+  const oldMap=new Map();
+
+  const source=Array.isArray(existing)?existing:editingVariantStock;
+  (source||[]).forEach(v=>{
+    oldMap.set(
+      variantKey(v.size||'Standard',v.color||'Default'),
+      Math.max(0,Math.trunc(Number(v.quantity)||0))
+    );
+  });
+
+  editingVariantStock=[];
+  axes.colors.forEach(color=>{
+    axes.sizes.forEach(size=>{
+      const key=variantKey(size,color);
+      editingVariantStock.push({
+        size,
+        color,
+        quantity:oldMap.has(key)?oldMap.get(key):0
+      });
+    });
+  });
+
+  grid.innerHTML=editingVariantStock.map((v,i)=>`
+    <div class="variant-stock-row">
+      <span>${esc(v.color)} / ${esc(v.size)}</span>
+      <input type="number" min="0" step="1" value="${v.quantity}" data-variant-index="${i}">
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('input[data-variant-index]').forEach(input=>{
+    input.addEventListener('input',()=>{
+      const i=Number(input.dataset.variantIndex);
+      if(editingVariantStock[i]){
+        editingVariantStock[i].quantity=Math.max(0,Math.trunc(Number(input.value)||0));
+        syncStockQtyFromVariants();
+      }
+    });
+  });
+
+  syncStockQtyFromVariants();
+}
+
+function syncStockQtyFromVariants(){
+  if(!Array.isArray(editingVariantStock)||!editingVariantStock.length)return;
+  const axes=getVariantAxes();
+  const hasRealVariant=
+    !(axes.sizes.length===1&&axes.sizes[0]==='Standard'&&axes.colors.length===1&&axes.colors[0]==='Default');
+  if(!hasRealVariant)return;
+  const total=editingVariantStock.reduce((sum,v)=>sum+Math.max(0,Math.trunc(Number(v.quantity)||0)),0);
+  $('stockQty').value=total;
+}
+
+function collectVariantStock(){
+  const grid=$('variantStockGrid');
+  if(grid){
+    grid.querySelectorAll('input[data-variant-index]').forEach(input=>{
+      const i=Number(input.dataset.variantIndex);
+      if(editingVariantStock[i]) editingVariantStock[i].quantity=Math.max(0,Math.trunc(Number(input.value)||0));
+    });
+  }
+  const axes=getVariantAxes();
+  const hasRealVariant=
+    !(axes.sizes.length===1&&axes.sizes[0]==='Standard'&&axes.colors.length===1&&axes.colors[0]==='Default');
+  if(!hasRealVariant)return [];
+  return editingVariantStock.map(v=>({
+    size:v.size||'Standard',
+    color:v.color||'Default',
+    quantity:Math.max(0,Math.trunc(Number(v.quantity)||0))
+  }));
+}
+
 function openModal(product=null){
-  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];clearMsg($('formMessage'));$('existingImages').innerHTML='';
+  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];editingVariantStock=[];clearMsg($('formMessage'));$('existingImages').innerHTML='';
   $('modalTitle').textContent=product?'Edit Product':'Add Product';
   if(product){
     $('productId').value=product.id;$('sku').value=product.sku||'';$('category').value=product.category||'';
     $('nameEn').value=product.name_en||'';$('nameAr').value=product.name_ar||'';$('descEn').value=product.description_en||'';$('descAr').value=product.description_ar||'';
     $('price').value=product.price_syp??'';$('oldPrice').value=product.old_price_syp??'';$('brand').value=product.brand||'';$('collection').value=product.collection||'';
     $('availability').value=product.availability||'In Stock';$('stockQty').value=product.stock_qty??0;$('featured').checked=!!product.featured;$('isActive').checked=!!product.is_active;
-    $('badgeEn').value=product.badge_en||'';$('badgeAr').value=product.badge_ar||'';$('sizes').value=arrayToCsv(product.sizes);$('colors').value=arrayToCsv(product.colors);$('colorsAr').value=arrayToCsv(product.colors_ar);
+    $('badgeEn').value=product.badge_en||'';$('badgeAr').value=product.badge_ar||'';$('sizes').value=arrayToCsv(product.sizes);$('colors').value=arrayToCsv(product.colors);$('colorsAr').value=arrayToCsv(product.colors_ar);renderVariantStock(product.variant_stock||[]);
     $('materialEn').value=product.material_en||'';$('materialAr').value=product.material_ar||'';$('dimensions').value=product.dimensions||'';$('weight').value=product.weight||'';
     $('deliveryEn').value=product.delivery_time_en||'';$('deliveryAr').value=product.delivery_time_ar||'';$('notesEn').value=product.special_notes_en||'';$('notesAr').value=product.special_notes_ar||'';
     $('tags').value=arrayToCsv(product.tags);$('relatedSkus').value=arrayToCsv(product.related_skus);$('rating').value=product.rating??'';$('reviewCount').value=product.review_count??0;
     currentProductImages=(product.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order);renderExistingImages();
+  } else {
+    renderVariantStock([]);
   }
   $('productModal').classList.remove('hidden');
 }
 function closeModal(){$('productModal').classList.add('hidden')}
-$('addProductBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;
+$('addProductBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;$('generateVariantStockBtn').onclick=()=>renderVariantStock();$('sizes').addEventListener('change',()=>renderVariantStock());$('colors').addEventListener('change',()=>renderVariantStock());
 
 window.editProduct=id=>{const p=allProducts.find(x=>x.id===id);if(p)openModal(p)}
 function renderExistingImages(){
@@ -474,13 +591,14 @@ async function uploadImages(productId,sku,files,startOrder){
 $('productForm').addEventListener('submit',async e=>{
   e.preventDefault();clearMsg($('formMessage'));$('saveProductBtn').disabled=true;$('saveProductBtn').textContent='Saving...';
   try{
+    syncStockQtyFromVariants();
     const payload={
       sku:$('sku').value.trim(),name_en:$('nameEn').value.trim(),name_ar:$('nameAr').value.trim(),
       description_en:$('descEn').value.trim(),description_ar:$('descAr').value.trim(),
       price_syp:Number($('price').value||0),old_price_syp:$('oldPrice').value?Number($('oldPrice').value):null,
       category:$('category').value.trim(),brand:$('brand').value.trim(),collection:$('collection').value.trim(),
       availability:$('availability').value,stock_qty:Number($('stockQty').value||0),featured:$('featured').checked,
-      badge_en:$('badgeEn').value.trim(),badge_ar:$('badgeAr').value.trim(),sizes:csvToArray($('sizes').value),colors:csvToArray($('colors').value),colors_ar:csvToArray($('colorsAr').value),
+      badge_en:$('badgeEn').value.trim(),badge_ar:$('badgeAr').value.trim(),sizes:csvToArray($('sizes').value),colors:csvToArray($('colors').value),colors_ar:csvToArray($('colorsAr').value),variant_stock:collectVariantStock(),
       material_en:$('materialEn').value.trim(),material_ar:$('materialAr').value.trim(),dimensions:$('dimensions').value.trim(),weight:$('weight').value.trim(),
       delivery_time_en:$('deliveryEn').value.trim(),delivery_time_ar:$('deliveryAr').value.trim(),special_notes_en:$('notesEn').value.trim(),special_notes_ar:$('notesAr').value.trim(),
       tags:csvToArray($('tags').value),related_skus:csvToArray($('relatedSkus').value),rating:$('rating').value?Number($('rating').value):null,
@@ -835,6 +953,15 @@ function bulkProductPayload(r){
     sizes:bulkArr(bulkField(r,'sizes','Sizes')),
     colors:bulkArr(bulkField(r,'colors','Colors')),
     colors_ar:bulkArr(bulkField(r,'colorsAr','colors_ar','Colors AR','Colors Arabic')),
+    variant_stock:(()=>{
+      const raw=bulkField(r,'variantStock','variant_stock','Variant Stock');
+      if(!raw)return [];
+      if(Array.isArray(raw))return raw;
+      try{
+        const parsed=JSON.parse(String(raw));
+        return Array.isArray(parsed)?parsed:[];
+      }catch(e){return []}
+    })(),
     material_en:String(bulkField(r,'materialEn','Material EN')??'').trim(),
     material_ar:String(bulkField(r,'materialAr','Material AR')??'').trim(),
     dimensions:String(bulkField(r,'dimensions','Dimensions')??'').trim(),
