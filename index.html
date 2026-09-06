@@ -9019,8 +9019,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if(files.length>3){msg.textContent=currentLanguage==='ar'?'الحد الأقصى 3 صور.':'Maximum 3 photos.';msg.className='saver-review-message error';return}
     msg.textContent=currentLanguage==='ar'?'جاري إرسال المراجعة...':'Submitting review...';msg.className='saver-review-message';
     try{
-      const profile=await reviewRest(`customer_profiles?id=eq.${encodeURIComponent(user.id)}&select=full_name`);
-      const name=profile?.[0]?.full_name||user.email?.split('@')[0]||'Customer';
+      const name=
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split('@')[0] ||
+        (currentLanguage==='ar'?'عميل Saver Market':'Saver Market Customer');
+
       const rows=await reviewRest('product_reviews',{
         method:'POST',
         headers:{Prefer:'return=representation'},
