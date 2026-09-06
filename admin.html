@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Saver Market Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--sage:#556B2F;--sage2:#71854a;--light:#eef3e9;--bg:#f6f7f3;--text:#293238;--muted:#6d756f;--danger:#b83b3b;--gold:#d4af37}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}
@@ -46,6 +48,22 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 
 /* Media Manager */
 .media-toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:18px}.media-toolbar .field{margin:0;min-width:180px}.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.media-card{background:#fff;border:1px solid #e2e7df;border-radius:16px;padding:10px;box-shadow:0 4px 14px rgba(0,0,0,.03)}.media-card img{width:100%;height:150px;object-fit:cover;border-radius:12px;background:#f2f4ef}.media-card.logo-card img{object-fit:contain}.media-meta{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px}.media-type{font-size:.78rem;color:var(--muted)}.media-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.media-actions .btn{padding:7px 10px;font-size:.8rem}.media-help{background:#f8faf5;border:1px solid #e3e9df;border-radius:14px;padding:12px 14px;color:var(--muted);font-size:.88rem;margin-bottom:16px}
+
+/* Integrated Bulk Import */
+.bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bulk-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.bulk-stat{background:var(--light);padding:14px;border-radius:14px}.bulk-stat b{display:block;font-size:1.35rem;color:var(--sage);margin-top:3px}
+.bulk-table-wrap{overflow:auto;max-height:340px;border:1px solid #edf0e9;border-radius:14px}
+.bulk-table{width:100%;border-collapse:collapse;min-width:720px}.bulk-table th,.bulk-table td{padding:9px 10px;border-bottom:1px solid #edf0e9;text-align:left;font-size:.86rem}
+.bulk-table th{position:sticky;top:0;background:#f5f7f2}
+.bulk-progress-shell{height:18px;background:#e7ebe4;border-radius:999px;overflow:hidden;margin:14px 0}
+.bulk-progress{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--sage));transition:width .2s}
+.bulk-log{background:#182019;color:#eaf1e6;border-radius:14px;padding:14px;height:240px;overflow:auto;font-family:Consolas,monospace;font-size:.8rem;white-space:pre-wrap}
+.bulk-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bulk-pill{padding:6px 10px;background:var(--light);border-radius:999px;color:var(--sage);font-weight:700;font-size:.82rem}
+.bulk-msg{padding:12px 14px;border-radius:12px;margin-top:12px}.bulk-error{background:#fff0f0;color:#8e2f2f}.bulk-ok{background:#edf7ea;color:#376029}.bulk-warn{background:#fff8df;color:#735a00}
+@media(max-width:760px){.bulk-grid,.bulk-stats{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -67,6 +85,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
     <h2>Saver Market</h2>
     <button class="nav-btn active" data-page="home">Dashboard</button>
     <button class="nav-btn" data-page="products">Products</button>
+    <button class="nav-btn" data-page="bulk">Bulk Import</button>
     <button class="nav-btn" data-page="orders">Orders</button>
     <button class="nav-btn" data-page="customers">Customers</button>
     <button class="nav-btn" data-page="media">Media</button>
@@ -106,6 +125,47 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
             <tbody id="productsBody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+
+    <section id="page-bulk" class="page hidden">
+      <div class="card">
+        <div class="media-help"><b>Bulk Product Import</b><br>
+          This is the same bulk importer that used to be a separate page. Choose your normal Products Excel file and the ZIP containing <b>Product/STK001...</b> image folders.
+          The optional Excel column <b>colorsAr</b> can contain Arabic colors in the same order as <b>colors</b>. If it is blank, the customer website automatically translates common English color names.
+        </div>
+        <h3>1. Choose your two files</h3>
+        <div class="bulk-grid">
+          <div class="field"><label>Products Excel (.xlsx)</label><input id="bulkXlsxFile" type="file" accept=".xlsx,.xls"></div>
+          <div class="field"><label>Product Images ZIP (.zip)</label><input id="bulkZipFile" type="file" accept=".zip"></div>
+        </div>
+        <button id="bulkAnalyzeBtn" class="btn btn-primary">Analyze Files</button>
+        <div id="bulkAnalyzeMsg"></div>
+      </div>
+      <div id="bulkPreviewCard" class="card hidden" style="margin-top:16px">
+        <h3>2. Validation Preview</h3>
+        <div class="bulk-stats">
+          <div class="bulk-stat">Products<b id="bulkSProducts">0</b></div>
+          <div class="bulk-stat">SKU folders<b id="bulkSFolders">0</b></div>
+          <div class="bulk-stat">Images<b id="bulkSImages">0</b></div>
+          <div class="bulk-stat">Problems<b id="bulkSProblems">0</b></div>
+        </div>
+        <div id="bulkValidationMsg"></div>
+        <div class="bulk-table-wrap">
+          <table class="bulk-table"><thead><tr><th>SKU</th><th>Name</th><th>Excel Count</th><th>Actual Images</th><th>Check</th></tr></thead><tbody id="bulkPreviewBody"></tbody></table>
+        </div>
+        <div style="margin-top:16px" class="bulk-row">
+          <span class="bulk-pill">Actual ZIP images are always used as source of truth</span>
+          <button id="bulkStartImportBtn" class="btn btn-primary">Import / Update Everything</button>
+        </div>
+      </div>
+      <div id="bulkProgressCard" class="card hidden" style="margin-top:16px">
+        <h3>3. Import Progress</h3>
+        <div id="bulkProgressText">Preparing...</div>
+        <div class="bulk-progress-shell"><div id="bulkBar" class="bulk-progress"></div></div>
+        <div id="bulkLog" class="bulk-log"></div>
+        <div id="bulkFinishMsg"></div>
       </div>
     </section>
 
@@ -251,7 +311,8 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
         <div class="field"><label>Badge Arabic</label><input id="badgeAr" dir="rtl"></div>
 
         <div class="field"><label>Sizes (comma separated)</label><input id="sizes" placeholder="S, M, L"></div>
-        <div class="field"><label>Colors (comma separated)</label><input id="colors" placeholder="No Specific Color, Gold"><small>Use “No Specific Color” when the product has no fixed color.</small></div>
+        <div class="field"><label>Colors — English (comma separated)</label><input id="colors" placeholder="Gold, Silver, Light Blue"></div>
+        <div class="field"><label>Colors — Arabic (optional, same order)</label><input id="colorsAr" dir="rtl" placeholder="ذهبي، فضي، أزرق فاتح"><div class="subtle">Leave blank to let the website translate the English color automatically.</div></div>
 
         <div class="field"><label>Material English</label><input id="materialEn"></div>
         <div class="field"><label>Material Arabic</label><input id="materialAr" dir="rtl"></div>
@@ -284,15 +345,6 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
           <div class="subtle">You can select multiple images at once.</div>
           <div id="existingImages" class="image-preview-grid"></div>
         </div>
-
-        <div class="field full hidden" id="variantInventorySection">
-          <h3 style="margin:8px 0">Variant Inventory</h3>
-          <div class="subtle">Set a separate available quantity for every size and color combination. These quantities are changed only by an administrator.</div>
-          <div class="actions" style="margin:12px 0"><button type="button" class="btn btn-light" id="generateVariantsBtn">Generate Size/Color Combinations</button></div>
-          <div id="variantInventoryGrid" style="display:grid;gap:9px"></div>
-          <div class="actions" style="margin-top:12px"><button type="button" class="btn btn-primary" id="saveVariantsBtn">Save Variant Quantities</button></div>
-          <div id="variantMessage" class="message"></div>
-        </div>
       </div>
 
       <div id="formMessage" class="message"></div>
@@ -305,7 +357,7 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 const SUPABASE_URL="https://zjfdedemugnfplrkojax.supabase.co";
 const SUPABASE_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let allProducts=[], currentProductImages=[], currentProductVariants=[];
+let allProducts=[], currentProductImages=[];
 let allOrders=[];
 let allCustomers=[];
 
@@ -338,8 +390,9 @@ document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
   document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
   $('page-'+btn.dataset.page).classList.remove('hidden');
-  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='customers'?'Customers':btn.dataset.page==='media'?'Media Manager':btn.dataset.page==='settings'?'Site Settings':'Admin Dashboard';
+  $('pageTitle').textContent=btn.dataset.page==='products'?'Products':btn.dataset.page==='bulk'?'Bulk Import':btn.dataset.page==='orders'?'Orders':btn.dataset.page==='customers'?'Customers':btn.dataset.page==='media'?'Media Manager':btn.dataset.page==='settings'?'Site Settings':'Admin Dashboard';
   if(btn.dataset.page==='products')loadProducts();
+  if(btn.dataset.page==='bulk')bulkPreparePage();
   if(btn.dataset.page==='orders')loadOrders();
   if(btn.dataset.page==='customers')loadCustomers();
   if(btn.dataset.page==='media')loadMedia();
@@ -375,19 +428,18 @@ function renderProducts(){
 $('productSearch').oninput=renderProducts;$('activeFilter').onchange=renderProducts;
 
 function openModal(product=null){
-  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];currentProductVariants=[];clearMsg($('formMessage'));clearMsg($('variantMessage'));$('existingImages').innerHTML='';$('variantInventoryGrid').innerHTML='';$('variantInventorySection').classList.add('hidden');
+  $('productForm').reset();$('productId').value='';$('isActive').checked=true;currentProductImages=[];clearMsg($('formMessage'));$('existingImages').innerHTML='';
   $('modalTitle').textContent=product?'Edit Product':'Add Product';
   if(product){
     $('productId').value=product.id;$('sku').value=product.sku||'';$('category').value=product.category||'';
     $('nameEn').value=product.name_en||'';$('nameAr').value=product.name_ar||'';$('descEn').value=product.description_en||'';$('descAr').value=product.description_ar||'';
     $('price').value=product.price_syp??'';$('oldPrice').value=product.old_price_syp??'';$('brand').value=product.brand||'';$('collection').value=product.collection||'';
     $('availability').value=product.availability||'In Stock';$('stockQty').value=product.stock_qty??0;$('featured').checked=!!product.featured;$('isActive').checked=!!product.is_active;
-    $('badgeEn').value=product.badge_en||'';$('badgeAr').value=product.badge_ar||'';$('sizes').value=arrayToCsv(product.sizes);$('colors').value=arrayToCsv(product.colors);
+    $('badgeEn').value=product.badge_en||'';$('badgeAr').value=product.badge_ar||'';$('sizes').value=arrayToCsv(product.sizes);$('colors').value=arrayToCsv(product.colors);$('colorsAr').value=arrayToCsv(product.colors_ar);
     $('materialEn').value=product.material_en||'';$('materialAr').value=product.material_ar||'';$('dimensions').value=product.dimensions||'';$('weight').value=product.weight||'';
     $('deliveryEn').value=product.delivery_time_en||'';$('deliveryAr').value=product.delivery_time_ar||'';$('notesEn').value=product.special_notes_en||'';$('notesAr').value=product.special_notes_ar||'';
     $('tags').value=arrayToCsv(product.tags);$('relatedSkus').value=arrayToCsv(product.related_skus);$('rating').value=product.rating??'';$('reviewCount').value=product.review_count??0;
     currentProductImages=(product.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order);renderExistingImages();
-    $('variantInventorySection').classList.remove('hidden');loadVariantInventory(product.id);
   }
   $('productModal').classList.remove('hidden');
 }
@@ -395,39 +447,6 @@ function closeModal(){$('productModal').classList.add('hidden')}
 $('addProductBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;
 
 window.editProduct=id=>{const p=allProducts.find(x=>x.id===id);if(p)openModal(p)}
-
-function variantOptions(){
-  const sizes=csvToArray($('sizes').value);if(!sizes.length)sizes.push('Standard');
-  const colors=csvToArray($('colors').value);if(!colors.length)colors.push('No Specific Color');
-  return {sizes:[...new Set(sizes)],colors:[...new Set(colors)]};
-}
-async function loadVariantInventory(productId){
-  clearMsg($('variantMessage'));
-  const {data,error}=await sb.from('product_variants').select('id,size,color,stock_qty').eq('product_id',productId).order('size').order('color');
-  if(error){showMsg($('variantMessage'),error.message);return}
-  currentProductVariants=data||[];renderVariantInventory();
-}
-function renderVariantInventory(){
-  const {sizes,colors}=variantOptions(),existing=new Map(currentProductVariants.map(v=>[`${v.size}\u0000${v.color}`,Number(v.stock_qty||0)]));
-  const rows=[];sizes.forEach(size=>colors.forEach(color=>rows.push({size,color,stock:existing.get(`${size}\u0000${color}`)??0})));
-  $('variantInventoryGrid').innerHTML=rows.map((v,i)=>`<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px;gap:10px;align-items:end;border:1px solid #e4e9e1;border-radius:12px;padding:10px"><div><small>Size</small><b style="display:block">${esc(v.size)}</b></div><div><small>Color</small><b style="display:block">${esc(v.color)}</b></div><div class="field"><label>Available Qty</label><input class="variant-stock-input" type="number" min="0" step="1" value="${v.stock}" data-size="${esc(v.size)}" data-color="${esc(v.color)}"></div></div>`).join('');
-}
-$('generateVariantsBtn').onclick=renderVariantInventory;
-$('saveVariantsBtn').onclick=async()=>{
-  const productId=Number($('productId').value||0);if(!productId){showMsg($('variantMessage'),'Save the product before configuring variants.');return}
-  const inputs=[...document.querySelectorAll('.variant-stock-input')];if(!inputs.length){showMsg($('variantMessage'),'Generate the size/color combinations first.');return}
-  const rows=inputs.map(input=>({product_id:productId,size:input.dataset.size,color:input.dataset.color,stock_qty:Math.max(0,Math.floor(Number(input.value)||0))}));
-  $('saveVariantsBtn').disabled=true;clearMsg($('variantMessage'));
-  try{
-    const {error:upsertError}=await sb.from('product_variants').upsert(rows,{onConflict:'product_id,size,color'});if(upsertError)throw upsertError;
-    const keep=new Set(rows.map(v=>`${v.size}\u0000${v.color}`)),stale=currentProductVariants.filter(v=>!keep.has(`${v.size}\u0000${v.color}`)).map(v=>v.id);
-    if(stale.length){const {error:deleteError}=await sb.from('product_variants').delete().in('id',stale);if(deleteError)throw deleteError}
-    const total=rows.reduce((sum,v)=>sum+v.stock_qty,0),options=variantOptions();
-    const {error:productError}=await sb.from('products').update({sizes:options.sizes,colors:options.colors,stock_qty:total,updated_at:new Date().toISOString()}).eq('id',productId);if(productError)throw productError;
-    $('stockQty').value=total;currentProductVariants=rows;showMsg($('variantMessage'),`Variant quantities saved. Total stock: ${total}.`,'success');await loadProducts();await loadVariantInventory(productId);
-  }catch(err){showMsg($('variantMessage'),err.message||'Could not save variant quantities.')}
-  finally{$('saveVariantsBtn').disabled=false}
-};
 function renderExistingImages(){
   $('existingImages').innerHTML=currentProductImages.map(img=>`<div class="image-box"><img src="${img.image_url}" alt=""><button type="button" onclick="removeImage(${img.id})">×</button></div>`).join('');
 }
@@ -461,7 +480,7 @@ $('productForm').addEventListener('submit',async e=>{
       price_syp:Number($('price').value||0),old_price_syp:$('oldPrice').value?Number($('oldPrice').value):null,
       category:$('category').value.trim(),brand:$('brand').value.trim(),collection:$('collection').value.trim(),
       availability:$('availability').value,stock_qty:Number($('stockQty').value||0),featured:$('featured').checked,
-      badge_en:$('badgeEn').value.trim(),badge_ar:$('badgeAr').value.trim(),sizes:csvToArray($('sizes').value),colors:csvToArray($('colors').value),
+      badge_en:$('badgeEn').value.trim(),badge_ar:$('badgeAr').value.trim(),sizes:csvToArray($('sizes').value),colors:csvToArray($('colors').value),colors_ar:csvToArray($('colorsAr').value),
       material_en:$('materialEn').value.trim(),material_ar:$('materialAr').value.trim(),dimensions:$('dimensions').value.trim(),weight:$('weight').value.trim(),
       delivery_time_en:$('deliveryEn').value.trim(),delivery_time_ar:$('deliveryAr').value.trim(),special_notes_en:$('notesEn').value.trim(),special_notes_ar:$('notesAr').value.trim(),
       tags:csvToArray($('tags').value),related_skus:csvToArray($('relatedSkus').value),rating:$('rating').value?Number($('rating').value):null,
@@ -494,7 +513,7 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function orderDate(v){try{return new Date(v).toLocaleString()}catch{return v||''}}
 async function loadOrders(){
   $('orderStatusMessage').textContent='Loading orders...';
-  const {data,error}=await sb.from('orders').select('*, order_items(id,product_id,sku,product_name,price_syp,quantity,size,color)').order('created_at',{ascending:false});
+  const {data,error}=await sb.from('orders').select('*, order_items(id,product_id,sku,product_name,price_syp,quantity)').order('created_at',{ascending:false});
   if(error){$('orderStatusMessage').textContent='Error: '+error.message;return}
   allOrders=data||[];
   $('orderStatusMessage').textContent=allOrders.length+' order(s)';
@@ -541,21 +560,10 @@ window.viewOrder=id=>{
       <div class="detail-card"><h4>Customer</h4><div class="detail-line"><b>${esc(o.customer_name)}</b></div><div class="detail-line">Phone: ${esc(o.customer_phone)}</div><div class="detail-line">Email: ${esc(o.customer_email||'—')}</div><div class="detail-line">Account: ${o.user_id?'Registered':'Guest'}</div></div>
       <div class="detail-card"><h4>Delivery</h4><div class="detail-line">${esc(o.delivery_address||'—')}</div><div class="detail-line">Payment: ${esc(o.payment_method||'cash_on_delivery')}</div><div class="detail-line">Notes: ${esc(o.notes||'—')}</div></div>
       <div class="detail-card"><h4>Order</h4><div class="detail-line">Order #: ${esc(o.order_number)}</div><div class="detail-line">Date: ${esc(orderDate(o.created_at))}</div><div class="detail-line">Status: <b>${esc(o.status)}</b></div></div>
-      <div class="detail-card"><h4>Totals</h4><div class="detail-line">Subtotal: ${money(o.subtotal_syp)}</div><div class="detail-line">Delivery: ${money(o.delivery_fee_syp)}</div><div class="detail-line"><b>Total: ${money(o.total_syp)}</b></div><div class="field" style="margin-top:10px"><label for="deliveryFeeInput-${o.id}">Delivery charge</label><input id="deliveryFeeInput-${o.id}" type="number" min="0" step="1" value="${Number(o.delivery_fee_syp||0)}"></div><button class="btn btn-primary" type="button" onclick="updateOrderDeliveryFee(${o.id})">Save Delivery Charge</button></div>
+      <div class="detail-card"><h4>Totals</h4><div class="detail-line">Subtotal: ${money(o.subtotal_syp)}</div><div class="detail-line">Delivery: ${money(o.delivery_fee_syp)}</div><div class="detail-line"><b>Total: ${money(o.total_syp)}</b></div></div>
     </div>
-    <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · Size: ${esc(i.size||'Standard')} · Color: ${esc(i.color||'No Specific Color')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
+    <div class="detail-card" style="margin-top:14px"><h4>Items</h4><div class="order-items-list">${items.length?items.map(i=>`<div class="order-item-row"><div><div class="order-item-name">${esc(i.product_name)}</div><div class="order-item-sub">SKU: ${esc(i.sku||'—')} · ${money(i.price_syp)} × ${Number(i.quantity||0)}</div></div><b>${money(Number(i.price_syp||0)*Number(i.quantity||0))}</b></div>`).join(''):'No item details found.'}</div></div>`;
   $('orderModal').classList.remove('hidden');
-};
-
-window.updateOrderDeliveryFee=async id=>{
-  const order=allOrders.find(o=>o.id===id);if(!order)return;
-  const input=$(`deliveryFeeInput-${id}`),fee=Number(input?.value);
-  if(!Number.isFinite(fee)||fee<0){alert('Enter a valid delivery charge of 0 or more.');return}
-  const subtotal=Number(order.subtotal_syp||0),delivery=Math.round(fee),total=subtotal+Math.round(fee);
-  const {error}=await sb.from('orders').update({delivery_fee_syp:delivery,total_syp:total,updated_at:new Date().toISOString()}).eq('id',id);
-  if(error){alert('Could not update delivery charge: '+error.message);return}
-  order.delivery_fee_syp=delivery;order.total_syp=total;updateOrderStats();renderOrders();viewOrder(id);
-  alert('Delivery charge and final total updated.');
 };
 
 
@@ -744,6 +752,144 @@ window.moveMedia=async(id,dir)=>{
 
 $('closeOrderModal').onclick=()=>$('orderModal').classList.add('hidden');
 $('orderModal').addEventListener('click',e=>{if(e.target===$('orderModal'))$('orderModal').classList.add('hidden')});
+
+
+/* =========================================================
+   INTEGRATED BULK PRODUCT IMPORTER
+   ========================================================= */
+let bulkParsedProducts=[], bulkZipObject=null, bulkZipImagesBySku=new Map(), bulkValidation=[];
+
+function bulkMsg(el,text,type){if(!el)return;el.innerHTML=`<div class="bulk-msg bulk-${type}">${esc(text)}</div>`}
+function bulkClear(el){if(el)el.innerHTML=''}
+function bulkLog(text){const el=$('bulkLog');if(!el)return;el.textContent+=text+"\n";el.scrollTop=el.scrollHeight}
+function bulkArr(v){return String(v??'').split(',').map(x=>x.trim()).filter(Boolean)}
+function bulkBoolYes(v){return ['yes','true','1','y'].includes(String(v??'').trim().toLowerCase())}
+function bulkNumber(v,fallback=null){if(v===null||v===undefined||v==='')return fallback;const x=Number(v);return Number.isFinite(x)?x:fallback}
+function bulkFileExt(name){const p=name.split('.');return (p.length>1?p.pop():'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg'}
+function bulkField(row,...keys){for(const key of keys){if(Object.prototype.hasOwnProperty.call(row,key)&&row[key]!==null&&row[key]!==undefined)return row[key]}return ''}
+function bulkImageSort(a,b){const an=parseInt((a.name.match(/(\d+)/)||[])[1]||'999999',10);const bn=parseInt((b.name.match(/(\d+)/)||[])[1]||'999999',10);return an-bn||a.name.localeCompare(b.name)}
+function bulkPreparePage(){if(!$('bulkAnalyzeBtn')?.dataset.bound){bindBulkImporter();$('bulkAnalyzeBtn').dataset.bound='1'}}
+function bindBulkImporter(){$('bulkAnalyzeBtn').onclick=bulkAnalyzeFiles;$('bulkStartImportBtn').onclick=bulkStartImport}
+
+async function bulkAnalyzeFiles(){
+  bulkClear($('bulkAnalyzeMsg'));$('bulkPreviewCard').classList.add('hidden');
+  const xf=$('bulkXlsxFile').files[0],zf=$('bulkZipFile').files[0];
+  if(!xf||!zf){bulkMsg($('bulkAnalyzeMsg'),'Please select both the Excel file and ZIP file.','error');return}
+  $('bulkAnalyzeBtn').disabled=true;$('bulkAnalyzeBtn').textContent='Analyzing...';
+  try{
+    const wb=XLSX.read(await xf.arrayBuffer(),{type:'array',cellDates:false});
+    if(!wb.SheetNames.includes('Products'))throw new Error('Excel sheet "Products" was not found.');
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets['Products'],{defval:null,raw:true});
+    bulkParsedProducts=rows.filter(r=>/^STK\d{3}$/i.test(String(bulkField(r,'sku','SKU')||'').trim())).map(r=>({...r,sku:String(bulkField(r,'sku','SKU')).trim().toUpperCase()}));
+    const skus=new Set(),dupes=[];bulkParsedProducts.forEach(p=>{if(skus.has(p.sku))dupes.push(p.sku);skus.add(p.sku)});
+    if(dupes.length)throw new Error('Duplicate SKU(s) in Excel: '+[...new Set(dupes)].join(', '));
+
+    bulkZipObject=await JSZip.loadAsync(await zf.arrayBuffer());bulkZipImagesBySku=new Map();
+    Object.values(bulkZipObject.files).forEach(entry=>{
+      if(entry.dir)return;
+      const m=entry.name.match(/^Product\/(STK\d{3})\/([^/]+\.(?:jpe?g|png|webp))$/i);if(!m)return;
+      const sku=m[1].toUpperCase();if(!bulkZipImagesBySku.has(sku))bulkZipImagesBySku.set(sku,[]);
+      bulkZipImagesBySku.get(sku).push({entry,name:m[2]});
+    });
+    for(const list of bulkZipImagesBySku.values())list.sort(bulkImageSort);
+
+    bulkValidation=[];const problems=[];
+    for(const p of bulkParsedProducts){
+      const imgs=bulkZipImagesBySku.get(p.sku)||[];
+      const excelCount=bulkNumber(bulkField(p,'imageCount','Image Count'),0)||0;
+      const actual=imgs.length,notes=[];if(!actual)notes.push('NO IMAGES');if(excelCount!==actual)notes.push(`count ${excelCount}→${actual}`);
+      bulkValidation.push({sku:p.sku,name:bulkField(p,'nameEn','Name EN'),excelCount,actual,notes});if(!actual)problems.push(p.sku);
+    }
+    const extras=[...bulkZipImagesBySku.keys()].filter(s=>!skus.has(s));extras.forEach(s=>problems.push(s+' (not in Excel)'));
+
+    $('bulkSProducts').textContent=bulkParsedProducts.length;$('bulkSFolders').textContent=bulkZipImagesBySku.size;
+    $('bulkSImages').textContent=[...bulkZipImagesBySku.values()].reduce((a,b)=>a+b.length,0);$('bulkSProblems').textContent=problems.length;
+    $('bulkPreviewBody').innerHTML=bulkValidation.map(v=>`<tr><td><b>${esc(v.sku)}</b></td><td>${esc(v.name)}</td><td>${v.excelCount}</td><td>${v.actual}</td><td>${v.notes.length?'⚠ '+esc(v.notes.join(', ')):'✓'}</td></tr>`).join('');
+    if(problems.length)bulkMsg($('bulkValidationMsg'),'Some SKUs have missing folders/files. Import is disabled until these are fixed: '+problems.join(', '),'error');
+    else{
+      const mismatches=bulkValidation.filter(v=>v.excelCount!==v.actual);
+      if(mismatches.length)bulkMsg($('bulkValidationMsg'),`Files are complete. ${mismatches.length} Excel imageCount value(s) differ from the folders, but the importer will use the actual ZIP files.`,'warn');
+      else bulkMsg($('bulkValidationMsg'),'Validation passed. Every Excel SKU has a matching image folder.','ok');
+    }
+    $('bulkStartImportBtn').disabled=problems.length>0;$('bulkPreviewCard').classList.remove('hidden');
+  }catch(e){console.error(e);bulkMsg($('bulkAnalyzeMsg'),e.message||String(e),'error')}
+  finally{$('bulkAnalyzeBtn').disabled=false;$('bulkAnalyzeBtn').textContent='Analyze Files'}
+}
+
+function bulkProductPayload(r){
+  return {
+    sku:r.sku,
+    name_en:String(bulkField(r,'nameEn','Name EN')??'').trim(),
+    name_ar:String(bulkField(r,'nameAr','Name AR')??'').trim(),
+    description_en:String(bulkField(r,'descEn','Description EN')??'').trim(),
+    description_ar:String(bulkField(r,'descAr','Description AR')??'').trim(),
+    price_syp:bulkNumber(bulkField(r,'priceSYP','Price SYP'),0)||0,
+    old_price_syp:bulkNumber(bulkField(r,'oldPriceSYP','Old Price SYP'),null),
+    category:String(bulkField(r,'category','Category')??'').trim(),
+    brand:String(bulkField(r,'brand','Brand')??'').trim(),
+    availability:String(bulkField(r,'availability','Availability')??'In Stock').trim()||'In Stock',
+    stock_qty:Math.max(0,Math.trunc(bulkNumber(bulkField(r,'stockQty','Stock Quantity'),0)||0)),
+    featured:bulkBoolYes(bulkField(r,'featured','Featured')),
+    badge_en:String(bulkField(r,'badgeEn','Badge English')??'').trim(),
+    badge_ar:String(bulkField(r,'badgeAr','Badge Arabic')??'').trim(),
+    sizes:bulkArr(bulkField(r,'sizes','Sizes')),
+    colors:bulkArr(bulkField(r,'colors','Colors')),
+    colors_ar:bulkArr(bulkField(r,'colorsAr','colors_ar','Colors AR','Colors Arabic')),
+    material_en:String(bulkField(r,'materialEn','Material EN')??'').trim(),
+    material_ar:String(bulkField(r,'materialAr','Material AR')??'').trim(),
+    dimensions:String(bulkField(r,'dimensions','Dimensions')??'').trim(),
+    weight:String(bulkField(r,'weight','Weight')??'').trim(),
+    delivery_time_en:String(bulkField(r,'deliveryTimeEn','Delivery Time EN')??'').trim(),
+    delivery_time_ar:String(bulkField(r,'deliveryTimeAr','Delivery Time AR')??'').trim(),
+    special_notes_en:String(bulkField(r,'specialNotesEn','Notes EN')??'').trim(),
+    special_notes_ar:String(bulkField(r,'specialNotesAr','Notes AR')??'').trim(),
+    collection:String(bulkField(r,'collection','Collection')??'').trim(),
+    tags:bulkArr(bulkField(r,'tags','Tags')),
+    related_skus:bulkArr(bulkField(r,'relatedSkus','Related SKUs')),
+    rating:bulkNumber(bulkField(r,'rating','Rating'),null),
+    review_count:Math.max(0,Math.trunc(bulkNumber(bulkField(r,'reviewCount','Review Count'),0)||0)),
+    is_active:true
+  };
+}
+
+async function bulkClearExistingImages(productId){
+  const {data:old,error}=await sb.from('product_images').select('id,storage_path').eq('product_id',productId);if(error)throw error;
+  const paths=(old||[]).map(x=>x.storage_path).filter(Boolean);if(paths.length){const {error:se}=await sb.storage.from('product-images').remove(paths);if(se)throw se}
+  const {error:de}=await sb.from('product_images').delete().eq('product_id',productId);if(de)throw de;
+}
+
+async function bulkImportOne(r,index,total){
+  const payload=bulkProductPayload(r);bulkLog(`[${index}/${total}] ${r.sku} — saving product`);
+  const {data:p,error:pe}=await sb.from('products').upsert(payload,{onConflict:'sku'}).select('id,sku').single();if(pe)throw pe;
+  await bulkClearExistingImages(p.id);
+  const imgs=bulkZipImagesBySku.get(r.sku)||[];let order=1;
+  for(const item of imgs){
+    const bytes=await item.entry.async('blob'),ext=bulkFileExt(item.name),path=`${r.sku}/${String(order).padStart(2,'0')}.${ext}`;
+    bulkLog(`    image ${order}/${imgs.length}: ${item.name}`);
+    const {error:ue}=await sb.storage.from('product-images').upload(path,bytes,{upsert:true,contentType:bytes.type||undefined,cacheControl:'3600'});if(ue)throw ue;
+    const {data:u}=sb.storage.from('product-images').getPublicUrl(path);
+    const {error:ie}=await sb.from('product_images').insert({product_id:p.id,image_url:u.publicUrl,storage_path:path,sort_order:order});if(ie)throw ie;order++;
+  }
+}
+
+async function bulkStartImport(){
+  if(!bulkParsedProducts.length||!bulkZipObject)return;
+  if(!confirm(`Import/update ${bulkParsedProducts.length} products now? Existing products with the same SKU will be updated and their images replaced.`))return;
+  $('bulkStartImportBtn').disabled=true;$('bulkProgressCard').classList.remove('hidden');$('bulkLog').textContent='';$('bulkFinishMsg').innerHTML='';
+  let ok=0,failed=[];const total=bulkParsedProducts.length;
+  for(let i=0;i<total;i++){
+    const r=bulkParsedProducts[i];$('bulkProgressText').textContent=`Importing ${i+1} of ${total}: ${r.sku}`;$('bulkBar').style.width=`${Math.round((i/total)*100)}%`;
+    try{await bulkImportOne(r,i+1,total);ok++}catch(e){console.error(e);failed.push({sku:r.sku,error:e.message||String(e)});bulkLog(`    ERROR: ${e.message||e}`)}
+  }
+  $('bulkBar').style.width='100%';$('bulkProgressText').textContent=`Finished: ${ok}/${total} products imported`;
+  if(failed.length){
+    bulkMsg($('bulkFinishMsg'),`${ok} products imported. ${failed.length} failed: ${failed.map(x=>x.sku).join(', ')}. You can safely run the importer again after fixing the issue.`,'error');
+    bulkLog('\nFAILED:\n'+failed.map(x=>`${x.sku}: ${x.error}`).join('\n'));
+  }else{
+    bulkMsg($('bulkFinishMsg'),`SUCCESS — all ${ok} products and their images were imported. Products will refresh automatically.`,'ok');await loadProducts();
+  }
+  $('bulkStartImportBtn').disabled=false;
+}
 
 (async()=>{
   const {data}=await sb.auth.getSession();const user=data?.session?.user;
