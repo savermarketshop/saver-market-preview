@@ -4001,6 +4001,51 @@ html[dir="rtl"] .about-message-divider { margin-left:auto !important; margin-rig
     #view-contact .contact-map-wrap { min-height:330px !important; height:330px !important; }
 }
 
+
+/* Customer variant picker */
+.saver-variant-overlay{
+    position:fixed; inset:0; z-index:5000; display:none;
+    align-items:center; justify-content:center; padding:18px;
+    background:rgba(24,31,26,.58); backdrop-filter:blur(7px);
+    -webkit-backdrop-filter:blur(7px);
+}
+.saver-variant-overlay.open{display:flex}
+.saver-variant-modal{
+    width:min(520px,96vw); max-height:90vh; overflow:auto;
+    background:var(--cream); border-radius:24px; padding:24px;
+    box-shadow:0 24px 70px rgba(0,0,0,.28);
+    border:1px solid rgba(85,107,47,.12);
+}
+.saver-variant-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px}
+.saver-variant-head h3{font-size:1.35rem;margin:0;color:var(--charcoal)}
+.saver-variant-close{width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.08);cursor:pointer;flex:0 0 auto}
+.saver-variant-product{display:flex;gap:12px;align-items:center;padding:12px;border-radius:15px;background:#fff;margin-bottom:18px}
+.saver-variant-product img{width:68px;height:68px;object-fit:contain;background:#fff;border-radius:12px}
+.saver-variant-product strong{display:block}
+.saver-variant-product small{color:#777}
+.saver-variant-section{margin-top:17px}
+.saver-variant-label{display:block;font-weight:800;margin-bottom:9px}
+.saver-variant-options{display:flex;gap:8px;flex-wrap:wrap}
+.saver-variant-choice{
+    border:1px solid rgba(85,107,47,.25);background:#fff;color:var(--charcoal);
+    border-radius:20px;padding:8px 14px;cursor:pointer;font-weight:600;
+}
+.saver-variant-choice.active{border-color:var(--gold);background:var(--sage-light);color:var(--sage-dark)}
+.saver-variant-choice:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+.saver-variant-stock-note{margin-top:10px;color:#6f786f;font-size:.84rem}
+.saver-variant-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;flex-wrap:wrap}
+.saver-variant-qty{display:flex;align-items:center;border:1px solid rgba(85,107,47,.22);border-radius:22px;overflow:hidden;background:#fff}
+.saver-variant-qty button{width:38px;height:40px;background:transparent;cursor:pointer;font-size:1.1rem}
+.saver-variant-qty span{min-width:38px;text-align:center;font-weight:700}
+.saver-variant-add{flex:1;min-width:190px;justify-content:center}
+.saver-variant-error{margin-top:11px;color:#a13737;font-size:.86rem;display:none}
+@media(max-width:600px){
+    .saver-variant-modal{padding:18px;border-radius:20px}
+    .saver-variant-footer{align-items:stretch}
+    .saver-variant-qty{justify-content:center}
+    .saver-variant-add{width:100%}
+}
+
 </style>
 
 <style id="saver-customer-upgrade-styles">
@@ -5056,6 +5101,9 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                     colorsAr: usingSupabase
                         ? (Array.isArray(item.colors_ar) ? item.colors_ar : [])
                         : (Array.isArray(item.colorsAr) ? item.colorsAr : []),
+                    variantStock: usingSupabase
+                        ? (Array.isArray(item.variant_stock) ? item.variant_stock : [])
+                        : (Array.isArray(item.variantStock) ? item.variantStock : []),
                     deliveryTime: usingSupabase ? (item.delivery_time_en || item.delivery_time_ar || 'Damascus area within 24-48 Hours.') : (item.deliveryTime || 'Damascus area within 24-48 Hours.'),
                     deliveryTimeAr: usingSupabase ? (item.delivery_time_ar || '') : (item.deliveryTimeAr || ''),
                     specialNotes: usingSupabase ? (item.special_notes_en || '') : (item.specialNotes || item.specialNotesEn || ''),
@@ -8720,5 +8768,240 @@ document.addEventListener("DOMContentLoaded", function () {
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadAdminSiteSettings);else loadAdminSiteSettings();
 })();
 </script>
+
+<div id="saverVariantOverlay" class="saver-variant-overlay" onclick="saverCloseVariantPicker(event)">
+  <div class="saver-variant-modal" role="dialog" aria-modal="true" aria-labelledby="saverVariantTitle">
+    <div class="saver-variant-head">
+      <div>
+        <h3 id="saverVariantTitle">Choose Options</h3>
+        <div id="saverVariantSubtitle" class="subtle"></div>
+      </div>
+      <button class="saver-variant-close" type="button" onclick="saverCloseVariantPicker()" aria-label="Close">×</button>
+    </div>
+    <div id="saverVariantProduct" class="saver-variant-product"></div>
+    <div id="saverVariantSizeSection" class="saver-variant-section">
+      <span id="saverVariantSizeLabel" class="saver-variant-label">Choose Size</span>
+      <div id="saverVariantSizes" class="saver-variant-options"></div>
+    </div>
+    <div id="saverVariantColorSection" class="saver-variant-section">
+      <span id="saverVariantColorLabel" class="saver-variant-label">Choose Color</span>
+      <div id="saverVariantColors" class="saver-variant-options"></div>
+    </div>
+    <div id="saverVariantStockNote" class="saver-variant-stock-note"></div>
+    <div class="saver-variant-footer">
+      <div class="saver-variant-qty">
+        <button type="button" onclick="saverVariantQty(-1)">−</button>
+        <span id="saverVariantQtyValue">1</span>
+        <button type="button" onclick="saverVariantQty(1)">+</button>
+      </div>
+      <button id="saverVariantAddBtn" type="button" class="btn-premium saver-variant-add" onclick="saverConfirmVariantAdd()">
+        <i class="fas fa-shopping-bag"></i><span>Add to Bag</span>
+      </button>
+    </div>
+    <div id="saverVariantError" class="saver-variant-error"></div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  "use strict";
+
+  let pickerProduct=null;
+  let pickerSourceButton=null;
+  let pickerSize="";
+  let pickerColor="";
+  let pickerQty=1;
+
+  function ar(){return currentLanguage==='ar'}
+  function clean(v){return String(v??'').trim()}
+  function realSizes(product){
+    return (Array.isArray(product?.sizes)?product.sizes:[]).map(clean).filter(Boolean)
+      .filter(v=>!/^standard$/i.test(v));
+  }
+  function realColors(product){
+    return (Array.isArray(product?.colors)?product.colors:[]).map(clean).filter(Boolean)
+      .filter(v=>!/^default$/i.test(v));
+  }
+  function variants(product){
+    return (Array.isArray(product?.variantStock)?product.variantStock:[])
+      .map(v=>({
+        size:clean(v.size)||"Standard",
+        color:clean(v.color)||"Default",
+        quantity:Math.max(0,Math.trunc(Number(v.quantity)||0))
+      }));
+  }
+  function needsPicker(product){
+    const s=realSizes(product), c=realColors(product), vs=variants(product);
+    return s.length>1 || c.length>1 || vs.length>1;
+  }
+  function availableFor(size,color){
+    const vs=variants(pickerProduct);
+    if(!vs.length) return Number(pickerProduct?.stockQty??999999);
+    const row=vs.find(v=>
+      (!size || v.size===size || (size==="Standard"&&v.size==="Standard")) &&
+      (!color || v.color===color || (color==="Default"&&v.color==="Default"))
+    );
+    return row ? row.quantity : 0;
+  }
+  function selectedVariantQty(){
+    const vs=variants(pickerProduct);
+    if(!vs.length) return Number(pickerProduct?.stockQty??999999);
+    const size=pickerSize||"Standard", color=pickerColor||"Default";
+    const row=vs.find(v=>v.size===size&&v.color===color);
+    return row?row.quantity:0;
+  }
+  function colorDisplay(value){
+    return typeof window.saverColorLabel==='function'
+      ? window.saverColorLabel(value,pickerProduct)
+      : value;
+  }
+  function updatePickerAvailability(){
+    const vs=variants(pickerProduct);
+    document.querySelectorAll('#saverVariantSizes .saver-variant-choice').forEach(btn=>{
+      if(!vs.length){btn.disabled=false;return}
+      const size=btn.dataset.value;
+      const has=vs.some(v=>v.size===size && (!pickerColor||v.color===pickerColor) && v.quantity>0);
+      btn.disabled=!has;
+    });
+    document.querySelectorAll('#saverVariantColors .saver-variant-choice').forEach(btn=>{
+      if(!vs.length){btn.disabled=false;return}
+      const color=btn.dataset.value;
+      const has=vs.some(v=>v.color===color && (!pickerSize||v.size===pickerSize) && v.quantity>0);
+      btn.disabled=!has;
+    });
+
+    const needSize=realSizes(pickerProduct).length>0;
+    const needColor=realColors(pickerProduct).length>0;
+    const chosen=(!needSize||pickerSize)&&(!needColor||pickerColor);
+    const qty=chosen?selectedVariantQty():0;
+    const note=document.getElementById('saverVariantStockNote');
+    const add=document.getElementById('saverVariantAddBtn');
+    const error=document.getElementById('saverVariantError');
+    error.style.display='none';
+
+    if(!chosen){
+      note.textContent=ar()?'اختر المقاس واللون المطلوبين.':'Please choose the required size and color.';
+      add.disabled=true;
+    }else if(qty<=0){
+      note.textContent=ar()?'هذا الخيار غير متوفر حالياً.':'This option is currently out of stock.';
+      add.disabled=true;
+    }else{
+      note.textContent=ar()?`المتوفر لهذا الخيار: ${qty}`:`Available for this option: ${qty}`;
+      add.disabled=false;
+      if(pickerQty>qty) pickerQty=qty;
+    }
+    document.getElementById('saverVariantQtyValue').textContent=pickerQty;
+  }
+
+  window.saverOpenVariantPicker=function(productId,sourceButton=null){
+    const product=productsDatabase.find(p=>p.id===productId);
+    if(!product)return;
+    pickerProduct=product;pickerSourceButton=sourceButton;pickerSize="";pickerColor="";pickerQty=1;
+
+    const sizes=realSizes(product), colors=realColors(product);
+    const overlay=document.getElementById('saverVariantOverlay');
+    document.getElementById('saverVariantTitle').textContent=ar()?'اختر خيارات المنتج':'Choose Product Options';
+    document.getElementById('saverVariantSubtitle').textContent=ar()?'اختر قبل الإضافة إلى السلة':'Choose before adding to your bag';
+    document.getElementById('saverVariantSizeLabel').textContent=ar()?'اختر المقاس':'Choose Size';
+    document.getElementById('saverVariantColorLabel').textContent=ar()?'اختر اللون':'Choose Color';
+    document.querySelector('#saverVariantAddBtn span').textContent=ar()?'أضف إلى السلة':'Add to Bag';
+
+    const title=ar()?product.nameAr:product.nameEn;
+    document.getElementById('saverVariantProduct').innerHTML=
+      `<img src="${product.images?.[0]||''}" alt=""><div><strong>${title}</strong><small>${product.sku}</small></div>`;
+
+    const sizeSection=document.getElementById('saverVariantSizeSection');
+    sizeSection.style.display=sizes.length?'block':'none';
+    document.getElementById('saverVariantSizes').innerHTML=sizes.map(v=>
+      `<button type="button" class="saver-variant-choice" data-value="${v.replace(/"/g,'&quot;')}" onclick="saverPickSize(this)">${typeof window.saverDetailValue==='function'?window.saverDetailValue(v):v}</button>`
+    ).join('');
+
+    const colorSection=document.getElementById('saverVariantColorSection');
+    colorSection.style.display=colors.length?'block':'none';
+    document.getElementById('saverVariantColors').innerHTML=colors.map(v=>
+      `<button type="button" class="saver-variant-choice" data-value="${v.replace(/"/g,'&quot;')}" onclick="saverPickColor(this)">${colorDisplay(v)}</button>`
+    ).join('');
+
+    if(!sizes.length)pickerSize="Standard";
+    if(!colors.length)pickerColor="Default";
+    updatePickerAvailability();
+    overlay.classList.add('open');
+    document.body.style.overflow='hidden';
+  };
+
+  window.saverPickSize=function(btn){
+    pickerSize=btn.dataset.value;
+    document.querySelectorAll('#saverVariantSizes .saver-variant-choice').forEach(x=>x.classList.toggle('active',x===btn));
+    updatePickerAvailability();
+  };
+  window.saverPickColor=function(btn){
+    pickerColor=btn.dataset.value;
+    document.querySelectorAll('#saverVariantColors .saver-variant-choice').forEach(x=>x.classList.toggle('active',x===btn));
+    updatePickerAvailability();
+  };
+  window.saverVariantQty=function(step){
+    const max=Math.max(1,selectedVariantQty()||1);
+    pickerQty=Math.max(1,Math.min(max,pickerQty+Number(step||0)));
+    document.getElementById('saverVariantQtyValue').textContent=pickerQty;
+  };
+  window.saverCloseVariantPicker=function(event){
+    if(event&&event.target.id!=='saverVariantOverlay')return;
+    document.getElementById('saverVariantOverlay')?.classList.remove('open');
+    document.body.style.overflow='';
+  };
+  window.saverConfirmVariantAdd=function(){
+    if(!pickerProduct)return;
+    const needSize=realSizes(pickerProduct).length>0;
+    const needColor=realColors(pickerProduct).length>0;
+    if((needSize&&!pickerSize)||(needColor&&!pickerColor))return;
+
+    const max=selectedVariantQty();
+    const existing=shoppingCart.find(x=>
+      x.product.id===pickerProduct.id &&
+      (x.size||'Standard')===(pickerSize||'Standard') &&
+      (x.color||'Default')===(pickerColor||'Default')
+    );
+    const already=existing?Number(existing.quantity||0):0;
+    if(max>0 && already+pickerQty>max){
+      const e=document.getElementById('saverVariantError');
+      e.textContent=ar()
+        ? `لا يمكن إضافة أكثر من ${max} من هذا الخيار.`
+        : `You cannot add more than ${max} of this option.`;
+      e.style.display='block';
+      return;
+    }
+
+    if(existing)existing.quantity+=pickerQty;
+    else shoppingCart.push({
+      product:pickerProduct,
+      quantity:pickerQty,
+      size:pickerSize||'Standard',
+      color:pickerColor||'Default'
+    });
+
+    refreshCartDisplayEngine();
+    if(typeof animateProductToCart==='function')animateProductToCart(pickerProduct,pickerSourceButton);
+    saverCloseVariantPicker();
+  };
+
+  /* Replace the old add-to-bag behavior:
+     - products with several size/color options open the picker
+     - simple products keep the current one-click add behavior */
+  const originalPush=window.pushToBagAction || (typeof pushToBagAction==='function'?pushToBagAction:null);
+  window.pushToBagAction=function(productId,isFromDetailsPage,sourceButton){
+    const product=productsDatabase.find(p=>p.id===productId);
+    if(product && needsPicker(product)){
+      saverOpenVariantPicker(productId,sourceButton);
+      return;
+    }
+    if(originalPush)return originalPush(productId,isFromDetailsPage,sourceButton);
+  };
+  try{pushToBagAction=window.pushToBagAction}catch(e){}
+
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')saverCloseVariantPicker()});
+})();
+</script>
+
 </body>
 </html>
