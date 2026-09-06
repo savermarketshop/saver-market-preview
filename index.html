@@ -964,7 +964,9 @@
         .main-img-box img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center center;
+            background: var(--white);
             transition: transform 0.5s ease;
         }
 
@@ -1408,7 +1410,7 @@ opacity:1;
             background:white; color:var(--charcoal); cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.12); }
         html[dir="rtl"] .quick-view-close { right:auto; left:14px; }
         .quick-view-grid { display:grid; grid-template-columns:1.05fr 1fr; gap:34px; align-items:start; }
-        .quick-main-image { width:100%; height:510px; object-fit:cover; border-radius:22px; background:var(--sage-light); }
+        .quick-main-image { width:100%; height:510px; object-fit:contain; object-position:center; border-radius:22px; background:var(--white); }
         .quick-thumbs { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:10px; }
         .quick-thumb { height:72px; width:100%; object-fit:cover; border-radius:10px; cursor:pointer; border:2px solid transparent; }
         .quick-thumb.active { border-color:var(--gold); }
@@ -3234,7 +3236,9 @@ html[dir="rtl"] .mobile-home-product { text-align:right; }
     inset:0 !important;
     width:100% !important;
     height:100% !important;
-    object-fit:cover !important;
+    object-fit:contain !important;
+    object-position:center center !important;
+    background:var(--white) !important;
     z-index:2;
     pointer-events:none;
 }
@@ -4189,6 +4193,10 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
       The English value remains the canonical value used for cart/filter/order storage.
     */
     const SAVER_COLOR_EXACT_AR = {
+        "no specific color":"لا يوجد لون محدد","no specific colour":"لا يوجد لون محدد",
+        "no color":"لا يوجد لون محدد","no colour":"لا يوجد لون محدد",
+        "only colors":"ألوان فقط","only colours":"ألوان فقط",
+        "colors":"ألوان","colours":"ألوان","default":"افتراضي",
         "black":"أسود","white":"أبيض","red":"أحمر","green":"أخضر","blue":"أزرق",
         "yellow":"أصفر","orange":"برتقالي","pink":"وردي","purple":"بنفسجي","violet":"بنفسجي",
         "brown":"بني","grey":"رمادي","gray":"رمادي","silver":"فضي","gold":"ذهبي",
@@ -4296,7 +4304,9 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
         if (currentLanguage !== "ar") return original;
 
         if (product && Array.isArray(product.colors) && Array.isArray(product.colorsAr)) {
-            const index = product.colors.findIndex(c => saverNormalizeColorText(c) === original);
+            const index = product.colors.findIndex(c =>
+                saverNormalizeColorText(c).toLowerCase() === original.toLowerCase()
+            );
             const manual = index >= 0 ? saverNormalizeColorText(product.colorsAr[index]) : "";
             if (manual) return manual;
         }
@@ -5994,9 +6004,18 @@ aboutSlides[current].classList.add("active");
         fillSelect('filterSize',new Set(productsDatabase.flatMap(p=>p.sizes||[])),'All Sizes');
         fillSelect('filterColor',new Set(productsDatabase.flatMap(p=>p.colors||[])),'All Colors');
         fillSelect('filterCollection',new Set(productsDatabase.map(p=>p.collection)),'All Collections');
+        if(typeof window.refreshFilterLanguage==='function') {
+            setTimeout(window.refreshFilterLanguage,0);
+        }
     }
     const oldGenerate=window.generateCoreProductDatabases;
-    window.generateCoreProductDatabases=function(){ oldGenerate(); populateAdvancedFilters(); };
+    window.generateCoreProductDatabases=async function(){
+        await oldGenerate();
+        populateAdvancedFilters();
+        if(typeof window.refreshFilterLanguage==='function') {
+            window.refreshFilterLanguage();
+        }
+    };
 
     window.processFilters=function(){
         const q=(document.getElementById('catalogSearch')?.value||'').trim().toLowerCase();
@@ -6492,8 +6511,9 @@ aboutSlides[current].classList.add("active");
                 name: text.nameSort
             };
             Array.from(sort.options).forEach(option => {
-                if (map[option.value]) option.textContent = map[option.value];
+                option.textContent = map[option.value] || option.textContent || text.defaultSort;
             });
+            if (!sort.value || !map[sort.value]) sort.value = "default";
         }
 
         ["filterCategory", "filterBrand", "filterSize", "filterColor", "filterCollection"]
@@ -8341,12 +8361,29 @@ document.addEventListener("DOMContentLoaded", function () {
     }catch(err){authMessage(err.message,'error')}
   };
 
+
+  function saverOrderStatusLabel(status){
+    const raw=String(status||'pending').trim();
+    if(currentLanguage!=='ar') return raw;
+    const map={
+      pending:'قيد الانتظار',
+      confirmed:'تم التأكيد',
+      preparing:'قيد التجهيز',
+      processing:'قيد التجهيز',
+      shipped:'تم الشحن',
+      delivered:'تم التوصيل',
+      cancelled:'ملغي',
+      canceled:'ملغي'
+    };
+    return map[raw.toLowerCase()]||raw;
+  }
+
   async function loadOrders(){
     const root=document.getElementById('saverOrdersList'); if(!root||!currentUser())return;
     try{
       const orders=await rest(`orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,total_syp,created_at&order=created_at.desc`);
       if(!orders?.length){root.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'لا توجد طلبات بعد.':'No orders yet.'}</div>`;return}
-      root.innerHTML=orders.map(o=>`<button type="button" class="saver-order-row" onclick="saverShowOrderDetails(${Number(o.id)})" style="width:100%;text-align:inherit;cursor:pointer"><div><strong>${o.order_number}</strong><small>${new Date(o.created_at).toLocaleDateString()} · ${formatPrice(Number(o.total_syp||0))}</small></div><span class="saver-order-status">${String(o.status||'pending')}</span></button>`).join('');
+      root.innerHTML=orders.map(o=>`<button type="button" class="saver-order-row" onclick="saverShowOrderDetails(${Number(o.id)})" style="width:100%;text-align:inherit;cursor:pointer"><div><strong>${o.order_number}</strong><small>${new Date(o.created_at).toLocaleDateString()} · ${formatPrice(Number(o.total_syp||0))}</small></div><span class="saver-order-status">${saverOrderStatusLabel(o.status)}</span></button>`).join('');
     }catch(e){root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`}
   }
 
