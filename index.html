@@ -6194,7 +6194,7 @@ aboutSlides[current].classList.add("active");
         document.querySelectorAll('.mobile-facebook').forEach(a=>{ if(SETTINGS.facebook) a.href=SETTINGS.facebook; });
         document.querySelectorAll('.mobile-whatsapp').forEach(a=>{ if(SETTINGS.whatsappNumber) a.href='https://wa.me/'+SETTINGS.whatsappNumber.replace(/\D/g,''); });
     });
-    window.addEventListener('popstate', openProductFromUrl);
+    // Product-page browser Back navigation is handled by saverProductHistory below.
     window.addEventListener('hashchange', openProductFromUrl);
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeQuickView();});
 })();
@@ -8928,13 +8928,21 @@ document.addEventListener("DOMContentLoaded", function () {
   function apiHeaders(token=''){return {apikey:SAVER_SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token||SAVER_SUPABASE_PUBLISHABLE_KEY}`,'Content-Type':'application/json'}}
   function customerToken(){
     try{
-      const raw=localStorage.getItem('saverMarketSupabaseSession');
+      /* Customer accounts already store the valid Supabase session here. */
+      const raw=localStorage.getItem('saverMarketCustomerSession');
       const parsed=raw?JSON.parse(raw):null;
       return parsed?.access_token||'';
     }catch(e){return ''}
   }
 
   async function reviewRest(path,options={}){
+    /* Reuse the existing customer-account REST helper whenever available.
+       This guarantees reviews use the same authenticated Supabase JWT as
+       My Account, cart and orders. */
+    if(typeof window.saverCustomerRest==='function'){
+      return await window.saverCustomerRest(path,options);
+    }
+
     const t=customerToken();
     const r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,{
       ...options,
@@ -9307,6 +9315,71 @@ document.addEventListener("DOMContentLoaded", function () {
   try{pushToBagAction=window.pushToBagAction}catch(e){}
 
   document.addEventListener('keydown',e=>{if(e.key==='Escape')saverCloseVariantPicker()});
+})();
+</script>
+
+
+<script id="saver-product-history-fix">
+(function(){
+  "use strict";
+
+  let handlingHistory = false;
+
+  function ensureBaseHistoryState(){
+    const state = history.state || {};
+    if(!state.saverView){
+      history.replaceState(
+        Object.assign({}, state, {saverView:'home', saverMarket:true}),
+        '',
+        location.href
+      );
+    }
+  }
+
+  ensureBaseHistoryState();
+
+  const originalDetailsForHistory = window.displayDedicatedProductDetailsPage;
+  if(typeof originalDetailsForHistory === 'function' && !originalDetailsForHistory.__saverHistoryFixed){
+    const historyAwareDetails = function(productId){
+      if(!handlingHistory){
+        const current = history.state || {};
+        const sameProduct =
+          current.saverView === 'details' &&
+          String(current.productId || '') === String(productId);
+
+        if(!sameProduct){
+          history.pushState(
+            {saverView:'details', productId:String(productId), saverMarket:true},
+            '',
+            location.href
+          );
+        }
+      }
+      return originalDetailsForHistory.apply(this, arguments);
+    };
+    historyAwareDetails.__saverHistoryFixed = true;
+    window.displayDedicatedProductDetailsPage = historyAwareDetails;
+    try{ displayDedicatedProductDetailsPage = historyAwareDetails; }catch(e){}
+  }
+
+  window.addEventListener('popstate', function(event){
+    handlingHistory = true;
+    try{
+      const state = event.state || {};
+
+      if(state.saverView === 'details' && state.productId){
+        window.displayDedicatedProductDetailsPage?.(state.productId);
+      }else{
+        /* When the customer leaves the first product-detail history entry,
+           keep them inside Saver Market instead of allowing the browser/app
+           to close because there was no internal page history. */
+        window.switchView?.('home');
+        window.currentDedicatedProductId = null;
+      }
+    } finally {
+      setTimeout(()=>{ handlingHistory = false; }, 0);
+    }
+  });
 })();
 </script>
 
