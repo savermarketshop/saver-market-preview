@@ -3858,7 +3858,7 @@ html[dir="rtl"] .saver-gallery-controls {
    DESKTOP-ONLY FIT + HOMEPAGE RAIL CONTROLS
    Mobile/touch layouts are intentionally untouched.
    ========================================================= */
-@media (min-width: 769px) and (pointer: fine) {
+@media (min-width: 769px) {
 
     /* 1) ABOUT: stretch each desktop artwork exactly to its slideshow frame. */
     #aboutSlideshow > picture.about-slide {
@@ -4080,6 +4080,26 @@ html[dir="rtl"] .saver-star-picker{justify-content:flex-end}
     line-height:1.9;
     font-size:.96rem;
     color:#4f5650;
+}
+
+
+/* FIX: quantity selector must remain visible on the full product page on phones */
+@media (max-width: 768px) {
+    #view-details .details-info .qty-select-wrapper {
+        display: flex !important;
+        width: auto !important;
+        min-width: 112px;
+        height: 44px;
+        background: var(--white);
+    }
+    #view-details .details-info .qty-btn {
+        display: flex !important;
+        width: 36px;
+    }
+    #view-details .details-info .qty-val {
+        display: block !important;
+        width: 40px;
+    }
 }
 
 </style>
@@ -4810,12 +4830,6 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                    data-ar="ترسل الأسئلة والشكاوى وطلبات الإرجاع عبر واتساب Saver Market الرسمي أو قنوات التواصل، مع معلومات الطلب والصور الداعمة عند الحاجة.">
                    Contact Saver Market through the official channels.
                 </p>
-
-                <div class="policy-note"
-                     data-en="Draft operating template: this text should be reviewed locally before the final public launch."
-                     data-ar="مسودة تشغيلية: يجب مراجعة هذه النصوص محلياً قبل الإطلاق العام النهائي.">
-                     Draft operating template: review locally before launch.
-                </div>
             </div>
         </div>
     </section>
@@ -4869,12 +4883,6 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                    data-ar="يرجى إرسال رقم الطلب واسم العميل وسبب الإرجاع وصور واضحة للمنتج عبر واتساب Saver Market الرسمي. لا ترسل المنتج قبل تأكيد تعليمات الإرجاع.">
                    Contact us before returning an item.
                 </p>
-
-                <div class="policy-note"
-                     data-en="This is a standard draft policy and may be adjusted before launch."
-                     data-ar="هذه مسودة سياسة قياسية ويمكن تعديلها قبل الإطلاق.">
-                     This is a standard draft policy.
-                </div>
             </div>
         </div>
     </section>
@@ -5721,7 +5729,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                             ${materialStr ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'الخامة' : 'Material'}</strong>${materialStr}</div>` : ''}
                             ${product.dimensions ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'الأبعاد' : 'Dimensions'}</strong>${product.dimensions}</div>` : ''}
                             ${product.weight ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'الوزن' : 'Weight'}</strong>${product.weight}</div>` : ''}
-                            ${product.stockQty !== null ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'المخزون' : 'Stock'}</strong>${currentLanguage === 'ar' ? `متوفر ${product.stockQty}` : `${product.stockQty} available`}</div>` : ''}
+                            <div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'التوفر' : 'Availability'}</strong>${saverDetailValue(product.availability)}</div>
                         </div>
 
                         ${notesStr ? `<p style="color:var(--gold-dark); font-size:0.88rem; margin-bottom:18px;">* ${notesStr}</p>` : ''}
@@ -6149,7 +6157,7 @@ aboutSlides[current].classList.add("active");
     window.openQuickView=function(id){
         const p=productsDatabase.find(x=>x.id===id);if(!p)return;recordRecentlyViewed(p);
         p.quickIndex=p.quickIndex||0; const title=currentLanguage==='ar'?p.nameAr:p.nameEn, desc=currentLanguage==='ar'?p.descAr:p.descEn;
-        document.getElementById('quickViewContent').innerHTML=`<div class="quick-view-grid"><div><img id="quickMainImg" class="quick-main-image" src="${p.images[p.quickIndex]}" alt=""><div class="quick-thumbs">${p.images.map((img,i)=>`<img class="quick-thumb ${i===p.quickIndex?'active':''}" src="${img}" onclick="setQuickImage('${p.id}',${i})">`).join('')}</div></div><div>${p.brand?`<div class="product-brand">${p.brand}</div>`:''}<h2 class="section-title" style="text-align:left">${title}</h2><div class="breadcrumb"><button onclick="closeQuickView();switchView('products')">${currentLanguage==='ar'?'المنتجات':'Products'}</button><span>›</span><span>${saverCategoryLabel(p.category)}</span><span>›</span><span>${p.sku}</span></div><div class="price-group"><span class="details-price">${formatPrice(p.price)}</span>${p.oldPrice?`<span class="old-price">${formatPrice(p.oldPrice)}</span>`:''}</div><p style="color:#555;margin:16px 0">${desc}</p><div class="details-extra-grid">${p.materialEn?`<div class="details-extra-item"><strong>${currentLanguage==='ar'?'الخامة':'Material'}</strong>${currentLanguage==='ar'?(p.materialAr||detailValue(p.materialEn)):p.materialEn}</div>`:''}${p.stockQty!==null?`<div class="details-extra-item"><strong>${currentLanguage==='ar'?'المخزون':'Stock'}</strong>${currentLanguage==='ar'?`متوفر ${p.stockQty}`:p.stockQty}</div>`:''}</div>${p.stockQty!==null?`<div><small>${currentLanguage==='ar'?`متبقي ${p.stockQty}`:`${p.stockQty} left`}</small><div class="stock-bar"><span style="width:${Math.min(100,Math.max(8,p.stockQty*5))}%"></span></div></div>`:''}<div class="price-row" style="justify-content:flex-start;gap:12px;margin-top:24px"><button class="btn-premium" onclick="pushToBagAction('${p.id}',false,this)"><i class="fas fa-shopping-bag"></i>${translations[currentLanguage].add_cart}</button><button class="wishlist-filter-btn ${wishlistItems.has(p.sku.replace('#',''))?'active':''}" onclick="toggleWishlistState('${p.id}',this,event)"><i class="fas fa-heart"></i></button></div><div class="share-row"><button class="share-btn" onclick="shareProduct('whatsapp','${p.id}')"><i class="fab fa-whatsapp"></i> ${currentLanguage === 'ar' ? 'واتساب' : 'WhatsApp'}</button><button class="share-btn" onclick="shareProduct('facebook','${p.id}')"><i class="fab fa-facebook"></i> ${currentLanguage === 'ar' ? 'فيسبوك' : 'Facebook'}</button><button class="share-btn" onclick="shareProduct('copy','${p.id}')"><i class="fas fa-link"></i> ${currentLanguage === 'ar' ? 'نسخ الرابط' : 'Copy'}</button></div></div></div>`;
+        document.getElementById('quickViewContent').innerHTML=`<div class="quick-view-grid"><div><img id="quickMainImg" class="quick-main-image" src="${p.images[p.quickIndex]}" alt=""><div class="quick-thumbs">${p.images.map((img,i)=>`<img class="quick-thumb ${i===p.quickIndex?'active':''}" src="${img}" onclick="setQuickImage('${p.id}',${i})">`).join('')}</div></div><div>${p.brand?`<div class="product-brand">${p.brand}</div>`:''}<h2 class="section-title" style="text-align:left">${title}</h2><div class="breadcrumb"><button onclick="closeQuickView();switchView('products')">${currentLanguage==='ar'?'المنتجات':'Products'}</button><span>›</span><span>${saverCategoryLabel(p.category)}</span><span>›</span><span>${p.sku}</span></div><div class="price-group"><span class="details-price">${formatPrice(p.price)}</span>${p.oldPrice?`<span class="old-price">${formatPrice(p.oldPrice)}</span>`:''}</div><p style="color:#555;margin:16px 0">${desc}</p><div class="details-extra-grid">${p.materialEn?`<div class="details-extra-item"><strong>${currentLanguage==='ar'?'الخامة':'Material'}</strong>${currentLanguage==='ar'?(p.materialAr||detailValue(p.materialEn)):p.materialEn}</div>`:''}<div class="details-extra-item"><strong>${currentLanguage==='ar'?'التوفر':'Availability'}</strong>${saverDetailValue(p.availability)}</div></div><div class="price-row" style="justify-content:flex-start;gap:12px;margin-top:24px"><button class="btn-premium" onclick="pushToBagAction('${p.id}',false,this)"><i class="fas fa-shopping-bag"></i>${translations[currentLanguage].add_cart}</button><button class="wishlist-filter-btn ${wishlistItems.has(p.sku.replace('#',''))?'active':''}" onclick="toggleWishlistState('${p.id}',this,event)"><i class="fas fa-heart"></i></button></div><div class="share-row"><button class="share-btn" onclick="shareProduct('whatsapp','${p.id}')"><i class="fab fa-whatsapp"></i> ${currentLanguage === 'ar' ? 'واتساب' : 'WhatsApp'}</button><button class="share-btn" onclick="shareProduct('facebook','${p.id}')"><i class="fab fa-facebook"></i> ${currentLanguage === 'ar' ? 'فيسبوك' : 'Facebook'}</button><button class="share-btn" onclick="shareProduct('copy','${p.id}')"><i class="fas fa-link"></i> ${currentLanguage === 'ar' ? 'نسخ الرابط' : 'Copy'}</button></div></div></div>`;
         document.getElementById('quickViewOverlay').classList.add('open');document.body.style.overflow='hidden';
     };
     window.setQuickImage=function(id,i){const p=productsDatabase.find(x=>x.id===id);if(!p)return;p.quickIndex=i;document.getElementById('quickMainImg').src=p.images[i];document.querySelectorAll('.quick-thumb').forEach((x,n)=>x.classList.toggle('active',n===i));};
@@ -8164,7 +8172,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "use strict";
 
     function installDesktopHomeRailControls() {
-        if (!window.matchMedia('(min-width: 769px) and (pointer: fine)').matches) return;
+        if (!window.matchMedia('(min-width: 769px)').matches) return;
 
         const rail = document.getElementById('mobileHomeProducts');
         const wrap = rail && rail.closest('.home-product-rail-wrap');
@@ -8183,6 +8191,10 @@ document.addEventListener("DOMContentLoaded", function () {
         right.setAttribute('role', 'button');
         left.removeAttribute('aria-hidden');
         right.removeAttribute('aria-hidden');
+        left.tabIndex = 0;
+        right.tabIndex = 0;
+        left.style.pointerEvents = 'auto';
+        right.style.pointerEvents = 'auto';
 
         const amount = () => Math.max(320, rail.clientWidth * 0.78);
 
@@ -8194,12 +8206,28 @@ document.addEventListener("DOMContentLoaded", function () {
             rail.scrollBy({ left: amount(), behavior: 'smooth' });
         });
 
+        left.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                rail.scrollBy({ left: -amount(), behavior: 'smooth' });
+            }
+        });
+        right.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                rail.scrollBy({ left: amount(), behavior: 'smooth' });
+            }
+        });
+
         function refreshButtons() {
             const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
-            const x = rail.scrollLeft;
+            const x = Math.abs(rail.scrollLeft);
 
-            left.classList.toggle('saver-rail-disabled', x <= 4);
-            right.classList.toggle('saver-rail-disabled', x >= max - 4);
+            /* Keep both arrows clickable whenever the rail can actually scroll.
+               This also avoids browser-specific RTL scrollLeft behavior. */
+            const canScroll = max > 6;
+            left.classList.toggle('saver-rail-disabled', !canScroll);
+            right.classList.toggle('saver-rail-disabled', !canScroll);
         }
 
         rail.addEventListener('scroll', refreshButtons, { passive: true });
@@ -8278,7 +8306,7 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 </script>
 
-\n<script id="saver-customer-upgrade-script">
+<script id="saver-customer-upgrade-script">
 (function(){
   "use strict";
 
@@ -8614,7 +8642,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.addEventListener('load',()=>{initializeCustomerFeatures().catch(console.warn)});
 })();
-</script>\n
+</script>
 
 <script>
 (function(){
@@ -8896,8 +8924,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.saverStockAlert=function(product,available){
     alert(currentLanguage==='ar'
-      ? (available<=0?'هذا المنتج غير متوفر حالياً.':`الكمية المتوفرة فقط ${available}.`)
-      : (available<=0?'This product is currently out of stock.':`Only ${available} item(s) are available.`));
+      ? (available<=0?'هذا المنتج غير متوفر حالياً.':'الكمية المطلوبة غير متوفرة. يرجى تقليل الكمية.')
+      : (available<=0?'This product is currently out of stock.':'The requested quantity is not available. Please reduce the quantity.'));
   };
 
   /* Simple products: replace old one-click add with strict stock checking. */
@@ -8937,8 +8965,8 @@ document.addEventListener("DOMContentLoaded", function () {
           event?.preventDefault?.();
           const name=currentLanguage==='ar'?line.product.nameAr:line.product.nameEn;
           alert(currentLanguage==='ar'
-            ? `لا يمكن إكمال الطلب. الكمية المتوفرة من ${name} هي ${available} فقط.`
-            : `Cannot complete order. Only ${available} of ${name} are available.`);
+            ? `لا يمكن إكمال الطلب للمنتج ${name}. الكمية المطلوبة غير متوفرة، يرجى تقليلها.`
+            : `Cannot complete the order for ${name}. The requested quantity is not available; please reduce it.`);
           return;
         }
       }
@@ -9219,7 +9247,9 @@ document.addEventListener("DOMContentLoaded", function () {
         ? window.saverCartQuantityFor(pickerProduct.id,pickerSize||'Standard',pickerColor||'Default')
         : 0;
       const remaining=Math.max(0,qty-already);
-      note.textContent=ar()?`المتوفر للإضافة: ${remaining}`:`Available to add: ${remaining}`;
+      note.textContent=remaining>0
+        ? (ar()?'هذا الخيار متوفر.':'This option is available.')
+        : (ar()?'لا توجد كمية إضافية متاحة لهذا الخيار.':'No additional quantity is available for this option.');
       add.disabled=remaining<=0;
       if(pickerQty>remaining) pickerQty=Math.max(1,remaining);
     }
@@ -9300,8 +9330,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if(max<=0 || already+pickerQty>max){
       const e=document.getElementById('saverVariantError');
       e.textContent=ar()
-        ? `لا يمكن إضافة أكثر من ${max} من هذا الخيار.`
-        : `You cannot add more than ${max} of this option.`;
+        ? 'الكمية المطلوبة لهذا الخيار غير متوفرة. يرجى تقليل الكمية.'
+        : 'The requested quantity for this option is not available. Please reduce the quantity.';
       e.style.display='block';
       return;
     }
