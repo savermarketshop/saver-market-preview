@@ -86,6 +86,463 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 .review-actions{display:flex;gap:6px;flex-wrap:wrap}
 .review-text-cell{max-width:360px;white-space:normal}
 
+
+/* =========================================================
+   SAVER MARKET ADMIN — MOBILE APP REDESIGN
+   MOBILE ONLY. Desktop layout remains unchanged.
+   ========================================================= */
+@media (max-width: 768px) {
+  :root{
+    --admin-mobile-nav-h:72px;
+    --admin-mobile-header-h:62px;
+  }
+
+  html, body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+    background:#f6f8f4;
+  }
+
+  body{
+    padding-bottom:calc(var(--admin-mobile-nav-h) + env(safe-area-inset-bottom));
+  }
+
+  .admin-shell{
+    display:block !important;
+    min-height:100vh;
+  }
+
+  .sidebar{
+    display:none !important;
+  }
+
+  .main{
+    width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+
+  .topbar{
+    position:sticky !important;
+    top:0;
+    z-index:1200;
+    min-height:var(--admin-mobile-header-h);
+    padding:8px 12px !important;
+    background:rgba(248,250,246,.96) !important;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(31,74,43,.08);
+    box-shadow:0 4px 18px rgba(31,74,43,.06);
+  }
+
+  .topbar-left{
+    min-width:0;
+    gap:10px !important;
+  }
+
+  .topbar h1,
+  #pageTitle{
+    font-size:1.15rem !important;
+    line-height:1.2 !important;
+    margin:0 !important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .topbar .subtle{
+    display:none !important;
+  }
+
+  .topbar-right{
+    gap:8px !important;
+  }
+
+  .topbar .btn,
+  #logoutBtn{
+    min-height:38px !important;
+    padding:7px 11px !important;
+    border-radius:12px !important;
+    font-size:.75rem !important;
+  }
+
+  .content{
+    padding:14px 12px 24px !important;
+  }
+
+  .page{
+    padding:0 !important;
+  }
+
+  .card{
+    border-radius:16px !important;
+    padding:14px !important;
+    box-shadow:0 6px 18px rgba(31,74,43,.06) !important;
+  }
+
+  .toolbar{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    margin-bottom:12px !important;
+  }
+
+  .toolbar-left,
+  .toolbar-right{
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+
+  .search,
+  input,
+  select,
+  textarea{
+    width:100% !important;
+    min-height:44px;
+    border-radius:12px !important;
+    font-size:16px !important;
+  }
+
+  textarea{
+    min-height:110px;
+  }
+
+  .btn{
+    min-height:42px !important;
+    border-radius:12px !important;
+    font-size:.82rem !important;
+  }
+
+  .btn-primary{
+    background:#1f4a2b !important;
+  }
+
+  /* Dashboard */
+  #page-dashboard .grid,
+  .dashboard-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+  }
+
+  #page-dashboard .card,
+  .dashboard-card{
+    padding:14px !important;
+    border-radius:16px !important;
+  }
+
+  /* Product table -> cards */
+  #page-products .table-wrap{
+    overflow:visible !important;
+  }
+
+  #page-products table,
+  #page-products thead,
+  #page-products tbody,
+  #page-products th,
+  #page-products td,
+  #page-products tr{
+    display:block !important;
+    width:100% !important;
+  }
+
+  #page-products thead{
+    display:none !important;
+  }
+
+  #page-products tbody{
+    display:grid !important;
+    gap:10px !important;
+  }
+
+  #page-products tr{
+    position:relative;
+    background:#fff;
+    border:1px solid rgba(31,74,43,.08);
+    border-radius:16px;
+    padding:12px 12px 12px 104px;
+    min-height:96px;
+    box-shadow:0 5px 16px rgba(31,74,43,.05);
+  }
+
+  #page-products td{
+    border:0 !important;
+    padding:2px 0 !important;
+    font-size:.78rem !important;
+  }
+
+  #page-products td:first-child{
+    position:absolute;
+    left:12px;
+    top:12px;
+    width:80px !important;
+    height:72px;
+  }
+
+  #page-products td:first-child img{
+    width:80px !important;
+    height:72px !important;
+    object-fit:cover !important;
+    border-radius:12px !important;
+  }
+
+  #page-products td:last-child{
+    margin-top:8px;
+    display:flex !important;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  #page-products td:last-child .btn{
+    flex:1 1 110px;
+  }
+
+  /* Orders / Reviews / Customers -> cards */
+  #page-orders .table-wrap,
+  #page-reviews .table-wrap,
+  #page-customers .table-wrap{
+    overflow:visible !important;
+  }
+
+  #page-orders table,
+  #page-orders thead,
+  #page-orders tbody,
+  #page-orders th,
+  #page-orders td,
+  #page-orders tr,
+  #page-reviews table,
+  #page-reviews thead,
+  #page-reviews tbody,
+  #page-reviews th,
+  #page-reviews td,
+  #page-reviews tr,
+  #page-customers table,
+  #page-customers thead,
+  #page-customers tbody,
+  #page-customers th,
+  #page-customers td,
+  #page-customers tr{
+    display:block !important;
+    width:100% !important;
+  }
+
+  #page-orders thead,
+  #page-reviews thead,
+  #page-customers thead{
+    display:none !important;
+  }
+
+  #page-orders tbody,
+  #page-reviews tbody,
+  #page-customers tbody{
+    display:grid !important;
+    gap:10px !important;
+  }
+
+  #page-orders tr,
+  #page-reviews tr,
+  #page-customers tr{
+    background:#fff;
+    border:1px solid rgba(31,74,43,.08);
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 5px 16px rgba(31,74,43,.05);
+  }
+
+  #page-orders td,
+  #page-reviews td,
+  #page-customers td{
+    border:0 !important;
+    padding:4px 0 !important;
+    font-size:.79rem !important;
+  }
+
+  #page-orders td:last-child,
+  #page-reviews td:last-child,
+  #page-customers td:last-child{
+    margin-top:8px;
+  }
+
+  .review-photo-row img{
+    width:58px !important;
+    height:58px !important;
+    border-radius:10px !important;
+  }
+
+  /* Forms */
+  #productEditor,
+  #productForm,
+  .product-form,
+  .form-grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  .modal,
+  .modal-card,
+  .dialog,
+  .drawer{
+    width:calc(100vw - 20px) !important;
+    max-width:none !important;
+    max-height:calc(100vh - 20px) !important;
+    border-radius:18px !important;
+    padding:14px !important;
+  }
+
+  #page-media .media-grid,
+  .media-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:9px !important;
+  }
+
+  #page-settings .settings-grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  #page-settings .settings-card{
+    padding:14px !important;
+    border-radius:16px !important;
+  }
+
+  #page-settings .settings-card h3{
+    font-size:1rem !important;
+    margin-bottom:8px !important;
+  }
+
+  /* Bottom app nav */
+  #saverAdminMobileNav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:1500;
+    height:calc(var(--admin-mobile-nav-h) + env(safe-area-inset-bottom));
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    align-items:center;
+    background:rgba(255,255,255,.98);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border-top:1px solid rgba(31,74,43,.10);
+    box-shadow:0 -8px 24px rgba(31,74,43,.08);
+  }
+
+  #saverAdminMobileNav button{
+    background:transparent;
+    color:#657064;
+    border:0;
+    min-height:56px;
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    font-size:.66rem;
+    font-weight:700;
+  }
+
+  #saverAdminMobileNav button i{
+    font-size:1rem;
+  }
+
+  #saverAdminMobileNav button.active{
+    color:#1f4a2b;
+    background:#edf5eb;
+  }
+
+  /* More bottom sheet */
+  #saverAdminMoreSheet{
+    position:fixed;
+    inset:0;
+    z-index:1700;
+    display:none;
+    align-items:flex-end;
+    background:rgba(22,34,24,.42);
+  }
+
+  #saverAdminMoreSheet.open{
+    display:flex;
+  }
+
+  #saverAdminMorePanel{
+    width:100%;
+    max-height:82vh;
+    overflow:auto;
+    background:#f8faf6;
+    border-radius:24px 24px 0 0;
+    padding:14px 12px calc(18px + env(safe-area-inset-bottom));
+    box-shadow:0 -16px 38px rgba(31,74,43,.18);
+  }
+
+  .saver-admin-more-handle{
+    width:44px;
+    height:4px;
+    border-radius:999px;
+    background:#c7cec5;
+    margin:0 auto 12px;
+  }
+
+  .saver-admin-more-title{
+    font-size:1.15rem;
+    font-weight:800;
+    margin:4px 4px 12px;
+  }
+
+  .saver-admin-more-list{
+    display:grid;
+    gap:8px;
+  }
+
+  .saver-admin-more-item{
+    width:100%;
+    min-height:54px;
+    border:1px solid rgba(31,74,43,.08);
+    border-radius:14px;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    text-align:left;
+    color:#263229;
+  }
+
+  .saver-admin-more-item i{
+    width:28px;
+    height:28px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#1f4a2b;
+    background:#edf5eb;
+  }
+
+  .saver-admin-more-item span{
+    font-weight:700;
+    font-size:.84rem;
+  }
+
+  .saver-admin-more-item small{
+    display:block;
+    color:#7c857d;
+    font-size:.68rem;
+    margin-top:2px;
+  }
+}
+
+@media (min-width: 769px){
+  #saverAdminMobileNav,
+  #saverAdminMoreSheet{
+    display:none !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1153,5 +1610,124 @@ async function saveSiteSettings(){
  if(error){showMsg(msg,'Error: '+error.message);return} showMsg(msg,'Site settings saved. The public website will use them automatically.','success');
 }
 </script>
+
+<nav id="saverAdminMobileNav" aria-label="Admin mobile navigation">
+  <button type="button" data-admin-mobile-page="dashboard" class="active">
+    <i class="fas fa-house"></i><span>Dashboard</span>
+  </button>
+  <button type="button" data-admin-mobile-page="products">
+    <i class="fas fa-box"></i><span>Products</span>
+  </button>
+  <button type="button" data-admin-mobile-page="orders">
+    <i class="fas fa-cart-shopping"></i><span>Orders</span>
+  </button>
+  <button type="button" id="saverAdminMoreBtn">
+    <i class="fas fa-ellipsis"></i><span>More</span>
+  </button>
+</nav>
+
+<div id="saverAdminMoreSheet" aria-hidden="true">
+  <div id="saverAdminMorePanel">
+    <div class="saver-admin-more-handle"></div>
+    <div class="saver-admin-more-title">More</div>
+    <div class="saver-admin-more-list">
+      <button class="saver-admin-more-item" type="button" data-admin-mobile-page="bulk">
+        <i class="fas fa-file-import"></i>
+        <div><span>Bulk Import</span><small>Import products from Excel</small></div>
+      </button>
+      <button class="saver-admin-more-item" type="button" data-admin-mobile-page="reviews">
+        <i class="fas fa-star"></i>
+        <div><span>Reviews</span><small>Approve or reject customer reviews</small></div>
+      </button>
+      <button class="saver-admin-more-item" type="button" data-admin-mobile-page="customers">
+        <i class="fas fa-users"></i>
+        <div><span>Customers</span><small>View registered customers</small></div>
+      </button>
+      <button class="saver-admin-more-item" type="button" data-admin-mobile-page="media">
+        <i class="fas fa-images"></i>
+        <div><span>Media Manager</span><small>Manage site images and banners</small></div>
+      </button>
+      <button class="saver-admin-more-item" type="button" data-admin-mobile-page="settings">
+        <i class="fas fa-gear"></i>
+        <div><span>Site Settings</span><small>Policies, contact details and banners</small></div>
+      </button>
+      <button class="saver-admin-more-item" type="button" id="saverAdminMobileLogout">
+        <i class="fas fa-right-from-bracket"></i>
+        <div><span>Log Out</span><small>Sign out of the admin panel</small></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script id="saver-admin-mobile-app-script">
+(function(){
+  "use strict";
+
+  function isMobile(){ return window.matchMedia('(max-width:768px)').matches; }
+
+  function findDesktopNavButton(page){
+    return document.querySelector(`.nav-btn[data-page="${page}"]`);
+  }
+
+  function setMobileActive(page){
+    document.querySelectorAll('#saverAdminMobileNav [data-admin-mobile-page]').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.adminMobilePage===page);
+    });
+    document.getElementById('saverAdminMoreBtn')?.classList.toggle(
+      'active',
+      !['dashboard','products','orders'].includes(page)
+    );
+  }
+
+  function closeMore(){
+    const sheet=document.getElementById('saverAdminMoreSheet');
+    if(!sheet)return;
+    sheet.classList.remove('open');
+    sheet.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+  }
+
+  function openMore(){
+    const sheet=document.getElementById('saverAdminMoreSheet');
+    if(!sheet)return;
+    sheet.classList.add('open');
+    sheet.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+  }
+
+  function go(page){
+    const btn=findDesktopNavButton(page);
+    if(btn) btn.click();
+    setMobileActive(page);
+    closeMore();
+    if(isMobile()) window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  document.querySelectorAll('#saverAdminMobileNav [data-admin-mobile-page], #saverAdminMoreSheet [data-admin-mobile-page]').forEach(btn=>{
+    btn.addEventListener('click',()=>go(btn.dataset.adminMobilePage));
+  });
+
+  document.getElementById('saverAdminMoreBtn')?.addEventListener('click',openMore);
+
+  document.getElementById('saverAdminMoreSheet')?.addEventListener('click',e=>{
+    if(e.target.id==='saverAdminMoreSheet') closeMore();
+  });
+
+  document.getElementById('saverAdminMobileLogout')?.addEventListener('click',()=>{
+    closeMore();
+    document.getElementById('logoutBtn')?.click();
+  });
+
+  document.querySelectorAll('.nav-btn[data-page]').forEach(btn=>{
+    btn.addEventListener('click',()=>setMobileActive(btn.dataset.page));
+  });
+
+  window.addEventListener('resize',()=>{
+    if(!isMobile()) closeMore();
+  });
+})();
+</script>
+
 </body>
 </html>
