@@ -4073,6 +4073,15 @@ html[dir="rtl"] .saver-star-picker{justify-content:flex-end}
 .saver-review-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:7000;display:none;align-items:center;justify-content:center;padding:20px}
 .saver-review-modal.open{display:flex}.saver-review-modal img{max-width:95vw;max-height:90vh;object-fit:contain}
 
+
+/* Admin-managed legal policy text */
+.policy-managed-text{
+    white-space:pre-wrap;
+    line-height:1.9;
+    font-size:.96rem;
+    color:#4f5650;
+}
+
 </style>
 
 <style id="saver-customer-upgrade-styles">
@@ -4753,7 +4762,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 <div class="section-divider"></div>
             </div>
 
-            <div class="policy-card">
+            <div class="policy-card" id="termsPolicyCard">
                 <p class="policy-intro"
                    data-en="These terms explain how Saver Market orders are handled. By placing an order, the customer agrees to the terms shown below."
                    data-ar="توضح هذه الشروط آلية التعامل مع طلبات Saver Market. عند تقديم الطلب، يوافق العميل على الشروط المبينة أدناه.">
@@ -4818,7 +4827,7 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                 <div class="section-divider"></div>
             </div>
 
-            <div class="policy-card">
+            <div class="policy-card" id="returnsPolicyCard">
                 <p class="policy-intro"
                    data-en="We want customers to receive the correct product in good condition. The following standard policy applies unless a product page clearly states a different condition."
                    data-ar="نحرص على استلام العميل للمنتج الصحيح وبحالة جيدة. تطبق السياسة القياسية التالية ما لم توضح صفحة المنتج شرطاً مختلفاً.">
@@ -4882,18 +4891,18 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
             <div>
                 <h4 class="footer-title" data-en="Quick Navigation" data-ar="روابط سريعة">Quick Navigation</h4>
                 <div class="footer-links">
-                    <a href="#" onclick="switchView('home')" data-en="Home Page" data-ar="الصفحة الرئيسية">Home Page</a>
-                    <a href="#" onclick="openAllProducts()" data-en="All Products" data-ar="جميع المنتجات">All Products</a>
-                    <a href="#" onclick="switchView('backorder')" data-en="Backorders" data-ar="الطلبات المسبقة">Backorders</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('home'); return false;" data-en="Home Page" data-ar="الصفحة الرئيسية">Home Page</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); openAllProducts(); return false;" data-en="All Products" data-ar="جميع المنتجات">All Products</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('backorder'); return false;" data-en="Backorders" data-ar="الطلبات المسبقة">Backorders</a>
                 </div>
             </div>
             <div>
                 <h4 class="footer-title" data-en="Legal & Info" data-ar="معلومات وقانونية">Legal & Info</h4>
                 <div class="footer-links">
-                    <a href="#" onclick="switchView('about')" data-en="About Brand" data-ar="عن العلامة التجارية">About Brand</a>
-                    <a href="#" onclick="switchView('contact')" data-en="Contact Hub" data-ar="مركز الاتصال">Contact Hub</a>
-                    <a href="#" onclick="switchView('terms')" data-en="Terms & Conditions" data-ar="الشروط والأحكام">Terms & Conditions</a>
-                    <a href="#" onclick="switchView('returns')" data-en="Return & Exchange Policy" data-ar="سياسة الإرجاع والاستبدال">Return & Exchange Policy</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('about'); return false;" data-en="About Brand" data-ar="عن العلامة التجارية">About Brand</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('contact'); return false;" data-en="Contact Hub" data-ar="مركز الاتصال">Contact Hub</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('terms'); return false;" data-en="Terms & Conditions" data-ar="الشروط والأحكام">Terms & Conditions</a>
+                    <a href="javascript:void(0)" onclick="event.preventDefault(); switchView('returns'); return false;" data-en="Return & Exchange Policy" data-ar="سياسة الإرجاع والاستبدال">Return & Exchange Policy</a>
                 </div>
             </div>
             <div>
@@ -8781,6 +8790,23 @@ document.addEventListener("DOMContentLoaded", function () {
   try{
    const r=await fetch(U+'/rest/v1/site_settings?id=eq.1&select=*',{headers:{apikey:K,Authorization:'Bearer '+K}}); if(!r.ok)return; const rows=await r.json(); const s=rows[0]; if(!s)return;
    window.SAVER_MARKET_SETTINGS=Object.assign({},window.SAVER_MARKET_SETTINGS||{},{whatsappNumber:s.whatsapp_number,addressEn:s.contact_address_en,addressAr:s.contact_address_ar});
+
+   function applyPolicy(cardId,en,ar){
+     const card=document.getElementById(cardId);
+     if(!card)return;
+     const enText=String(en||'').trim(), arText=String(ar||'').trim();
+     if(!enText&&!arText)return; /* keep the built-in policy as fallback */
+     card.innerHTML='';
+     const body=document.createElement('div');
+     body.className='policy-managed-text';
+     body.setAttribute('data-en',enText);
+     body.setAttribute('data-ar',arText);
+     body.textContent=(document.documentElement.dir==='rtl'?(arText||enText):(enText||arText))||'';
+     card.appendChild(body);
+   }
+   applyPolicy('termsPolicyCard',s.terms_conditions_en,s.terms_conditions_ar);
+   applyPolicy('returnsPolicyCard',s.return_exchange_policy_en,s.return_exchange_policy_ar);
+
    document.querySelectorAll('.announcement-item').forEach(x=>setBi(x,s.announcement_en,s.announcement_ar));
    const hero=document.querySelector('#view-home .hero-text'); if(hero){const els=hero.querySelectorAll('[data-en][data-ar]'); if(els[0])setBi(els[0],s.hero_subtitle_en,s.hero_subtitle_ar); if(els[1])setBi(els[1],s.hero_title_en,s.hero_title_ar); if(els[2])setBi(els[2],s.hero_description_en,s.hero_description_ar);}
    const addr=document.getElementById('contactAddressText'); setBi(addr,s.contact_address_en,s.contact_address_ar);

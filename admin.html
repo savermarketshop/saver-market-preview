@@ -292,6 +292,18 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
         <div class="settings-card" style="grid-column:1/-1"><h3>Announcement Bar</h3>
           <div class="field"><label>English</label><textarea id="setAnnEn"></textarea></div>
           <div class="field"><label>Arabic</label><textarea id="setAnnAr" dir="rtl"></textarea></div>
+        </div>
+
+        <div class="settings-card" style="grid-column:1/-1"><h3>Terms & Conditions</h3>
+          <div class="field"><label>Terms & Conditions — English</label><textarea id="setTermsEn" rows="12" placeholder="Enter the full English Terms & Conditions"></textarea></div>
+          <div class="field"><label>Terms & Conditions — Arabic</label><textarea id="setTermsAr" rows="12" dir="rtl" placeholder="أدخل الشروط والأحكام كاملة باللغة العربية"></textarea></div>
+          <div class="subtle">If left blank, the current built-in website text remains as the fallback.</div>
+        </div>
+
+        <div class="settings-card" style="grid-column:1/-1"><h3>Return & Exchange Policy</h3>
+          <div class="field"><label>Return & Exchange Policy — English</label><textarea id="setReturnsEn" rows="12" placeholder="Enter the full English Return & Exchange Policy"></textarea></div>
+          <div class="field"><label>Return & Exchange Policy — Arabic</label><textarea id="setReturnsAr" rows="12" dir="rtl" placeholder="أدخل سياسة الإرجاع والاستبدال كاملة باللغة العربية"></textarea></div>
+          <div class="subtle">Customers will see these texts from the footer Quick Links after you save them.</div>
           <div id="settingsMessage" class="message"></div>
           <button class="btn btn-primary" onclick="saveSiteSettings()">Save Site Settings</button>
         </div>
@@ -1125,7 +1137,7 @@ async function bulkStartImport(){
   if(user&&await isAdmin(user))showDashboard(user);else showLogin();
 })();
 
-const SETTINGS_FIELDS={whatsapp_number:'setWhatsapp',contact_phone_display:'setPhoneDisplay',instagram_url:'setInstagram',facebook_url:'setFacebook',contact_address_en:'setAddressEn',contact_address_ar:'setAddressAr',business_hours_en:'setHoursEn',business_hours_ar:'setHoursAr',hero_subtitle_en:'setHeroSubEn',hero_subtitle_ar:'setHeroSubAr',hero_title_en:'setHeroTitleEn',hero_title_ar:'setHeroTitleAr',hero_description_en:'setHeroDescEn',hero_description_ar:'setHeroDescAr',announcement_en:'setAnnEn',announcement_ar:'setAnnAr'};
+const SETTINGS_FIELDS={whatsapp_number:'setWhatsapp',contact_phone_display:'setPhoneDisplay',instagram_url:'setInstagram',facebook_url:'setFacebook',contact_address_en:'setAddressEn',contact_address_ar:'setAddressAr',business_hours_en:'setHoursEn',business_hours_ar:'setHoursAr',hero_subtitle_en:'setHeroSubEn',hero_subtitle_ar:'setHeroSubAr',hero_title_en:'setHeroTitleEn',hero_title_ar:'setHeroTitleAr',hero_description_en:'setHeroDescEn',hero_description_ar:'setHeroDescAr',announcement_en:'setAnnEn',announcement_ar:'setAnnAr',terms_conditions_en:'setTermsEn',terms_conditions_ar:'setTermsAr',return_exchange_policy_en:'setReturnsEn',return_exchange_policy_ar:'setReturnsAr'};
 async function loadSiteSettings(){
  const msg=$('settingsMessage'); if(msg){msg.textContent='Loading...';msg.className='message';}
  const {data,error}=await sb.from('site_settings').select('*').eq('id',1).single();
