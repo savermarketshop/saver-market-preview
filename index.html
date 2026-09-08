@@ -5009,14 +5009,14 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
                         </div>
                         <div class="saver-cart-login-note" id="saverCartAccountNote"></div>
                         <form class="checkout-form" id="checkoutForm" onsubmit="handleCheckout(event)">
-                            <h4 style="font-size:0.9rem; color:var(--sage-dark);" data-tr="deliv_info">Delivery details</h4>
-                            <input type="text" class="form-input" id="custName" placeholder="Full Name" required>
-                            <input type="tel" class="form-input" id="custPhone" placeholder="WhatsApp Phone Number" required>
-                            <textarea class="form-input" id="custAddress" rows="3" placeholder="Delivery Address (Damascus, Syria...)" required></textarea>
+                            <h4 id="saverCheckoutHeading" style="font-size:0.9rem; color:var(--sage-dark);">Enquiry via WhatsApp</h4>
+                            <input type="text" class="form-input" id="custName" placeholder="Full Name">
+                            <input type="tel" class="form-input" id="custPhone" placeholder="WhatsApp Phone Number">
+                            <textarea class="form-input" id="custAddress" rows="3" placeholder="Delivery Address (Damascus, Syria...)"></textarea>
                             <textarea class="form-input" id="custNotes" rows="2" placeholder="Special delivery notes..."></textarea>
-                            <button type="submit" class="btn-gold" style="width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px;">
+                            <button id="saverCheckoutAction" type="submit" class="btn-gold" style="width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px;">
                                 <i class="fab fa-whatsapp"></i>
-                                <span data-tr="checkout_wa">Order via WhatsApp</span>
+                                <span id="saverCheckoutActionLabel">Send Enquiry via WhatsApp</span>
                             </button>
                         </form>
                     </div>
@@ -8700,8 +8700,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if(note){
       note.innerHTML=currentUser()
         ? `<i class="fas fa-cloud"></i> ${currentLanguage==='ar'?'سلتك محفوظة في حسابك ويمكن الوصول إليها من أجهزتك.':'Your cart is saved to your account and available across your devices.'}`
-        : `<i class="fas fa-user"></i> ${currentLanguage==='ar'?'يمكنك إكمال الطلب كضيف، أو تسجيل الدخول لحفظ السلة والطلبات.':'You can order as a guest, or sign in to save your cart and order history.'}`;
+        : `<i class="fas fa-user"></i> ${currentLanguage==='ar'?'يمكنك التسوق كضيف وإرسال استفسار عبر واتساب. سجّل الدخول لإنشاء طلب فعلي.':'You can shop as a guest and send an enquiry via WhatsApp. Sign in to place an actual order.'}`;
     }
+    if(typeof window.saverUpdateCheckoutModeUI==='function') window.saverUpdateCheckoutModeUI();
   }
 
   async function authRequest(path, body){
@@ -9266,6 +9267,32 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   // Expose only the customer helpers needed by the later account/address UI module.
   window.saverCustomerCurrentUser = currentUser;
+  window.saverCustomerGetSession = getSession;
+  window.saverCustomerRefreshSession = refreshSessionIfNeeded;
+  window.saverCustomerEnsureFreshSession = async function(){
+    const u=currentUser();
+    if(!u) return null;
+    let s=getSession();
+    if(!s?.access_token && s?.refresh_token){
+      await refreshSessionIfNeeded();
+      s=getSession();
+    }
+    if(!s?.access_token) return null;
+
+    let shouldRefresh=false;
+    try{
+      const part=(s.access_token.split('.')[1]||'').replace(/-/g,'+').replace(/_/g,'/');
+      const padded=part + '='.repeat((4-part.length%4)%4);
+      const payload=JSON.parse(atob(padded));
+      shouldRefresh=!payload.exp || payload.exp*1000 < Date.now()+120000;
+    }catch(e){ shouldRefresh=true; }
+
+    if(shouldRefresh && s?.refresh_token){
+      await refreshSessionIfNeeded();
+      s=getSession();
+    }
+    return s?.access_token ? s : null;
+  };
   window.saverCustomerRest = rest;
   window.saverCustomerLoadOrders = loadOrders;
   window.saverCustomerAuthMessage = authMessage;
@@ -10213,22 +10240,13 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 
   async function ensureFreshCustomerSession(){
     try{
-      if(typeof currentUser !== "function" || !currentUser()) return null;
-      const s = typeof getSession === "function" ? getSession() : null;
-      if(!s?.access_token) return null;
-
-      let needsRefresh = false;
-      try{
-        const payload = JSON.parse(atob((s.access_token.split(".")[1] || "").replace(/-/g,"+").replace(/_/g,"/")));
-        needsRefresh = !payload.exp || payload.exp * 1000 < Date.now() + 120000;
-      }catch(_){ needsRefresh = true; }
-
-      if(needsRefresh && typeof refreshSessionIfNeeded === "function"){
-        const refreshed = await refreshSessionIfNeeded();
-        if(refreshed?.access_token) return refreshed;
+      if(typeof window.saverCustomerCurrentUser!=="function" || !window.saverCustomerCurrentUser()) return null;
+      if(typeof window.saverCustomerEnsureFreshSession==="function"){
+        return await window.saverCustomerEnsureFreshSession();
       }
-      return typeof getSession === "function" ? getSession() : s;
-    }catch(_){
+      return typeof window.saverCustomerGetSession==="function" ? window.saverCustomerGetSession() : null;
+    }catch(e){
+      console.warn("[Saver Market] Could not read customer session",e);
       return null;
     }
   }
@@ -10294,116 +10312,169 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     return `https://wa.me/${wa}?text=${encodeURIComponent(message)}`;
   }
 
+
+  function updateCheckoutModeUI(){
+    const signedIn=typeof window.saverCustomerCurrentUser==="function" && !!window.saverCustomerCurrentUser();
+    const heading=document.getElementById("saverCheckoutHeading");
+    const label=document.getElementById("saverCheckoutActionLabel");
+    const action=document.getElementById("saverCheckoutAction");
+    const name=document.getElementById("custName");
+    const phone=document.getElementById("custPhone");
+    const address=document.getElementById("custAddress");
+
+    if(signedIn){
+      if(heading) heading.textContent=checkoutLang("Delivery details","بيانات التوصيل");
+      if(label) label.textContent=checkoutLang("Order via WhatsApp","اطلب عبر واتساب");
+      if(action) action.dataset.checkoutMode="order";
+      if(name) name.required=true;
+      if(phone) phone.required=true;
+      if(address) address.required=true;
+    }else{
+      if(heading) heading.textContent=checkoutLang("Enquiry via WhatsApp","استفسار عبر واتساب");
+      if(label) label.textContent=checkoutLang("Send Enquiry via WhatsApp","إرسال استفسار عبر واتساب");
+      if(action) action.dataset.checkoutMode="enquiry";
+      if(name) name.required=false;
+      if(phone) phone.required=false;
+      if(address) address.required=false;
+    }
+  }
+  window.saverUpdateCheckoutModeUI=updateCheckoutModeUI;
+
+  function buildGuestEnquiryWhatsAppUrl(){
+    let itemsText="",total=0;
+    shoppingCart.forEach((line,index)=>{
+      const productName=currentLanguage==="ar"?line.product.nameAr:line.product.nameEn;
+      const qty=Number(line.quantity||1), price=Number(line.product.price||0), lineTotal=qty*price;
+      total+=lineTotal;
+      const colorText=typeof saverColorLabel==="function"?saverColorLabel(line.color||"Default",line.product):(line.color||"Default");
+      itemsText += `${index+1}. [${line.product.sku||""}] ${productName}\n` +
+        `${checkoutLang("Size","المقاس")}: ${line.size||"Standard"} · ${checkoutLang("Color","اللون")}: ${colorText} · ${checkoutLang("Qty","الكمية")}: ${qty}\n` +
+        `${checkoutLang("Subtotal","المجموع")}: ${formatPrice(lineTotal)}\n\n`;
+    });
+
+    const name=document.getElementById("custName")?.value?.trim()||"";
+    const phone=document.getElementById("custPhone")?.value?.trim()||"";
+    const notes=document.getElementById("custNotes")?.value?.trim()||"";
+
+    const message=currentLanguage==="ar"
+      ? `مرحباً Saver Market، أود الاستفسار عن المنتجات التالية:\n\n${itemsText}الإجمالي التقديري: ${formatPrice(total)}\n${name?`الاسم: ${name}\n`:""}${phone?`الهاتف: ${phone}\n`:""}${notes?`ملاحظات: ${notes}\n`:""}\nهذا استفسار فقط وليس طلباً مؤكداً.`
+      : `Hello Saver Market, I would like to enquire about the following items:\n\n${itemsText}Estimated total: ${formatPrice(total)}\n${name?`Name: ${name}\n`:""}${phone?`Phone: ${phone}\n`:""}${notes?`Notes: ${notes}\n`:""}\nThis is an enquiry only, not a confirmed order.`;
+
+    const wa=(window.SAVER_MARKET_SETTINGS?.whatsappNumber||"963991727336").replace(/\D/g,"");
+    return `https://wa.me/${wa}?text=${encodeURIComponent(message)}`;
+  }
+
   async function createStoredOrder(){
-    const expectedSignedIn = typeof currentUser === "function" && !!currentUser();
-    let session = await ensureFreshCustomerSession();
-    let accessToken = session?.access_token || "";
-
-    // If the interface says the customer is signed in, never silently create
-    // an unlinked guest order. Refresh first; if that still fails, ask them to
-    // sign in again instead of losing the order from My Account.
-    if(expectedSignedIn && !accessToken && typeof refreshSessionIfNeeded === "function"){
-      session = await refreshSessionIfNeeded();
-      accessToken = session?.access_token || "";
-    }
-    if(expectedSignedIn && !accessToken){
-      throw new Error(checkoutLang(
-        "Your login session expired. Please sign in again, then place the order.",
-        "انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى ثم إرسال الطلب."
-      ));
+    const expectedUser=typeof window.saverCustomerCurrentUser==="function"?window.saverCustomerCurrentUser():null;
+    if(!expectedUser?.id){
+      throw new Error(checkoutLang("Please sign in before placing an order.","يرجى تسجيل الدخول قبل إنشاء الطلب."));
     }
 
-    const payload = {
-      customer_name: document.getElementById("custName")?.value?.trim() || "",
-      customer_phone: document.getElementById("custPhone")?.value?.trim() || "",
-      delivery_address: document.getElementById("custAddress")?.value?.trim() || "",
-      notes: document.getElementById("custNotes")?.value?.trim() || "None",
-      items: shoppingCart.map(line => ({
-        product_id: Number(line.product.id),
-        quantity: Number(line.quantity || 1),
-        size: line.size || "Standard",
-        color: line.color || "Default"
+    let session=await ensureFreshCustomerSession();
+    let accessToken=session?.access_token||"";
+    if(!accessToken){
+      throw new Error(checkoutLang("Your login session expired. Please sign in again, then place the order.","انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى ثم إرسال الطلب."));
+    }
+
+    const payload={
+      customer_name:document.getElementById("custName")?.value?.trim()||"",
+      customer_phone:document.getElementById("custPhone")?.value?.trim()||"",
+      delivery_address:document.getElementById("custAddress")?.value?.trim()||"",
+      notes:document.getElementById("custNotes")?.value?.trim()||"None",
+      items:shoppingCart.map(line=>({
+        product_id:Number(line.product.id),
+        quantity:Number(line.quantity||1),
+        size:line.size||"Standard",
+        color:line.color||"Default"
       }))
     };
 
     async function send(tokenValue){
-      const headers = {
-        "Content-Type":"application/json",
-        "apikey": SAVER_SUPABASE_PUBLISHABLE_KEY
-      };
-      if(tokenValue) headers.Authorization = `Bearer ${tokenValue}`;
-
-      const response = await fetch(`${SAVER_SUPABASE_URL}/functions/v1/create-order`, {
+      const response=await fetch(`${SAVER_SUPABASE_URL}/functions/v1/create-order`,{
         method:"POST",
-        headers,
+        headers:{
+          "Content-Type":"application/json",
+          "apikey":SAVER_SUPABASE_PUBLISHABLE_KEY,
+          "Authorization":`Bearer ${tokenValue}`
+        },
         body:JSON.stringify(payload)
       });
-      const result = await response.json().catch(()=>({}));
+      const result=await response.json().catch(()=>({}));
       return {response,result};
     }
 
-    let attempt = await send(accessToken);
-
-    // A customer token may expire while the installed mobile app is suspended.
-    // Refresh it once and retry the SAME order, preserving its account link.
-    if(attempt.response.status===401 && expectedSignedIn && typeof refreshSessionIfNeeded === "function"){
-      session = await refreshSessionIfNeeded();
-      accessToken = session?.access_token || "";
-      if(accessToken) attempt = await send(accessToken);
+    let attempt=await send(accessToken);
+    if(attempt.response.status===401 && typeof window.saverCustomerRefreshSession==="function"){
+      await window.saverCustomerRefreshSession();
+      session=typeof window.saverCustomerGetSession==="function"?window.saverCustomerGetSession():null;
+      accessToken=session?.access_token||"";
+      if(accessToken) attempt=await send(accessToken);
     }
 
-    if(!attempt.response.ok || !attempt.result?.ok){
-      throw new Error(attempt.result?.error || `Order save failed (${attempt.response.status})`);
+    if(!attempt.response.ok||!attempt.result?.ok){
+      throw new Error(attempt.result?.error||`Order save failed (${attempt.response.status})`);
     }
-    return {result:attempt.result, signedIn: !!attempt.result?.signed_in};
+    if(!attempt.result?.signed_in || String(attempt.result?.user_id||"")!==String(expectedUser.id)){
+      throw new Error(checkoutLang("The order could not be linked to your account. Nothing was submitted. Please sign in again.","تعذر ربط الطلب بحسابك. لم يتم إرسال الطلب. يرجى تسجيل الدخول مرة أخرى."));
+    }
+
+    return {result:attempt.result,signedIn:true};
   }
 
   window.handleCheckout = async function(event){
     event?.preventDefault?.();
     if(saverCheckoutBusy) return false;
+
+    if(!Array.isArray(shoppingCart)||shoppingCart.length===0){
+      alert(checkoutLang("Your shopping cart is empty.","سلة التسوق فارغة."));
+      return false;
+    }
+
+    const signedIn=typeof window.saverCustomerCurrentUser==="function" && !!window.saverCustomerCurrentUser();
+
+    // Guest = enquiry only. Never create an Admin order.
+    if(!signedIn){
+      window.location.href=buildGuestEnquiryWhatsAppUrl();
+      return false;
+    }
+
     if(!validateCartStock()) return false;
+    const form=document.getElementById("checkoutForm");
+    if(form&&!form.reportValidity()) return false;
 
-    const form = document.getElementById("checkoutForm");
-    if(form && !form.reportValidity()) return false;
-
-    const submit = form?.querySelector('button[type="submit"]');
-    const oldHtml = submit?.innerHTML || "";
-    saverCheckoutBusy = true;
+    const submit=form?.querySelector('button[type="submit"]');
+    const oldHtml=submit?.innerHTML||"";
+    saverCheckoutBusy=true;
     if(submit){
-      submit.disabled = true;
-      submit.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${checkoutLang("Saving order...","جاري حفظ الطلب...")}</span>`;
+      submit.disabled=true;
+      submit.innerHTML=`<i class="fas fa-spinner fa-spin"></i><span>${checkoutLang("Saving order...","جاري حفظ الطلب...")}</span>`;
     }
 
     try{
-      const whatsappUrl = buildWhatsAppUrl();
-      const saved = await createStoredOrder();
+      const whatsappUrl=buildWhatsAppUrl();
+      await createStoredOrder();
 
-      // Make the next visit useful instead of reopening on an unexplained home page.
-      localStorage.setItem("saverMarketAfterWhatsAppView", saved.signedIn ? "account" : "home");
-
-      // Order is safely saved now. Clear the local/account cart.
-      shoppingCart.splice(0, shoppingCart.length);
-      if(typeof refreshCartDisplayEngine === "function") refreshCartDisplayEngine();
-      if(typeof window.saverFlushCartSync === "function"){
-        try{ await window.saverFlushCartSync(); }catch(e){ console.warn("[Saver Market] Final cart sync",e); }
+      localStorage.setItem("saverMarketAfterWhatsAppView","account");
+      shoppingCart.splice(0,shoppingCart.length);
+      if(typeof refreshCartDisplayEngine==="function") refreshCartDisplayEngine();
+      if(typeof window.saverFlushCartSync==="function"){
+        try{await window.saverFlushCartSync()}catch(e){console.warn("[Saver Market] Final cart sync",e)}
       }
-
-      // Use the current navigation instead of a late popup, which is more reliable
-      // in iPhone/Android installed web apps after an async database save.
-      window.location.href = whatsappUrl;
+      window.location.href=whatsappUrl;
       return false;
     }catch(err){
-      console.error("[Saver Market] Checkout save failed", err);
+      console.error("[Saver Market] Checkout save failed",err);
       alert(checkoutLang(
-        `We could not save your order. Nothing was submitted. Please try again.\n\n${err?.message || err}`,
-        `تعذر حفظ طلبك. لم يتم إرسال الطلب. يرجى المحاولة مرة أخرى.\n\n${err?.message || err}`
+        `We could not save your order. Nothing was submitted. Please try again.\n\n${err?.message||err}`,
+        `تعذر حفظ طلبك. لم يتم إرسال الطلب. يرجى المحاولة مرة أخرى.\n\n${err?.message||err}`
       ));
       return false;
     }finally{
-      saverCheckoutBusy = false;
+      saverCheckoutBusy=false;
       if(submit){
-        submit.disabled = false;
-        submit.innerHTML = oldHtml;
+        submit.disabled=false;
+        submit.innerHTML=oldHtml;
+        updateCheckoutModeUI();
       }
     }
   };
@@ -10427,8 +10498,8 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     }, 450);
   }
 
-  window.addEventListener("pageshow", restoreAfterWhatsApp);
-  window.addEventListener("load", restoreAfterWhatsApp);
+  window.addEventListener("pageshow",()=>{restoreAfterWhatsApp();updateCheckoutModeUI();});
+  window.addEventListener("load",()=>{restoreAfterWhatsApp();updateCheckoutModeUI();});
 })();
 </script>
 
