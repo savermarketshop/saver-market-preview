@@ -87,205 +87,59 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 .review-text-cell{max-width:360px;white-space:normal}
 
 
-/* ============================================================
-   SAVER MARKET ADMIN — MOBILE APP UI
-   Applies ONLY to phones. Desktop remains exactly as before.
-   ============================================================ */
-.sma-mobile-header,.sma-bottom-nav,.sma-more-sheet,.sma-product-fab{display:none}
-
-@media (max-width:768px){
-  :root{
-    --sma-green:#184b29;
-    --sma-green-2:#2c663b;
-    --sma-pale:#edf5eb;
-    --sma-bg:#f7f9f5;
-    --sma-border:#e4e9e1;
-    --sma-text:#17231b;
-    --sma-muted:#7c857e;
-    --sma-bottom:74px;
-    --sma-header:64px;
-  }
-  html,body{width:100%;max-width:100%;overflow-x:hidden;background:var(--sma-bg)}
-  body{padding-bottom:calc(var(--sma-bottom) + env(safe-area-inset-bottom))}
-  #dashboardView.dashboard{display:block!important;min-height:100vh;background:var(--sma-bg)}
-  #dashboardView .sidebar{display:none!important}
-  #dashboardView .main{padding:0!important;margin:0!important;width:100%!important}
-  #dashboardView .topbar{display:none!important}
-  #dashboardView .page{padding:0!important}
-  #dashboardView .hidden{display:none!important}
-  #dashboardView .page:not(.hidden){display:block!important}
-  #dashboardView .main>.page{padding:14px 12px 24px!important}
-  #dashboardView .main>.page#page-home{padding-top:14px!important}
-
-  /* Header identical app-like structure from mockup */
-  .sma-mobile-header{
-    position:sticky;top:0;z-index:1500;height:var(--sma-header);
-    display:grid;grid-template-columns:42px 1fr 42px;align-items:center;
-    padding:6px 12px;background:rgba(255,255,255,.98);
-    border-bottom:1px solid var(--sma-border);
-    box-shadow:0 3px 14px rgba(25,65,35,.05);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  }
-  .sma-menu-btn,.sma-avatar{
-    width:38px;height:38px;border:0;border-radius:12px;background:#fff;color:var(--sma-green);
-    display:flex;align-items:center;justify-content:center;font-size:1rem
-  }
-  .sma-avatar{
-    border-radius:50%;background:var(--sma-green);color:#fff;font-weight:800;
-  }
-  .sma-brand{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
-  .sma-brand img{height:45px;width:auto;max-width:86px;object-fit:contain}
-  .sma-brand-text{font-size:.78rem;font-weight:800;color:var(--sma-green);white-space:nowrap}
-  .sma-page-titlebar{display:flex;align-items:center;gap:8px;margin:2px 0 12px}
-  .sma-page-titlebar h2{margin:0;font-size:1.45rem;line-height:1.15;color:var(--sma-text)}
-  .sma-back-btn{width:36px;height:36px;border:0;background:#fff;border-radius:10px;color:var(--sma-green)}
-
-  /* Inputs and controls */
-  input,select,textarea{font-size:16px!important}
-  .card{border-radius:16px!important;padding:14px!important;box-shadow:0 5px 18px rgba(24,75,41,.05)!important;border:1px solid rgba(24,75,41,.06)}
-  .toolbar{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;margin-bottom:10px!important}
-  .toolbar-left,.toolbar-right{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;width:100%!important}
-  .search,input,select,textarea{width:100%!important;min-height:44px!important;border-radius:12px!important}
-  .btn{min-height:42px!important;border-radius:12px!important;font-size:.8rem!important}
-  .btn-primary{background:var(--sma-green)!important;color:#fff!important}
-  .subtle{font-size:.76rem!important}
-
-  /* Dashboard */
-  #page-home .dashboard-home{display:none!important}
-  .sma-home-wrap{display:block}
-  .sma-welcome h2{font-size:1.55rem;margin:0;color:var(--sma-text);line-height:1.1}
-  .sma-welcome p{margin:5px 0 14px;color:var(--sma-muted);font-size:.78rem}
-  .sma-today-pill{margin-left:auto;width:max-content;background:#fff;border:1px solid var(--sma-border);border-radius:11px;padding:8px 12px;font-size:.72rem;color:#56615a;margin-bottom:12px}
-  .sma-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .sma-stat-card{background:#fff;border:1px solid var(--sma-border);border-radius:16px;padding:13px;min-height:112px;box-shadow:0 5px 15px rgba(24,75,41,.04)}
-  .sma-stat-icon{width:38px;height:38px;border-radius:12px;background:var(--sma-pale);display:flex;align-items:center;justify-content:center;color:var(--sma-green);font-size:1rem;margin-bottom:9px}
-  .sma-stat-card.warn .sma-stat-icon{background:#fff4d8;color:#b77a00}
-  .sma-stat-card.alert .sma-stat-icon{background:#fdecec;color:#b93d3d}
-  .sma-stat-num{font-size:1.45rem;font-weight:850;color:var(--sma-text);line-height:1}
-  .sma-stat-label{font-size:.67rem;color:var(--sma-muted);margin-top:5px}
-  .sma-section-title{font-size:1rem;font-weight:850;margin:18px 0 10px;color:var(--sma-text)}
-  .sma-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .sma-quick{min-height:84px;border:0;border-radius:15px;background:linear-gradient(180deg,#edf5eb,#e6f0e3);color:var(--sma-green);font-weight:800;font-size:.76rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
-  .sma-quick i{font-size:1.2rem}
-
-  /* Products — card list matching sample */
-  #page-products>.card{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
-  #page-products .toolbar{background:transparent}
-  #page-products .toolbar-left{grid-template-columns:1fr 124px!important}
-  #page-products #addProductBtn{display:none!important}
-  #page-products .table-wrap{overflow:visible!important}
-  #page-products table,#page-products thead,#page-products tbody,#page-products tr,#page-products th,#page-products td{display:block!important;width:100%!important}
-  #page-products thead{display:none!important}
-  #page-products tbody{display:grid!important;gap:9px!important}
-  #page-products tr{
-    min-height:102px;position:relative;background:#fff;border:1px solid var(--sma-border);
-    border-radius:15px;padding:12px 42px 12px 102px;box-shadow:0 4px 13px rgba(24,75,41,.04)
-  }
-  #page-products td{border:0!important;padding:1px 0!important;font-size:.76rem!important;line-height:1.25}
-  #page-products td:nth-child(1){position:absolute;left:11px;top:11px;width:80px!important;height:80px}
-  #page-products td:nth-child(1) img{width:80px!important;height:80px!important;border-radius:11px!important;object-fit:cover!important}
-  #page-products td:nth-child(2){font-size:.66rem!important;color:#8a928c;margin-top:19px}
-  #page-products td:nth-child(3){position:absolute;left:102px;right:44px;top:11px;font-weight:800!important;color:var(--sma-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #page-products td:nth-child(4){font-weight:850!important;color:var(--sma-green);font-size:.82rem!important;margin-top:4px}
-  #page-products td:nth-child(5){display:inline-block!important;width:auto!important;margin-top:5px;padding:3px 8px!important;background:var(--sma-pale);border-radius:999px;font-size:.65rem!important;color:var(--sma-green)}
-  #page-products td:nth-child(6){display:inline-block!important;width:auto!important;margin-left:5px;font-size:.65rem!important}
-  #page-products td:last-child{position:absolute;right:8px;top:8px;width:34px!important}
-  #page-products td:last-child .btn{font-size:0!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;background:#fff!important;color:var(--sma-green)!important;border:0!important;box-shadow:none!important}
-  #page-products td:last-child .btn:first-child::before{content:"\22EE";font-size:1.4rem}
-  #page-products td:last-child .btn:not(:first-child){display:none!important}
-  .sma-product-fab{
-    position:fixed;right:18px;bottom:calc(var(--sma-bottom) + 16px + env(safe-area-inset-bottom));
-    z-index:1450;width:54px;height:54px;border:0;border-radius:50%;background:var(--sma-green);
-    color:#fff;font-size:1.45rem;display:none;align-items:center;justify-content:center;
-    box-shadow:0 8px 22px rgba(24,75,41,.3)
-  }
-  body.sma-products-open .sma-product-fab{display:flex}
-
-  /* Product modal = full mobile editor */
-  .modal-backdrop{z-index:1800!important;align-items:stretch!important;padding:0!important}
-  .modal-card,.modal{
-    width:100%!important;max-width:none!important;height:100dvh!important;max-height:none!important;
-    border-radius:0!important;padding:16px 12px calc(24px + env(safe-area-inset-bottom))!important;overflow:auto!important
-  }
-  .modal-card h2,.modal h2{font-size:1.25rem!important}
-  .form-grid{grid-template-columns:1fr!important;gap:10px!important}
-  .full{grid-column:auto!important}
-  .image-preview-grid{grid-template-columns:repeat(3,1fr)!important}
-
-  /* Orders */
-  .orders-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-bottom:10px!important}
-  .stat-box{border-radius:14px!important;padding:11px!important}
-  #page-orders>.card{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
-  #page-orders .table-wrap{overflow:visible!important}
-  #page-orders table,#page-orders thead,#page-orders tbody,#page-orders tr,#page-orders th,#page-orders td{display:block!important;width:100%!important}
-  #page-orders thead{display:none!important}
-  #page-orders tbody{display:grid!important;gap:9px!important}
-  #page-orders tr{background:#fff;border:1px solid var(--sma-border);border-radius:15px;padding:12px;position:relative;box-shadow:0 4px 13px rgba(24,75,41,.04)}
-  #page-orders td{border:0!important;padding:2px 0!important;font-size:.75rem!important}
-  #page-orders td:nth-child(1){font-weight:850!important;font-size:.82rem!important}
-  #page-orders td:nth-child(2){color:#59645c}
-  #page-orders td:nth-child(3),#page-orders td:nth-child(4){font-size:.67rem!important;color:#8a928c}
-  #page-orders td:nth-child(5){display:inline!important}
-  #page-orders td:nth-child(6){position:absolute;right:12px;top:12px;font-weight:850!important;color:var(--sma-text)}
-  #page-orders td:nth-child(7){display:inline-block!important;width:auto!important;margin-top:6px;padding:4px 9px!important;border-radius:999px;background:#fff3cd;color:#916700}
-  #page-orders td:last-child{margin-top:8px}
-  #page-orders td:last-child .btn{width:100%!important}
-
-  /* Reviews */
-  #page-reviews>.card,#page-customers>.card{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
-  #page-reviews .table-wrap,#page-customers .table-wrap{overflow:visible!important}
-  #page-reviews table,#page-reviews thead,#page-reviews tbody,#page-reviews tr,#page-reviews th,#page-reviews td,
-  #page-customers table,#page-customers thead,#page-customers tbody,#page-customers tr,#page-customers th,#page-customers td{display:block!important;width:100%!important}
-  #page-reviews thead,#page-customers thead{display:none!important}
-  #page-reviews tbody,#page-customers tbody{display:grid!important;gap:9px!important}
-  #page-reviews tr,#page-customers tr{background:#fff;border:1px solid var(--sma-border);border-radius:15px;padding:12px;box-shadow:0 4px 13px rgba(24,75,41,.04)}
-  #page-reviews td,#page-customers td{border:0!important;padding:3px 0!important;font-size:.75rem!important}
-  .review-stars{font-size:.95rem!important}
-  .review-photo-row img{width:62px!important;height:62px!important;border-radius:10px!important}
-  .review-actions{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important}
-  .review-actions .btn{min-height:38px!important}
-
-  /* Media / Bulk / Settings */
-  #page-media .media-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}
-  .media-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
-  .bulk-grid{grid-template-columns:1fr!important}
-  .bulk-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  .settings-grid{grid-template-columns:1fr!important;gap:10px!important}
-  .settings-card{border-radius:15px!important;padding:14px!important}
-  .settings-card h3{font-size:1rem!important;margin-bottom:10px!important}
-
-  /* Bottom navigation exactly like mockup */
-  .sma-bottom-nav{
-    position:fixed;left:0;right:0;bottom:0;z-index:1600;
-    height:calc(var(--sma-bottom) + env(safe-area-inset-bottom));
-    display:grid;grid-template-columns:repeat(4,1fr);align-items:center;
-    padding:5px 8px calc(5px + env(safe-area-inset-bottom));
-    background:rgba(255,255,255,.98);border-top:1px solid var(--sma-border);
-    box-shadow:0 -5px 20px rgba(24,75,41,.08)
-  }
-  .sma-bottom-nav button{border:0;background:transparent;color:#778079;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;height:58px;border-radius:13px;font-size:.64rem;font-weight:750}
-  .sma-bottom-nav button i{font-size:1.05rem}
-  .sma-bottom-nav button.active{color:var(--sma-green);background:var(--sma-pale)}
-
-  /* More sheet */
-  .sma-more-sheet{position:fixed;inset:0;z-index:1750;background:rgba(20,35,25,.42);align-items:flex-end;display:none}
-  .sma-more-sheet.open{display:flex}
-  .sma-more-panel{width:100%;max-height:84vh;overflow:auto;background:var(--sma-bg);border-radius:24px 24px 0 0;padding:12px 12px calc(18px + env(safe-area-inset-bottom))}
-  .sma-handle{width:42px;height:4px;border-radius:99px;background:#c9cfca;margin:2px auto 12px}
-  .sma-more-title{font-size:1.35rem;font-weight:850;margin:0 4px 12px;color:var(--sma-text)}
-  .sma-account-card{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--sma-border);border-radius:15px;padding:12px;margin-bottom:9px}
-  .sma-account-avatar{width:40px;height:40px;border-radius:50%;background:var(--sma-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:850}
-  .sma-account-card b{display:block;font-size:.82rem}.sma-account-card small{color:var(--sma-muted);font-size:.68rem}
-  .sma-more-list{display:grid;gap:7px}
-  .sma-more-item{display:flex;align-items:center;gap:11px;width:100%;min-height:56px;border:1px solid var(--sma-border);border-radius:14px;background:#fff;padding:10px 12px;text-align:left;color:var(--sma-text)}
-  .sma-more-icon{width:34px;height:34px;border-radius:10px;background:var(--sma-pale);color:var(--sma-green);display:flex;align-items:center;justify-content:center}
-  .sma-more-item b{display:block;font-size:.78rem}.sma-more-item small{font-size:.66rem;color:var(--sma-muted)}
-  .sma-more-item .chev{margin-left:auto;color:#95a098}
-  .sma-logout{color:#b53434!important;border-color:#f1c9c9!important;background:#fff5f5!important;justify-content:center!important;margin-top:8px}
+/* === Saver Market compact mobile admin v3 — phone only === */
+.smapp-header,.smapp-nav,.smapp-more{display:none}
+@media(max-width:768px){
+:root{--ma:#214f31;--ma2:#edf5ec;--mabg:#f5f7f3;--mab:#e1e7df;--mat:#18231c;--mam:#748078}
+html,body{max-width:100%;overflow-x:hidden;background:var(--mabg)}
+body{padding-bottom:70px}
+#dashboardView.dashboard{display:block!important;background:var(--mabg);min-height:100vh}
+.sidebar,.topbar{display:none!important}.main{padding:10px!important;width:100%!important}
+.smapp-header{display:flex;position:sticky;top:0;z-index:900;height:54px;background:#fff;border-bottom:1px solid var(--mab);align-items:center;justify-content:space-between;padding:0 12px}
+.smapp-header b{font-size:.9rem;color:var(--ma)}.smapp-header span{font-size:.67rem;color:var(--mam)}
+.smapp-head-side{width:34px;height:34px;border:0;border-radius:50%;background:var(--ma2);color:var(--ma);display:grid;place-items:center}
+.page{padding:0!important}.card{padding:11px!important;border-radius:14px!important;box-shadow:none!important;border:1px solid var(--mab)!important}
+.toolbar{display:grid!important;gap:7px!important;margin-bottom:9px!important}.toolbar-left,.toolbar-right{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+input,select,textarea{font-size:16px!important;border-radius:10px!important;padding:9px 10px!important;min-height:40px!important}
+textarea{min-height:76px!important}.field{margin-bottom:9px!important}.field label{font-size:.72rem!important;margin-bottom:4px!important;font-weight:700!important}
+.btn{min-height:38px!important;padding:8px 10px!important;border-radius:10px!important;font-size:.75rem!important}.btn-primary{background:var(--ma)!important}
+#page-home .dashboard-home{border:0!important;background:transparent!important;padding:5px!important}
+#page-home .dashboard-home h3{font-size:1.15rem!important;margin:4px 0 4px!important}#page-home .dashboard-home p{font-size:.75rem!important;margin:0!important;color:var(--mam)}
+.smapp-nav{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:950;height:66px;background:#fff;border-top:1px solid var(--mab);grid-template-columns:repeat(4,1fr);padding:4px 6px calc(4px + env(safe-area-inset-bottom))}
+.smapp-nav button{border:0;background:transparent;border-radius:11px;color:#768078;font-size:.61rem;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.smapp-nav button i{font-size:1rem}.smapp-nav button.active{color:var(--ma);background:var(--ma2)}
+.smapp-more{position:fixed;inset:0;z-index:1000;background:#0006;align-items:flex-end}.smapp-more.open{display:flex}.smapp-panel{width:100%;background:var(--mabg);border-radius:20px 20px 0 0;padding:10px 10px 18px}.smapp-panel h3{margin:5px 5px 9px}.smapp-more button{width:100%;height:48px;background:#fff;border:1px solid var(--mab);border-radius:12px;margin:4px 0;text-align:left;padding:0 12px;color:var(--mat);font-weight:700}.smapp-more button i{width:27px;color:var(--ma)}
+/* lists become compact cards */
+#page-products .table-wrap,#page-orders .table-wrap,#page-reviews .table-wrap,#page-customers .table-wrap{overflow:visible!important}
+#page-products table,#page-products thead,#page-products tbody,#page-products tr,#page-products th,#page-products td,
+#page-orders table,#page-orders thead,#page-orders tbody,#page-orders tr,#page-orders th,#page-orders td,
+#page-reviews table,#page-reviews thead,#page-reviews tbody,#page-reviews tr,#page-reviews th,#page-reviews td,
+#page-customers table,#page-customers thead,#page-customers tbody,#page-customers tr,#page-customers th,#page-customers td{display:block!important;width:100%!important;min-width:0!important}
+#page-products thead,#page-orders thead,#page-reviews thead,#page-customers thead{display:none!important}
+#page-products tbody,#page-orders tbody,#page-reviews tbody,#page-customers tbody{display:grid!important;gap:7px!important}
+#page-products tr,#page-orders tr,#page-reviews tr,#page-customers tr{background:#fff;border:1px solid var(--mab);border-radius:13px;padding:9px;box-shadow:none}
+#page-products td,#page-orders td,#page-reviews td,#page-customers td{border:0!important;padding:2px 0!important;font-size:.7rem!important;white-space:normal!important}
+#page-products tr{position:relative;min-height:78px;padding-left:78px;padding-right:34px}
+#page-products td:first-child{position:absolute;left:8px;top:8px;width:61px!important;height:61px}#page-products td:first-child img{width:61px!important;height:61px!important;object-fit:cover;border-radius:9px!important}
+#page-products td:nth-child(3){font-weight:800!important;font-size:.76rem!important}#page-products td:nth-child(4){color:var(--ma);font-weight:800!important}
+#page-products td:last-child{position:absolute;right:5px;top:5px;width:28px!important}#page-products td:last-child .btn{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;font-size:0!important;background:transparent!important;color:var(--ma)!important;border:0!important}#page-products td:last-child .btn:first-child:before{content:"⋮";font-size:1.3rem}#page-products td:last-child .btn:not(:first-child){display:none!important}
+.orders-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;margin-bottom:9px!important}.stat-box{padding:9px!important;border-radius:12px!important}.stat-box b{font-size:1rem!important}.stat-box span{font-size:.65rem!important}
+#page-orders td:first-child{font-weight:800!important;color:var(--ma)}#page-orders td:last-child .btn{width:100%!important;margin-top:5px!important}
+.review-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important}.review-photo-row img{width:50px!important;height:50px!important}
+/* full-screen app-like editor/details */
+.modal-backdrop{padding:0!important;place-items:stretch!important;z-index:1100!important;background:#fff!important}
+.modal{width:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;padding:0 10px 84px!important;background:var(--mabg)!important}
+.modal-head{position:sticky;top:0;z-index:4;height:54px;margin:0 -10px 10px!important;padding:0 10px;background:#fff;border-bottom:1px solid var(--mab);display:flex!important;align-items:center!important}.modal-head h2{font-size:1rem!important}.close{width:34px!important;height:34px!important;background:var(--ma2)!important;color:var(--ma)!important}
+#productForm>.message{margin:5px 0!important}.form-grid{grid-template-columns:1fr!important;gap:0!important}.full{grid-column:auto!important}
+#productForm .check-row{background:#fff;border:1px solid var(--mab);border-radius:11px;padding:8px;margin-bottom:8px;gap:10px!important}#productForm .check-row label{font-size:.72rem!important}
+#productForm .check-row input{min-height:0!important;width:auto!important;padding:0!important}
+.variant-stock-box{padding:9px!important;margin-top:7px!important;border-radius:12px!important}.variant-stock-head{margin-bottom:7px!important}.variant-stock-head strong{font-size:.75rem!important}.variant-stock-grid{grid-template-columns:1fr!important;gap:5px!important}.variant-stock-row{grid-template-columns:1fr 68px!important;padding:6px 8px!important;border-radius:9px!important}.variant-stock-row span{font-size:.7rem!important}.variant-stock-row input{min-height:34px!important;padding:5px 7px!important}.variant-stock-help{font-size:.65rem!important;margin-top:5px!important}
+#productForm button[type=submit]{position:fixed!important;left:10px;right:10px;bottom:10px;z-index:1200;width:calc(100% - 20px)!important;height:46px!important;border-radius:13px!important;box-shadow:0 7px 20px #214f3140}
+.order-detail-grid{grid-template-columns:1fr!important;gap:7px!important}.detail-card{padding:9px!important;border-radius:11px!important}.detail-card h4{font-size:.78rem!important;margin-bottom:5px!important}.detail-line,.order-item-sub{font-size:.7rem!important}.order-item-row{padding:8px!important;border-radius:9px!important}
+.media-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:7px!important;align-items:stretch!important}.media-toolbar .field{min-width:0!important}.media-grid{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}.media-card{padding:7px!important;border-radius:11px!important}.media-card img{height:105px!important;border-radius:8px!important}.media-actions .btn{padding:5px 7px!important;min-height:32px!important;font-size:.65rem!important}
+.settings-grid{grid-template-columns:1fr!important;gap:7px!important}.settings-card{padding:10px!important;border-radius:12px!important}.settings-card h3{font-size:.85rem!important;margin-bottom:7px!important}
+.bulk-grid{grid-template-columns:1fr!important;gap:7px!important}.bulk-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}.media-help{font-size:.7rem!important;padding:8px 9px!important;margin-bottom:8px!important;border-radius:10px!important}
 }
-@media(min-width:769px){
-  .sma-mobile-header,.sma-bottom-nav,.sma-more-sheet,.sma-product-fab,.sma-home-wrap{display:none!important}
-}
+@media(min-width:769px){.smapp-header,.smapp-nav,.smapp-more{display:none!important}}
 
 </style>
 </head>
@@ -1355,151 +1209,39 @@ async function saveSiteSettings(){
 }
 </script>
 
-<header class="sma-mobile-header">
-  <button class="sma-menu-btn" id="smaMenuBtn" type="button" aria-label="Menu"><i class="fas fa-bars"></i></button>
-  <div class="sma-brand">
-    <img src="images/logo.png" alt="Saver Market" onerror="this.style.display='none'">
-    <span class="sma-brand-text">Admin</span>
-  </div>
-  <div class="sma-avatar" id="smaAvatar">A</div>
+<header class="smapp-header">
+ <button class="smapp-head-side" id="smappMenu"><i class="fas fa-bars"></i></button>
+ <div style="text-align:center"><b>Saver Market</b><br><span>Admin</span></div>
+ <button class="smapp-head-side" id="smappProfile">A</button>
 </header>
-
-<button class="sma-product-fab" id="smaProductFab" type="button" aria-label="Add product">+</button>
-
-<nav class="sma-bottom-nav" id="smaBottomNav">
-  <button type="button" data-page="home" class="active"><i class="fas fa-house"></i><span>Dashboard</span></button>
-  <button type="button" data-page="products"><i class="fas fa-box"></i><span>Products</span></button>
-  <button type="button" data-page="orders"><i class="fas fa-cart-shopping"></i><span>Orders</span></button>
-  <button type="button" id="smaMoreBtn"><i class="fas fa-ellipsis"></i><span>More</span></button>
+<nav class="smapp-nav" id="smappNav">
+ <button data-page="home" class="active"><i class="fas fa-house"></i>Dashboard</button>
+ <button data-page="products"><i class="fas fa-box"></i>Products</button>
+ <button data-page="orders"><i class="fas fa-cart-shopping"></i>Orders</button>
+ <button id="smappMore"><i class="fas fa-ellipsis"></i>More</button>
 </nav>
-
-<div class="sma-more-sheet" id="smaMoreSheet" aria-hidden="true">
-  <div class="sma-more-panel">
-    <div class="sma-handle"></div>
-    <div class="sma-more-title">More</div>
-    <div class="sma-account-card">
-      <div class="sma-account-avatar">A</div>
-      <div><b>Admin</b><small id="smaAdminEmail"></small></div>
-    </div>
-    <div class="sma-more-list">
-      <button class="sma-more-item" data-page="bulk"><span class="sma-more-icon"><i class="fas fa-file-import"></i></span><div><b>Bulk Import</b><small>Import products via Excel</small></div><i class="fas fa-chevron-right chev"></i></button>
-      <button class="sma-more-item" data-page="reviews"><span class="sma-more-icon"><i class="fas fa-star"></i></span><div><b>Reviews</b><small>Approve customer reviews</small></div><i class="fas fa-chevron-right chev"></i></button>
-      <button class="sma-more-item" data-page="customers"><span class="sma-more-icon"><i class="fas fa-users"></i></span><div><b>Customers</b><small>View registered customers</small></div><i class="fas fa-chevron-right chev"></i></button>
-      <button class="sma-more-item" data-page="media"><span class="sma-more-icon"><i class="fas fa-images"></i></span><div><b>Media Manager</b><small>Website images and banners</small></div><i class="fas fa-chevron-right chev"></i></button>
-      <button class="sma-more-item" data-page="settings"><span class="sma-more-icon"><i class="fas fa-gear"></i></span><div><b>Site Settings</b><small>Policies, contact info and homepage</small></div><i class="fas fa-chevron-right chev"></i></button>
-      <button class="sma-more-item sma-logout" id="smaLogout"><i class="fas fa-right-from-bracket"></i><b>Log Out</b></button>
-    </div>
-  </div>
-</div>
+<div class="smapp-more" id="smappSheet"><div class="smapp-panel">
+ <h3>More</h3>
+ <button data-page="bulk"><i class="fas fa-file-import"></i>Bulk Import</button>
+ <button data-page="reviews"><i class="fas fa-star"></i>Reviews</button>
+ <button data-page="customers"><i class="fas fa-users"></i>Customers</button>
+ <button data-page="media"><i class="fas fa-images"></i>Media Manager</button>
+ <button data-page="settings"><i class="fas fa-gear"></i>Site Settings</button>
+ <button id="smappLogout" style="color:#a53232"><i class="fas fa-right-from-bracket"></i>Log Out</button>
+</div></div>
 
 
-<script id="sma-mobile-ui-script">
-(function(){
-  "use strict";
-  const mq=()=>window.matchMedia('(max-width:768px)').matches;
-  const $q=(s)=>document.querySelector(s);
-  const $qa=(s)=>Array.from(document.querySelectorAll(s));
-
-  function navBtn(page){return $q(`.nav-btn[data-page="${page}"]`)}
-
-  function activate(page){
-    $qa('#smaBottomNav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-    $q('#smaMoreBtn')?.classList.toggle('active',!['home','products','orders'].includes(page));
-    document.body.classList.toggle('sma-products-open',page==='products');
-  }
-
-  function go(page){
-    navBtn(page)?.click();
-    activate(page);
-    closeMore();
-    if(mq())window.scrollTo({top:0,behavior:'smooth'});
-    setTimeout(()=>decoratePage(page),20);
-  }
-
-  function openMore(){
-    const s=$q('#smaMoreSheet');if(!s)return;
-    s.classList.add('open');s.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
-  }
-  function closeMore(){
-    const s=$q('#smaMoreSheet');if(!s)return;
-    s.classList.remove('open');s.setAttribute('aria-hidden','true');document.body.style.overflow='';
-  }
-
-  $qa('#smaBottomNav [data-page],#smaMoreSheet [data-page]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));
-  $q('#smaMoreBtn')?.addEventListener('click',openMore);
-  $q('#smaMenuBtn')?.addEventListener('click',openMore);
-  $q('#smaAvatar')?.addEventListener('click',openMore);
-  $q('#smaMoreSheet')?.addEventListener('click',e=>{if(e.target.id==='smaMoreSheet')closeMore()});
-  $q('#smaLogout')?.addEventListener('click',()=>{closeMore();$q('#logoutBtn')?.click()});
-  $q('#smaProductFab')?.addEventListener('click',()=>{$q('#addProductBtn')?.click()});
-
-  $qa('.nav-btn[data-page]').forEach(b=>b.addEventListener('click',()=>{activate(b.dataset.page);setTimeout(()=>decoratePage(b.dataset.page),20)}));
-
-  function ensureTitle(page,label){
-    const sec=$q(`#page-${page}`);if(!sec||sec.querySelector(':scope > .sma-page-titlebar'))return;
-    const bar=document.createElement('div');bar.className='sma-page-titlebar';
-    bar.innerHTML=`<h2>${label}</h2>`;
-    sec.prepend(bar);
-  }
-
-  function decoratePage(page){
-    if(!mq())return;
-    const names={products:'Products',bulk:'Bulk Import',orders:'Orders',reviews:'Reviews',customers:'Customers',media:'Media Manager',settings:'Site Settings'};
-    if(names[page])ensureTitle(page,names[page]);
-  }
-
-  function dashboardHtml(){
-    const p=$q('#page-home');if(!p||p.querySelector('.sma-home-wrap'))return;
-    const wrap=document.createElement('div');wrap.className='sma-home-wrap';
-    wrap.innerHTML=`
-      <div class="sma-welcome"><h2>Welcome Back!</h2><p>Here's what's happening with your store today.</p></div>
-      <div class="sma-today-pill"><i class="far fa-calendar"></i>&nbsp; Today</div>
-      <div class="sma-stat-grid">
-        <div class="sma-stat-card"><div class="sma-stat-icon"><i class="fas fa-cart-shopping"></i></div><div id="smaStatOrders" class="sma-stat-num">—</div><div class="sma-stat-label">Total Orders</div></div>
-        <div class="sma-stat-card"><div class="sma-stat-icon"><i class="fas fa-box"></i></div><div id="smaStatProducts" class="sma-stat-num">—</div><div class="sma-stat-label">Total Products</div></div>
-        <div class="sma-stat-card warn"><div class="sma-stat-icon"><i class="fas fa-star"></i></div><div id="smaStatReviews" class="sma-stat-num">—</div><div class="sma-stat-label">Pending Reviews</div></div>
-        <div class="sma-stat-card alert"><div class="sma-stat-icon"><i class="far fa-clock"></i></div><div id="smaStatPending" class="sma-stat-num">—</div><div class="sma-stat-label">Pending Orders</div></div>
-      </div>
-      <div class="sma-section-title">Quick Actions</div>
-      <div class="sma-quick-grid">
-        <button class="sma-quick" id="smaQuickAdd"><i class="fas fa-circle-plus"></i><span>Add Product</span></button>
-        <button class="sma-quick" data-go="orders"><i class="fas fa-cart-shopping"></i><span>View Orders</span></button>
-        <button class="sma-quick" data-go="products"><i class="fas fa-box-open"></i><span>Manage Products</span></button>
-        <button class="sma-quick" data-go="settings"><i class="fas fa-gear"></i><span>Site Settings</span></button>
-      </div>`;
-    p.appendChild(wrap);
-    $q('#smaQuickAdd')?.addEventListener('click',()=>{$q('#addProductBtn')?.click()});
-    $qa('.sma-quick[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
-  }
-
-  async function loadMobileStats(){
-    if(!mq()||typeof sb==='undefined')return;
-    try{
-      const [products,orders,reviews]=await Promise.all([
-        sb.from('products').select('id',{count:'exact',head:true}),
-        sb.from('orders').select('id,status'),
-        sb.from('product_reviews').select('id,status')
-      ]);
-      const orderRows=orders.data||[], reviewRows=reviews.data||[];
-      if($q('#smaStatProducts'))$q('#smaStatProducts').textContent=products.count??'0';
-      if($q('#smaStatOrders'))$q('#smaStatOrders').textContent=orderRows.length;
-      if($q('#smaStatPending'))$q('#smaStatPending').textContent=orderRows.filter(x=>x.status==='pending').length;
-      if($q('#smaStatReviews'))$q('#smaStatReviews').textContent=reviewRows.filter(x=>x.status==='pending').length;
-    }catch(e){console.warn('Mobile dashboard stats',e)}
-  }
-
-  function syncAdminEmail(){
-    const e=$q('#adminEmail')?.textContent||'';
-    if($q('#smaAdminEmail'))$q('#smaAdminEmail').textContent=e;
-  }
-
-  dashboardHtml();
-  syncAdminEmail();
-  activate('home');
-  loadMobileStats();
-  setTimeout(syncAdminEmail,500);
-
-  window.addEventListener('resize',()=>{if(!mq())closeMore()});
+<script id="smapp-mobile-controller">
+(()=>{const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];
+const sheet=q('#smappSheet');
+function close(){sheet?.classList.remove('open');document.body.style.overflow=''}
+function open(){sheet?.classList.add('open');document.body.style.overflow='hidden'}
+function active(p){qa('#smappNav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));q('#smappMore')?.classList.toggle('active',!['home','products','orders'].includes(p))}
+function go(p){q(`.nav-btn[data-page="${p}"]`)?.click();active(p);close();scrollTo(0,0)}
+qa('#smappNav [data-page],#smappSheet [data-page]').forEach(x=>x.onclick=()=>go(x.dataset.page));
+q('#smappMore').onclick=open;q('#smappMenu').onclick=open;q('#smappProfile').onclick=open;
+sheet.onclick=e=>{if(e.target===sheet)close()};q('#smappLogout').onclick=()=>{close();q('#logoutBtn')?.click()};
+qa('.nav-btn[data-page]').forEach(x=>x.addEventListener('click',()=>active(x.dataset.page)));
 })();
 </script>
 
