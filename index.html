@@ -8659,6 +8659,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const AUTH_KEY = 'saverMarketCustomerSession';
   const GUEST_CART_KEY = 'saverMarketGuestCart';
+  const ACCOUNT_CART_CACHE_PREFIX = 'saverMarketAccountCartCache:';
   let saverSession = null;
   let authTab = 'login';
   let syncTimer = null;
@@ -8793,8 +8794,18 @@ document.addEventListener("DOMContentLoaded", function () {
     setSession(null); shoppingCart=[]; restoreGuestCart(); refreshCartDisplayEngine(); saverRenderAccountView();
   };
 
-  async function rest(path, options={}){
-    const r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+  async function rest(path, options={}, allowRefresh=true){
+    let r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+
+    // Customer access tokens expire. Refresh once automatically instead of silently
+    // loading an empty cart/account when the installed app is reopened later.
+    if(r.status===401 && allowRefresh && getSession()?.refresh_token){
+      const refreshed=await refreshSessionIfNeeded();
+      if(refreshed?.access_token){
+        r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+      }
+    }
+
     const text=await r.text(); let data=null; try{data=text?JSON.parse(text):null}catch(e){data=text}
     if(!r.ok) throw new Error((data&&data.message)||text||`Request failed ${r.status}`);
     return data;
@@ -8857,41 +8868,230 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   function cartPayload(){
-    return shoppingCart.map(line=>({product_id:Number(line.product.id),quantity:Number(line.quantity),size:line.size||'Standard',color:line.color||'Default'})).filter(x=>Number.isFinite(x.product_id));
+    return shoppingCart.map(line=>({
+      product_id:Number(line.product.id),
+      quantity:Number(line.quantity),
+      size:line.size||'Standard',
+      color:line.color||'Default'
+    })).filter(x=>Number.isFinite(x.product_id));
   }
+
+  function cartSlim(){
+    return shoppingCart.map(l=>({
+      product_id:Number(l.product.id),
+      sku:String(l.product.sku||'').replace('#',''),
+      quantity:Math.max(1,Number(l.quantity)||1),
+      size:l.size||'Standard',
+      color:l.color||'Default'
+    }));
+  }
+
+  function cartFromSlim(rows){
+    return (rows||[]).map(r=>{
+      const p=productsDatabase.find(x=>
+        Number(x.id)===Number(r.product_id) ||
+        String(x.sku||'').replace('#','')===String(r.sku||'').replace('#','')
+      );
+      return p?{
+        product:p,
+        quantity:Math.max(1,Number(r.quantity)||1),
+        size:r.size||'Standard',
+        color:r.color||'Default'
+      }:null;
+    }).filter(Boolean);
+  }
+
+  function accountCartCacheKey(userId){
+    return ACCOUNT_CART_CACHE_PREFIX + String(userId||'');
+  }
+
+  function saveLocalCartSnapshot(dirty=true){
+    const u=currentUser();
+    if(u){
+      try{
+        localStorage.setItem(accountCartCacheKey(u.id),JSON.stringify({
+          items:cartSlim(),
+          dirty:!!dirty,
+          updated_at:Date.now()
+        }));
+      }catch(e){}
+      return;
+    }
+
+    try{localStorage.setItem(GUEST_CART_KEY,JSON.stringify(cartSlim()))}catch(e){}
+  }
+
+  function markAccountCartCacheClean(){
+    const u=currentUser(); if(!u)return;
+    try{
+      localStorage.setItem(accountCartCacheKey(u.id),JSON.stringify({
+        items:cartSlim(),
+        dirty:false,
+        updated_at:Date.now()
+      }));
+    }catch(e){}
+  }
+
+  function readAccountCartCache(){
+    const u=currentUser(); if(!u)return null;
+    const raw=safeJsonParse(localStorage.getItem(accountCartCacheKey(u.id)),null);
+    if(!raw)return null;
+    if(Array.isArray(raw)) return {items:raw,dirty:true};
+    return {items:Array.isArray(raw.items)?raw.items:[],dirty:!!raw.dirty};
+  }
+
+  // Keep the old function name because refreshCartDisplayEngine already calls it.
+  // It now saves BOTH guest carts and a local shadow copy of signed-in carts.
   function saveGuestCart(){
-    if(currentUser())return;
-    const slim=shoppingCart.map(l=>({sku:l.product.sku.replace('#',''),quantity:l.quantity,size:l.size,color:l.color}));
-    localStorage.setItem(GUEST_CART_KEY,JSON.stringify(slim));
+    saveLocalCartSnapshot(true);
   }
+
   function restoreGuestCart(){
     if(currentUser())return;
     const rows=safeJsonParse(localStorage.getItem(GUEST_CART_KEY),[]);
-    shoppingCart=(rows||[]).map(r=>{const p=productsDatabase.find(x=>x.sku.replace('#','')===r.sku);return p?{product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'}:null}).filter(Boolean);
+    shoppingCart=cartFromSlim(rows);
   }
+
+  function restoreAccountCartCache(){
+    const cached=readAccountCartCache();
+    if(!cached)return null;
+    shoppingCart=cartFromSlim(cached.items);
+    return cached;
+  }
+
+  function cartKey(row){
+    return `${Number(row.product_id)}|${String(row.size||'Standard')}|${String(row.color||'Default')}`;
+  }
+
+  async function performAccountCartSync(){
+    const u=currentUser(); if(!u)return;
+    const desired=cartPayload();
+    try{
+      if(desired.length){
+        const rows=desired.map(x=>Object.assign({user_id:u.id},x));
+
+        // UPSERT FIRST. Never delete the existing server cart before the replacement
+        // rows have been safely written; otherwise closing the mobile app mid-sync can
+        // permanently turn a non-empty cart into an empty one.
+        await rest(
+          'cart_items?on_conflict=user_id,product_id,size,color',
+          {
+            method:'POST',
+            headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+            body:JSON.stringify(rows)
+          }
+        );
+
+        // Remove only stale server rows after current rows are confirmed saved.
+        const server=await rest(
+          `cart_items?user_id=eq.${encodeURIComponent(u.id)}&select=id,product_id,size,color`
+        );
+        const wanted=new Set(desired.map(cartKey));
+        const stale=(server||[]).filter(r=>!wanted.has(cartKey(r))).map(r=>Number(r.id)).filter(Number.isFinite);
+        if(stale.length){
+          await rest(
+            `cart_items?user_id=eq.${encodeURIComponent(u.id)}&id=in.(${stale.join(',')})`,
+            {method:'DELETE',headers:{'Prefer':'return=minimal'}}
+          );
+        }
+      }else{
+        await rest(
+          `cart_items?user_id=eq.${encodeURIComponent(u.id)}`,
+          {method:'DELETE',headers:{'Prefer':'return=minimal'}}
+        );
+      }
+
+      markAccountCartCacheClean();
+    }catch(e){
+      // The local snapshot stays dirty, so the next app launch retries the sync.
+      console.warn('[Saver Market] Cart sync',e);
+      saveLocalCartSnapshot(true);
+      throw e;
+    }
+  }
+
   async function syncCartToAccount(){
     const u=currentUser(); if(!u)return;
     clearTimeout(syncTimer);
-    syncTimer=setTimeout(async()=>{
-      try{
-        await rest(`cart_items?user_id=eq.${encodeURIComponent(u.id)}`,{method:'DELETE',headers:{'Prefer':'return=minimal'}});
-        const rows=cartPayload().map(x=>Object.assign({user_id:u.id},x));
-        if(rows.length) await rest('cart_items',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(rows)});
-      }catch(e){console.warn('[Saver Market] Cart sync',e)}
-    },250);
+    syncTimer=setTimeout(()=>{
+      performAccountCartSync().catch(()=>{});
+    },180);
   }
+
+  // Used before leaving for WhatsApp so an empty/updated cart is not lost when
+  // iOS/Android immediately suspends the web app.
+  window.saverFlushCartSync=async function(){
+    clearTimeout(syncTimer);
+    if(currentUser()) await performAccountCartSync();
+    else saveLocalCartSnapshot(true);
+  };
+
   async function loadAccountCart(){
     const u=currentUser(); if(!u)return;
+
+    // Restore the phone's copy immediately. This protects against app suspension,
+    // poor connections and an access-token refresh happening on startup.
+    const cached=restoreAccountCartCache();
+
     try{
-      const rows=await rest(`cart_items?user_id=eq.${encodeURIComponent(u.id)}&select=product_id,quantity,size,color&order=id.asc`);
-      shoppingCart=(rows||[]).map(r=>{const p=productsDatabase.find(x=>Number(x.id)===Number(r.product_id));return p?{product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'}:null}).filter(Boolean);
-    }catch(e){console.warn('[Saver Market] Load cart',e)}
+      const rows=await rest(
+        `cart_items?user_id=eq.${encodeURIComponent(u.id)}&select=id,product_id,quantity,size,color&order=id.asc`
+      );
+
+      if(cached?.dirty){
+        // Local cart contains a change that did not finish syncing before the app
+        // was closed. Keep it and safely retry the server sync now.
+        await performAccountCartSync();
+      }else{
+        shoppingCart=(rows||[]).map(r=>{
+          const p=productsDatabase.find(x=>Number(x.id)===Number(r.product_id));
+          return p?{
+            product:p,
+            quantity:Math.max(1,Number(r.quantity)||1),
+            size:r.size||'Standard',
+            color:r.color||'Default'
+          }:null;
+        }).filter(Boolean);
+        markAccountCartCacheClean();
+      }
+    }catch(e){
+      // Never replace a locally saved cart with [] just because the network/token
+      // was temporarily unavailable.
+      console.warn('[Saver Market] Load cart',e);
+      if(!cached) shoppingCart=[];
+    }
   }
+
   async function mergeGuestCartIntoAccount(){
-    const guest=safeJsonParse(localStorage.getItem(GUEST_CART_KEY),[]); if(!guest?.length||!currentUser())return;
+    const guest=safeJsonParse(localStorage.getItem(GUEST_CART_KEY),[]);
+    if(!currentUser())return;
+
     await loadAccountCart();
-    guest.forEach(r=>{const p=productsDatabase.find(x=>x.sku.replace('#','')===r.sku);if(!p)return;const line=shoppingCart.find(l=>l.product.id===p.id&&(l.size||'Standard')===(r.size||'Standard')&&(l.color||'Default')===(r.color||'Default'));if(line)line.quantity+=Math.max(1,Number(r.quantity)||1);else shoppingCart.push({product:p,quantity:Math.max(1,Number(r.quantity)||1),size:r.size||'Standard',color:r.color||'Default'});});
-    localStorage.removeItem(GUEST_CART_KEY); await syncCartToAccount();
+
+    if(guest?.length){
+      guest.forEach(r=>{
+        const p=productsDatabase.find(x=>
+          Number(x.id)===Number(r.product_id) ||
+          String(x.sku||'').replace('#','')===String(r.sku||'').replace('#','')
+        );
+        if(!p)return;
+        const line=shoppingCart.find(l=>
+          Number(l.product.id)===Number(p.id) &&
+          (l.size||'Standard')===(r.size||'Standard') &&
+          (l.color||'Default')===(r.color||'Default')
+        );
+        if(line) line.quantity+=Math.max(1,Number(r.quantity)||1);
+        else shoppingCart.push({
+          product:p,
+          quantity:Math.max(1,Number(r.quantity)||1),
+          size:r.size||'Standard',
+          color:r.color||'Default'
+        });
+      });
+      localStorage.removeItem(GUEST_CART_KEY);
+      saveLocalCartSnapshot(true);
+      await window.saverFlushCartSync();
+    }
   }
 
   async function syncWishlistFromAccount(){
@@ -8978,7 +9178,16 @@ document.addEventListener("DOMContentLoaded", function () {
       // Refresh token when close to expiry.
       try{const payload=JSON.parse(atob(token().split('.')[1]||''));if(payload.exp*1000<Date.now()+60000)await refreshSessionIfNeeded()}catch(e){}
     }
-    if(currentUser()){await loadAccountCart();await syncWishlistFromAccount();await loadProfileIntoForm()}else restoreGuestCart();
+    if(currentUser()){
+      // Show the locally persisted account cart immediately, then reconcile with Supabase.
+      restoreAccountCartCache();
+      refreshCartDisplayEngine();
+      await loadAccountCart();
+      await syncWishlistFromAccount();
+      await loadProfileIntoForm();
+    }else{
+      restoreGuestCart();
+    }
     refreshCartDisplayEngine();updateWishlistBadge();updateAccountIndicators();
   }
   // Expose only the customer helpers needed by the later account/address UI module.
@@ -10073,6 +10282,9 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
       // Order is safely saved now. Clear the local/account cart.
       shoppingCart.splice(0, shoppingCart.length);
       if(typeof refreshCartDisplayEngine === "function") refreshCartDisplayEngine();
+      if(typeof window.saverFlushCartSync === "function"){
+        try{ await window.saverFlushCartSync(); }catch(e){ console.warn("[Saver Market] Final cart sync",e); }
+      }
 
       // Use the current navigation instead of a late popup, which is more reliable
       // in iPhone/Android installed web apps after an async database save.
