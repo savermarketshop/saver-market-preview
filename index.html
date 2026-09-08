@@ -9909,5 +9909,214 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 }
 </script>
 
+
+<script id="saver-checkout-persistence-fix">
+/* =========================================================
+   SAVER MARKET CHECKOUT PERSISTENCE FIX
+   - Every WhatsApp checkout is saved to Supabase first.
+   - Signed-in orders remain linked to My Account.
+   - Guest orders still appear in Admin.
+   - Checkout failure is shown instead of being silently ignored.
+   - Returning from WhatsApp restores Account (signed-in) or Home.
+   ========================================================= */
+(function(){
+  "use strict";
+
+  let saverCheckoutBusy = false;
+
+  function checkoutLang(en, ar){
+    return (typeof currentLanguage !== "undefined" && currentLanguage === "ar") ? ar : en;
+  }
+
+  async function ensureFreshCustomerSession(){
+    try{
+      if(typeof currentUser !== "function" || !currentUser()) return null;
+      const s = typeof getSession === "function" ? getSession() : null;
+      if(!s?.access_token) return null;
+
+      let needsRefresh = false;
+      try{
+        const payload = JSON.parse(atob((s.access_token.split(".")[1] || "").replace(/-/g,"+").replace(/_/g,"/")));
+        needsRefresh = !payload.exp || payload.exp * 1000 < Date.now() + 120000;
+      }catch(_){ needsRefresh = true; }
+
+      if(needsRefresh && typeof refreshSessionIfNeeded === "function"){
+        const refreshed = await refreshSessionIfNeeded();
+        if(refreshed?.access_token) return refreshed;
+      }
+      return typeof getSession === "function" ? getSession() : s;
+    }catch(_){
+      return null;
+    }
+  }
+
+  function validateCartStock(){
+    if(!Array.isArray(shoppingCart) || shoppingCart.length === 0){
+      alert(checkoutLang("Your shopping cart is empty.","سلة التسوق فارغة."));
+      return false;
+    }
+
+    if(typeof window.saverProductAvailableStock === "function"){
+      for(const line of shoppingCart){
+        const size = line.size || "Standard";
+        const color = line.color || "Default";
+        const available = window.saverProductAvailableStock(line.product, size, color);
+        if(Number(line.quantity || 0) > Number(available || 0)){
+          const name = currentLanguage === "ar" ? line.product.nameAr : line.product.nameEn;
+          alert(checkoutLang(
+            `Cannot complete the order for ${name}. The requested quantity is not available; please reduce it.`,
+            `لا يمكن إكمال الطلب للمنتج ${name}. الكمية المطلوبة غير متوفرة، يرجى تقليلها.`
+          ));
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function buildWhatsAppUrl(){
+    const name = document.getElementById("custName")?.value?.trim() || "";
+    const phone = document.getElementById("custPhone")?.value?.trim() || "";
+    const address = document.getElementById("custAddress")?.value?.trim() || "";
+    const notes = document.getElementById("custNotes")?.value?.trim() || "None";
+
+    let itemsText = "";
+    let total = 0;
+
+    shoppingCart.forEach((line, index) => {
+      const productName = currentLanguage === "ar" ? line.product.nameAr : line.product.nameEn;
+      const price = Number(line.product.price || 0);
+      const qty = Number(line.quantity || 1);
+      const lineTotal = price * qty;
+      total += lineTotal;
+
+      const colorText = typeof saverColorLabel === "function"
+        ? saverColorLabel(line.color || "Default", line.product)
+        : (line.color || "Default");
+
+      itemsText += `${index + 1}. [${line.product.sku || ""}] ${productName}\n` +
+        `   Options: Size ${line.size || "Standard"} / Color ${colorText}\n` +
+        `   Qty Units: ${qty} @ ${formatPrice(price)} each -> Total: ${formatPrice(lineTotal)}\n\n`;
+    });
+
+    const message = `*New Order Received*\n\n` +
+      `*Customer Name:* ${name}\n` +
+      `*Phone:* ${phone}\n` +
+      `*Address:* ${address}\n` +
+      `*Notes:* ${notes}\n\n` +
+      `--- Items ---\n${itemsText}` +
+      `*Grand Total: ${formatPrice(total)}*`;
+
+    const wa = (window.SAVER_MARKET_SETTINGS?.whatsappNumber || "963991727336").replace(/\D/g,"");
+    return `https://wa.me/${wa}?text=${encodeURIComponent(message)}`;
+  }
+
+  async function createStoredOrder(){
+    const session = await ensureFreshCustomerSession();
+    const accessToken = session?.access_token || "";
+
+    const payload = {
+      customer_name: document.getElementById("custName")?.value?.trim() || "",
+      customer_phone: document.getElementById("custPhone")?.value?.trim() || "",
+      delivery_address: document.getElementById("custAddress")?.value?.trim() || "",
+      notes: document.getElementById("custNotes")?.value?.trim() || "None",
+      items: shoppingCart.map(line => ({
+        product_id: Number(line.product.id),
+        quantity: Number(line.quantity || 1),
+        size: line.size || "Standard",
+        color: line.color || "Default"
+      }))
+    };
+
+    const headers = {
+      "Content-Type":"application/json",
+      "apikey": SAVER_SUPABASE_PUBLISHABLE_KEY
+    };
+    if(accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    const response = await fetch(`${SAVER_SUPABASE_URL}/functions/v1/create-order`, {
+      method:"POST",
+      headers,
+      body:JSON.stringify(payload)
+    });
+
+    const result = await response.json().catch(()=>({}));
+    if(!response.ok || !result?.ok){
+      throw new Error(result?.error || `Order save failed (${response.status})`);
+    }
+    return {result, signedIn: !!accessToken};
+  }
+
+  window.handleCheckout = async function(event){
+    event?.preventDefault?.();
+    if(saverCheckoutBusy) return false;
+    if(!validateCartStock()) return false;
+
+    const form = document.getElementById("checkoutForm");
+    if(form && !form.reportValidity()) return false;
+
+    const submit = form?.querySelector('button[type="submit"]');
+    const oldHtml = submit?.innerHTML || "";
+    saverCheckoutBusy = true;
+    if(submit){
+      submit.disabled = true;
+      submit.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${checkoutLang("Saving order...","جاري حفظ الطلب...")}</span>`;
+    }
+
+    try{
+      const whatsappUrl = buildWhatsAppUrl();
+      const saved = await createStoredOrder();
+
+      // Make the next visit useful instead of reopening on an unexplained home page.
+      localStorage.setItem("saverMarketAfterWhatsAppView", saved.signedIn ? "account" : "home");
+
+      // Order is safely saved now. Clear the local/account cart.
+      shoppingCart.splice(0, shoppingCart.length);
+      if(typeof refreshCartDisplayEngine === "function") refreshCartDisplayEngine();
+
+      // Use the current navigation instead of a late popup, which is more reliable
+      // in iPhone/Android installed web apps after an async database save.
+      window.location.href = whatsappUrl;
+      return false;
+    }catch(err){
+      console.error("[Saver Market] Checkout save failed", err);
+      alert(checkoutLang(
+        `We could not save your order. Nothing was submitted. Please try again.\n\n${err?.message || err}`,
+        `تعذر حفظ طلبك. لم يتم إرسال الطلب. يرجى المحاولة مرة أخرى.\n\n${err?.message || err}`
+      ));
+      return false;
+    }finally{
+      saverCheckoutBusy = false;
+      if(submit){
+        submit.disabled = false;
+        submit.innerHTML = oldHtml;
+      }
+    }
+  };
+
+  try{ handleCheckout = window.handleCheckout; }catch(_){}
+
+  function restoreAfterWhatsApp(){
+    const target = localStorage.getItem("saverMarketAfterWhatsAppView");
+    if(!target) return;
+    localStorage.removeItem("saverMarketAfterWhatsAppView");
+
+    setTimeout(async ()=>{
+      try{
+        if(target === "account" && typeof currentUser === "function" && currentUser()){
+          if(typeof switchView === "function") switchView("account");
+          if(typeof saverRenderAccountView === "function") await saverRenderAccountView();
+        }else if(typeof switchView === "function"){
+          switchView("home");
+        }
+      }catch(_){}
+    }, 450);
+  }
+
+  window.addEventListener("pageshow", restoreAfterWhatsApp);
+  window.addEventListener("load", restoreAfterWhatsApp);
+})();
+</script>
+
 </body>
 </html>
