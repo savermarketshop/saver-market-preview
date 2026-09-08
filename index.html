@@ -4602,6 +4602,12 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Saver Market">
 
+
+<style id="saver-product-image-open-style">
+.card-gallery .gallery-slide{cursor:pointer}
+#view-cart .saver-product-open-link{cursor:pointer}
+</style>
+
 </head>
 <body>
 
@@ -8663,6 +8669,9 @@ document.addEventListener("DOMContentLoaded", function () {
   let saverSession = null;
   let authTab = 'login';
   let syncTimer = null;
+  let cartPersistenceReady = false;
+  let refreshPromise = null;
+  let authConfirmedFromUrl = false;
 
   const apiHeaders = (token, extra={}) => Object.assign({
     'apikey': SAVER_SUPABASE_PUBLISHABLE_KEY,
@@ -8698,17 +8707,70 @@ document.addEventListener("DOMContentLoaded", function () {
   async function authRequest(path, body){
     const r=await fetch(`${SAVER_SUPABASE_URL}/auth/v1/${path}`,{method:'POST',headers:apiHeaders('',{}),body:JSON.stringify(body)});
     const data=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(data.msg||data.message||data.error_description||'Authentication failed');
+    if(!r.ok){
+      const err=new Error(data.msg||data.message||data.error_description||'Authentication failed');
+      err.status=r.status; err.data=data; throw err;
+    }
     return data;
   }
 
   async function refreshSessionIfNeeded(){
+    if(refreshPromise) return refreshPromise;
     const s=getSession(); if(!s?.refresh_token) return null;
+
+    refreshPromise=(async()=>{
+      try{
+        const data=await authRequest('token?grant_type=refresh_token',{refresh_token:s.refresh_token});
+        if(data.access_token){ setSession(data); return data; }
+        return s;
+      }catch(e){
+        /* A mobile app can be suspended or briefly offline while refreshing.
+           Never erase the customer's session/cart because of a temporary error. */
+        console.warn('[Saver Market] Session refresh failed',e);
+        return getSession()||s;
+      }finally{
+        refreshPromise=null;
+      }
+    })();
+    return refreshPromise;
+  }
+
+  function confirmationRedirectUrl(){
+    const u=new URL(window.location.href);
+    u.hash=''; u.search='';
+    if(u.pathname.endsWith('/index.html')) u.pathname=u.pathname.slice(0,-'index.html'.length);
+    return u.toString();
+  }
+
+  async function consumeAuthRedirect(){
     try{
-      const data=await authRequest('token?grant_type=refresh_token',{refresh_token:s.refresh_token});
-      if(data.access_token){ setSession(data); return data; }
-    }catch(e){ setSession(null); }
-    return null;
+      const hash=new URLSearchParams((window.location.hash||'').replace(/^#/,''));
+      const accessToken=hash.get('access_token');
+      const refreshToken=hash.get('refresh_token');
+      if(!accessToken) return false;
+
+      const r=await fetch(`${SAVER_SUPABASE_URL}/auth/v1/user`,{headers:apiHeaders(accessToken)});
+      const user=await r.json().catch(()=>null);
+      if(!r.ok||!user?.id) return false;
+
+      const expiresIn=Number(hash.get('expires_in')||3600);
+      setSession({
+        access_token:accessToken,
+        refresh_token:refreshToken||'',
+        token_type:hash.get('token_type')||'bearer',
+        expires_in:expiresIn,
+        expires_at:Math.floor(Date.now()/1000)+expiresIn,
+        user
+      });
+      authConfirmedFromUrl=true;
+
+      const clean=window.location.pathname+window.location.search;
+      history.replaceState(history.state,'',clean||'/');
+      return true;
+    }catch(e){
+      console.warn('[Saver Market] Email confirmation callback',e);
+      return false;
+    }
   }
 
   window.saverSetAuthTab=function(tab){ authTab=tab; saverRenderAccountView(); };
@@ -8775,7 +8837,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverSignup=async function(e){
     e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري إنشاء الحساب...':'Creating account...');
     try{
-      const data=await authRequest('signup',{email:document.getElementById('saverSignupEmail').value.trim(),password:document.getElementById('saverSignupPassword').value,data:{full_name:document.getElementById('saverSignupName').value.trim(),phone:document.getElementById('saverSignupPhone').value.trim()}});
+      const data=await authRequest('signup?redirect_to='+encodeURIComponent(confirmationRedirectUrl()),{email:document.getElementById('saverSignupEmail').value.trim(),password:document.getElementById('saverSignupPassword').value,data:{full_name:document.getElementById('saverSignupName').value.trim(),phone:document.getElementById('saverSignupPhone').value.trim()}});
       if(data.access_token){ setSession(data); await mergeGuestCartIntoAccount(); await saverRenderAccountView(); }
       else authMessage(currentLanguage==='ar'?'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب ثم سجّل الدخول.':'Account created. Check your email for confirmation, then log in.','success');
     }catch(err){authMessage(err.message,'error')}
@@ -9130,14 +9192,14 @@ document.addEventListener("DOMContentLoaded", function () {
       units+=Number(line.quantity)||0; total+=Number(line.product.price||0)*Number(line.quantity||0);
       const title=currentLanguage==='ar'?line.product.nameAr:line.product.nameEn;
       const sizeLabel=currentLanguage==='ar'?'المقاس':'Size',colorLabel=currentLanguage==='ar'?'اللون':'Color';
-      const row=document.createElement('div');row.className='cart-item';
-      row.innerHTML=`<img class="cart-item-img" src="${line.product.images[0]}" alt="${String(title).replace(/"/g,'&quot;')}"><div class="cart-item-details"><h4 class="cart-item-title">${title}</h4><span class="cart-item-meta">SKU: ${line.product.sku} · ${sizeLabel}: ${line.size||'Standard'} · ${colorLabel}: ${saverColorLabel(line.color||'Default', line.product)}</span><div class="cart-item-unit-price">${formatPrice(line.product.price)} × ${line.quantity}</div><div class="cart-item-price">${formatPrice(line.product.price*line.quantity)}</div></div><div class="cart-line-controls"><div class="qty-select-wrapper"><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},-1)" aria-label="Decrease quantity">−</button><span class="qty-val">${line.quantity}</span><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},1)" aria-label="Increase quantity">+</button></div></div><button class="saver-cart-remove" type="button" onclick="purgeCartLineItem(${i})" aria-label="Remove item"><i class="far fa-trash-alt"></i></button>`;
+      const row=document.createElement('div');row.className='cart-item';row.dataset.productId=String(line.product.id);
+      row.innerHTML=`<img class="cart-item-img saver-product-open-link" role="button" tabindex="0" src="${line.product.images[0]}" alt="${String(title).replace(/"/g,'&quot;')}" onclick="displayDedicatedProductDetailsPage('${line.product.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();displayDedicatedProductDetailsPage('${line.product.id}')}" style="cursor:pointer"><div class="cart-item-details"><h4 class="cart-item-title saver-product-open-link" role="button" tabindex="0" onclick="displayDedicatedProductDetailsPage('${line.product.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();displayDedicatedProductDetailsPage('${line.product.id}')}" style="cursor:pointer">${title}</h4><span class="cart-item-meta">SKU: ${line.product.sku} · ${sizeLabel}: ${line.size||'Standard'} · ${colorLabel}: ${saverColorLabel(line.color||'Default', line.product)}</span><div class="cart-item-unit-price">${formatPrice(line.product.price)} × ${line.quantity}</div><div class="cart-item-price">${formatPrice(line.product.price*line.quantity)}</div></div><div class="cart-line-controls"><div class="qty-select-wrapper"><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},-1)" aria-label="Decrease quantity">−</button><span class="qty-val">${line.quantity}</span><button class="qty-btn" type="button" onclick="alterCartLineItemQuantity(${i},1)" aria-label="Increase quantity">+</button></div></div><button class="saver-cart-remove" type="button" onclick="purgeCartLineItem(${i})" aria-label="Remove item"><i class="far fa-trash-alt"></i></button>`;
       list.appendChild(row);
     });
     if(!shoppingCart.length) list.innerHTML=`<div class="saver-cart-empty"><i class="fas fa-bag-shopping"></i><strong>${currentLanguage==='ar'?'سلة التسوق فارغة':'Your cart is empty'}</strong><span>${currentLanguage==='ar'?'أضف بعض المنتجات للمتابعة.':'Add some products to continue.'}</span></div>`;
     const badge=document.getElementById('cartBadgeCount'),mobile=document.getElementById('mobileCartBadge'),cnt=document.getElementById('summaryItemCount'),sum=document.getElementById('summaryTotalPrice');
     if(badge)badge.textContent=units;if(mobile)mobile.textContent=units;if(cnt)cnt.textContent=units;if(sum)sum.textContent=formatPrice(total);
-    saveGuestCart(); if(currentUser())syncCartToAccount(); updateAccountIndicators();
+    if(cartPersistenceReady){ saveGuestCart(); if(currentUser())syncCartToAccount(); } updateAccountIndicators();
   };
   try{refreshCartDisplayEngine=window.refreshCartDisplayEngine}catch(e){}
   try{alterCartLineItemQuantity=window.alterCartLineItemQuantity;purgeCartLineItem=window.purgeCartLineItem}catch(e){}
@@ -9173,10 +9235,13 @@ document.addEventListener("DOMContentLoaded", function () {
   if(originalToggleLanguage){window.toggleLanguage=function(){originalToggleLanguage();updateAccountIndicators();if(document.getElementById('view-account')?.classList.contains('active'))saverRenderAccountView();refreshCartDisplayEngine();};try{toggleLanguage=window.toggleLanguage}catch(e){}}
 
   async function initializeCustomerFeatures(){
+    cartPersistenceReady=false;
+    await consumeAuthRedirect();
     let tries=0;while(!productsDatabase.length&&tries<80){await new Promise(r=>setTimeout(r,100));tries++}
     if(getSession()){
-      // Refresh token when close to expiry.
-      try{const payload=JSON.parse(atob(token().split('.')[1]||''));if(payload.exp*1000<Date.now()+60000)await refreshSessionIfNeeded()}catch(e){}
+      // Refresh token when close to expiry. Refreshes are serialized so multiple
+      // startup requests cannot rotate the same refresh token at the same time.
+      try{const payload=JSON.parse(atob(token().split('.')[1]||''));if(payload.exp*1000<Date.now()+120000)await refreshSessionIfNeeded()}catch(e){}
     }
     if(currentUser()){
       // Show the locally persisted account cart immediately, then reconcile with Supabase.
@@ -9188,7 +9253,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }else{
       restoreGuestCart();
     }
+
+    // IMPORTANT: only start saving after the previous cart has been restored.
     refreshCartDisplayEngine();updateWishlistBadge();updateAccountIndicators();
+    cartPersistenceReady=true;
+
+    if(authConfirmedFromUrl){
+      setTimeout(()=>{
+        try{ switchView('account'); saverRenderAccountView(); }catch(e){}
+      },150);
+    }
   }
   // Expose only the customer helpers needed by the later account/address UI module.
   window.saverCustomerCurrentUser = currentUser;
@@ -10327,6 +10401,62 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 
   window.addEventListener("pageshow", restoreAfterWhatsApp);
   window.addEventListener("load", restoreAfterWhatsApp);
+})();
+</script>
+
+
+<script id="saver-product-image-open-fix">
+(function(){
+  "use strict";
+  const gestureState=new WeakMap();
+
+  function galleryFromTarget(target){
+    return target?.closest?.('.card-gallery')||null;
+  }
+  function isGalleryControl(target){
+    return !!target?.closest?.('button,a,input,select,textarea,label,.wishlist-btn,.gallery-arrow,.quick-view-btn');
+  }
+  function productIdFromGallery(gallery){
+    const slider=gallery?.querySelector?.('[id^="gallery-slider-"]');
+    return slider ? slider.id.slice('gallery-slider-'.length) : '';
+  }
+
+  document.addEventListener('pointerdown',event=>{
+    const gallery=galleryFromTarget(event.target);
+    if(!gallery||isGalleryControl(event.target))return;
+    gestureState.set(gallery,{x:event.clientX,y:event.clientY,moved:false});
+  },true);
+
+  document.addEventListener('pointermove',event=>{
+    const gallery=galleryFromTarget(event.target);
+    if(!gallery)return;
+    const state=gestureState.get(gallery);if(!state)return;
+    if(Math.abs(event.clientX-state.x)>10||Math.abs(event.clientY-state.y)>10)state.moved=true;
+  },true);
+
+  document.addEventListener('pointerup',event=>{
+    const gallery=galleryFromTarget(event.target);
+    if(!gallery)return;
+    const state=gestureState.get(gallery);
+    if(state?.moved)gallery.dataset.saverSuppressImageClickUntil=String(Date.now()+500);
+  },true);
+
+  document.addEventListener('click',event=>{
+    const gallery=galleryFromTarget(event.target);
+    if(!gallery||isGalleryControl(event.target))return;
+
+    const suppressUntil=Number(gallery.dataset.saverSuppressImageClickUntil||0);
+    if(Date.now()<suppressUntil){
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    const id=productIdFromGallery(gallery);
+    if(!id)return;
+    event.preventDefault();
+    displayDedicatedProductDetailsPage(id);
+  },true);
 })();
 </script>
 
