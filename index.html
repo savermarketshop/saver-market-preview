@@ -10295,8 +10295,23 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
   }
 
   async function createStoredOrder(){
-    const session = await ensureFreshCustomerSession();
-    const accessToken = session?.access_token || "";
+    const expectedSignedIn = typeof currentUser === "function" && !!currentUser();
+    let session = await ensureFreshCustomerSession();
+    let accessToken = session?.access_token || "";
+
+    // If the interface says the customer is signed in, never silently create
+    // an unlinked guest order. Refresh first; if that still fails, ask them to
+    // sign in again instead of losing the order from My Account.
+    if(expectedSignedIn && !accessToken && typeof refreshSessionIfNeeded === "function"){
+      session = await refreshSessionIfNeeded();
+      accessToken = session?.access_token || "";
+    }
+    if(expectedSignedIn && !accessToken){
+      throw new Error(checkoutLang(
+        "Your login session expired. Please sign in again, then place the order.",
+        "انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى ثم إرسال الطلب."
+      ));
+    }
 
     const payload = {
       customer_name: document.getElementById("custName")?.value?.trim() || "",
@@ -10311,23 +10326,36 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
       }))
     };
 
-    const headers = {
-      "Content-Type":"application/json",
-      "apikey": SAVER_SUPABASE_PUBLISHABLE_KEY
-    };
-    if(accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    async function send(tokenValue){
+      const headers = {
+        "Content-Type":"application/json",
+        "apikey": SAVER_SUPABASE_PUBLISHABLE_KEY
+      };
+      if(tokenValue) headers.Authorization = `Bearer ${tokenValue}`;
 
-    const response = await fetch(`${SAVER_SUPABASE_URL}/functions/v1/create-order`, {
-      method:"POST",
-      headers,
-      body:JSON.stringify(payload)
-    });
-
-    const result = await response.json().catch(()=>({}));
-    if(!response.ok || !result?.ok){
-      throw new Error(result?.error || `Order save failed (${response.status})`);
+      const response = await fetch(`${SAVER_SUPABASE_URL}/functions/v1/create-order`, {
+        method:"POST",
+        headers,
+        body:JSON.stringify(payload)
+      });
+      const result = await response.json().catch(()=>({}));
+      return {response,result};
     }
-    return {result, signedIn: !!accessToken};
+
+    let attempt = await send(accessToken);
+
+    // A customer token may expire while the installed mobile app is suspended.
+    // Refresh it once and retry the SAME order, preserving its account link.
+    if(attempt.response.status===401 && expectedSignedIn && typeof refreshSessionIfNeeded === "function"){
+      session = await refreshSessionIfNeeded();
+      accessToken = session?.access_token || "";
+      if(accessToken) attempt = await send(accessToken);
+    }
+
+    if(!attempt.response.ok || !attempt.result?.ok){
+      throw new Error(attempt.result?.error || `Order save failed (${attempt.response.status})`);
+    }
+    return {result:attempt.result, signedIn: !!attempt.result?.signed_in};
   }
 
   window.handleCheckout = async function(event){
