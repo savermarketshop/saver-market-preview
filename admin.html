@@ -87,59 +87,222 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
 .review-text-cell{max-width:360px;white-space:normal}
 
 
-/* === Saver Market compact mobile admin v3 — phone only === */
-.smapp-header,.smapp-nav,.smapp-more{display:none}
+
+
+
+/* ============================================================
+   SAVER MARKET ADMIN — COMPACT MOBILE CONTROL CENTER
+   Phone only. Desktop admin is intentionally unchanged.
+   ============================================================ */
+.smapp-header,.smapp-homebar,.smapp-mobile-dashboard{display:none}
+
 @media(max-width:768px){
-:root{--ma:#214f31;--ma2:#edf5ec;--mabg:#f5f7f3;--mab:#e1e7df;--mat:#18231c;--mam:#748078}
-html,body{max-width:100%;overflow-x:hidden;background:var(--mabg)}
-body{padding-bottom:70px}
-#dashboardView.dashboard{display:block!important;background:var(--mabg);min-height:100vh}
-.sidebar,.topbar{display:none!important}.main{padding:10px!important;width:100%!important}
-.smapp-header{display:flex;position:sticky;top:0;z-index:900;height:54px;background:#fff;border-bottom:1px solid var(--mab);align-items:center;justify-content:space-between;padding:0 12px}
-.smapp-header b{font-size:.9rem;color:var(--ma)}.smapp-header span{font-size:.67rem;color:var(--mam)}
-.smapp-head-side{width:34px;height:34px;border:0;border-radius:50%;background:var(--ma2);color:var(--ma);display:grid;place-items:center}
-.page{padding:0!important}.card{padding:11px!important;border-radius:14px!important;box-shadow:none!important;border:1px solid var(--mab)!important}
-.toolbar{display:grid!important;gap:7px!important;margin-bottom:9px!important}.toolbar-left,.toolbar-right{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
-input,select,textarea{font-size:16px!important;border-radius:10px!important;padding:9px 10px!important;min-height:40px!important}
-textarea{min-height:76px!important}.field{margin-bottom:9px!important}.field label{font-size:.72rem!important;margin-bottom:4px!important;font-weight:700!important}
-.btn{min-height:38px!important;padding:8px 10px!important;border-radius:10px!important;font-size:.75rem!important}.btn-primary{background:var(--ma)!important}
-#page-home .dashboard-home{border:0!important;background:transparent!important;padding:5px!important}
-#page-home .dashboard-home h3{font-size:1.15rem!important;margin:4px 0 4px!important}#page-home .dashboard-home p{font-size:.75rem!important;margin:0!important;color:var(--mam)}
-.smapp-nav{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:950;height:66px;background:#fff;border-top:1px solid var(--mab);grid-template-columns:repeat(4,1fr);padding:4px 6px calc(4px + env(safe-area-inset-bottom))}
-.smapp-nav button{border:0;background:transparent;border-radius:11px;color:#768078;font-size:.61rem;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.smapp-nav button i{font-size:1rem}.smapp-nav button.active{color:var(--ma);background:var(--ma2)}
-.smapp-more{position:fixed;inset:0;z-index:1000;background:#0006;align-items:flex-end}.smapp-more.open{display:flex}.smapp-panel{width:100%;background:var(--mabg);border-radius:20px 20px 0 0;padding:10px 10px 18px}.smapp-panel h3{margin:5px 5px 9px}.smapp-more button{width:100%;height:48px;background:#fff;border:1px solid var(--mab);border-radius:12px;margin:4px 0;text-align:left;padding:0 12px;color:var(--mat);font-weight:700}.smapp-more button i{width:27px;color:var(--ma)}
-/* lists become compact cards */
-#page-products .table-wrap,#page-orders .table-wrap,#page-reviews .table-wrap,#page-customers .table-wrap{overflow:visible!important}
-#page-products table,#page-products thead,#page-products tbody,#page-products tr,#page-products th,#page-products td,
-#page-orders table,#page-orders thead,#page-orders tbody,#page-orders tr,#page-orders th,#page-orders td,
-#page-reviews table,#page-reviews thead,#page-reviews tbody,#page-reviews tr,#page-reviews th,#page-reviews td,
-#page-customers table,#page-customers thead,#page-customers tbody,#page-customers tr,#page-customers th,#page-customers td{display:block!important;width:100%!important;min-width:0!important}
-#page-products thead,#page-orders thead,#page-reviews thead,#page-customers thead{display:none!important}
-#page-products tbody,#page-orders tbody,#page-reviews tbody,#page-customers tbody{display:grid!important;gap:7px!important}
-#page-products tr,#page-orders tr,#page-reviews tr,#page-customers tr{background:#fff;border:1px solid var(--mab);border-radius:13px;padding:9px;box-shadow:none}
-#page-products td,#page-orders td,#page-reviews td,#page-customers td{border:0!important;padding:2px 0!important;font-size:.7rem!important;white-space:normal!important}
-#page-products tr{position:relative;min-height:78px;padding-left:78px;padding-right:34px}
-#page-products td:first-child{position:absolute;left:8px;top:8px;width:61px!important;height:61px}#page-products td:first-child img{width:61px!important;height:61px!important;object-fit:cover;border-radius:9px!important}
-#page-products td:nth-child(3){font-weight:800!important;font-size:.76rem!important}#page-products td:nth-child(4){color:var(--ma);font-weight:800!important}
-#page-products td:last-child{position:absolute;right:5px;top:5px;width:28px!important}#page-products td:last-child .btn{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;font-size:0!important;background:transparent!important;color:var(--ma)!important;border:0!important}#page-products td:last-child .btn:first-child:before{content:"⋮";font-size:1.3rem}#page-products td:last-child .btn:not(:first-child){display:none!important}
-.orders-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;margin-bottom:9px!important}.stat-box{padding:9px!important;border-radius:12px!important}.stat-box b{font-size:1rem!important}.stat-box span{font-size:.65rem!important}
-#page-orders td:first-child{font-weight:800!important;color:var(--ma)}#page-orders td:last-child .btn{width:100%!important;margin-top:5px!important}
-.review-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important}.review-photo-row img{width:50px!important;height:50px!important}
-/* full-screen app-like editor/details */
-.modal-backdrop{padding:0!important;place-items:stretch!important;z-index:1100!important;background:#fff!important}
-.modal{width:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;padding:0 10px 84px!important;background:var(--mabg)!important}
-.modal-head{position:sticky;top:0;z-index:4;height:54px;margin:0 -10px 10px!important;padding:0 10px;background:#fff;border-bottom:1px solid var(--mab);display:flex!important;align-items:center!important}.modal-head h2{font-size:1rem!important}.close{width:34px!important;height:34px!important;background:var(--ma2)!important;color:var(--ma)!important}
-#productForm>.message{margin:5px 0!important}.form-grid{grid-template-columns:1fr!important;gap:0!important}.full{grid-column:auto!important}
-#productForm .check-row{background:#fff;border:1px solid var(--mab);border-radius:11px;padding:8px;margin-bottom:8px;gap:10px!important}#productForm .check-row label{font-size:.72rem!important}
-#productForm .check-row input{min-height:0!important;width:auto!important;padding:0!important}
-.variant-stock-box{padding:9px!important;margin-top:7px!important;border-radius:12px!important}.variant-stock-head{margin-bottom:7px!important}.variant-stock-head strong{font-size:.75rem!important}.variant-stock-grid{grid-template-columns:1fr!important;gap:5px!important}.variant-stock-row{grid-template-columns:1fr 68px!important;padding:6px 8px!important;border-radius:9px!important}.variant-stock-row span{font-size:.7rem!important}.variant-stock-row input{min-height:34px!important;padding:5px 7px!important}.variant-stock-help{font-size:.65rem!important;margin-top:5px!important}
-#productForm button[type=submit]{position:fixed!important;left:10px;right:10px;bottom:10px;z-index:1200;width:calc(100% - 20px)!important;height:46px!important;border-radius:13px!important;box-shadow:0 7px 20px #214f3140}
-.order-detail-grid{grid-template-columns:1fr!important;gap:7px!important}.detail-card{padding:9px!important;border-radius:11px!important}.detail-card h4{font-size:.78rem!important;margin-bottom:5px!important}.detail-line,.order-item-sub{font-size:.7rem!important}.order-item-row{padding:8px!important;border-radius:9px!important}
-.media-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:7px!important;align-items:stretch!important}.media-toolbar .field{min-width:0!important}.media-grid{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}.media-card{padding:7px!important;border-radius:11px!important}.media-card img{height:105px!important;border-radius:8px!important}.media-actions .btn{padding:5px 7px!important;min-height:32px!important;font-size:.65rem!important}
-.settings-grid{grid-template-columns:1fr!important;gap:7px!important}.settings-card{padding:10px!important;border-radius:12px!important}.settings-card h3{font-size:.85rem!important;margin-bottom:7px!important}
-.bulk-grid{grid-template-columns:1fr!important;gap:7px!important}.bulk-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}.media-help{font-size:.7rem!important;padding:8px 9px!important;margin-bottom:8px!important;border-radius:10px!important}
+  :root{
+    --sm-green:#214f31;
+    --sm-green2:#2f6740;
+    --sm-soft:#edf5ec;
+    --sm-bg:#f5f7f3;
+    --sm-card:#ffffff;
+    --sm-border:#e1e7df;
+    --sm-text:#18231c;
+    --sm-muted:#748078;
+    --sm-warn:#b67600;
+    --sm-danger:#b13b3b;
+    --sm-home-h:58px;
+  }
+
+  html,body{max-width:100%;overflow-x:hidden;background:var(--sm-bg)}
+  body.smapp-admin-open{padding-bottom:calc(var(--sm-home-h) + 12px + env(safe-area-inset-bottom))}
+  #dashboardView.dashboard{display:block!important;background:var(--sm-bg);min-height:100vh}
+  #dashboardView .sidebar,#dashboardView .topbar{display:none!important}
+  #dashboardView .main{padding:10px!important;width:100%!important;margin:0!important}
+  #dashboardView .page{padding:0!important}
+  input,select,textarea{font-size:16px!important}
+
+  /* Compact app header */
+  body.smapp-admin-open .smapp-header{
+    display:flex;
+    position:sticky;top:0;z-index:900;
+    height:54px;background:#fff;border-bottom:1px solid var(--sm-border);
+    align-items:center;justify-content:space-between;padding:0 12px;
+    box-shadow:0 3px 12px rgba(33,79,49,.05)
+  }
+  .smapp-brand{display:flex;align-items:center;gap:9px;min-width:0}
+  .smapp-brand-mark{
+    width:34px;height:34px;border-radius:10px;background:var(--sm-green);
+    color:#fff;display:grid;place-items:center;font-weight:900;font-size:.78rem
+  }
+  .smapp-brand-copy b{display:block;color:var(--sm-green);font-size:.88rem;line-height:1.05}
+  .smapp-brand-copy span{display:block;color:var(--sm-muted);font-size:.62rem;margin-top:2px}
+  .smapp-logout-top{
+    width:34px;height:34px;border:0;border-radius:10px;background:#fff1f1;color:#aa3434;
+    display:grid;place-items:center
+  }
+
+  /* Shared mobile controls */
+  .card{padding:11px!important;border-radius:14px!important;box-shadow:none!important;border:1px solid var(--sm-border)!important}
+  .toolbar{display:grid!important;gap:7px!important;margin-bottom:9px!important}
+  .toolbar-left,.toolbar-right{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+  input,select,textarea{border-radius:10px!important;padding:9px 10px!important;min-height:40px!important}
+  textarea{min-height:76px!important}
+  .field{margin-bottom:9px!important}
+  .field label{font-size:.72rem!important;margin-bottom:4px!important;font-weight:700!important}
+  .btn{min-height:38px!important;padding:8px 10px!important;border-radius:10px!important;font-size:.75rem!important}
+  .btn-primary{background:var(--sm-green)!important}
+
+  /* Dashboard becomes the mobile control center */
+  #page-home .dashboard-home{display:none!important}
+  .smapp-mobile-dashboard{display:block}
+  .smapp-dash-intro{padding:3px 2px 10px}
+  .smapp-dash-intro h2{margin:0;font-size:1.3rem;line-height:1.15;color:var(--sm-text)}
+  .smapp-dash-intro p{margin:4px 0 0;font-size:.7rem;color:var(--sm-muted)}
+  .smapp-dash-refresh{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--sm-soft);border:1px solid #dde9da;border-radius:11px;
+    padding:7px 9px;margin-bottom:8px;font-size:.65rem;color:#607063
+  }
+  .smapp-dash-refresh button{
+    border:0;background:transparent;color:var(--sm-green);font-weight:800;font-size:.65rem;padding:3px 4px
+  }
+  .smapp-dashboard-list{display:grid;gap:7px}
+  .smapp-dashboard-card{
+    width:100%;border:1px solid var(--sm-border);background:var(--sm-card);
+    border-radius:14px;padding:10px 10px;display:grid;
+    grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:9px;
+    text-align:left;color:var(--sm-text);box-shadow:0 2px 8px rgba(33,79,49,.025)
+  }
+  .smapp-dashboard-card:active{transform:scale(.99);background:#fbfcfa}
+  .smapp-card-icon{
+    width:42px;height:42px;border-radius:12px;background:var(--sm-soft);
+    color:var(--sm-green);display:grid;place-items:center;font-size:1rem
+  }
+  .smapp-dashboard-card.warn .smapp-card-icon{background:#fff4dc;color:var(--sm-warn)}
+  .smapp-dashboard-card.alert .smapp-card-icon{background:#fff0f0;color:var(--sm-danger)}
+  .smapp-card-main{min-width:0}
+  .smapp-card-title-row{display:flex;align-items:center;gap:6px;min-width:0}
+  .smapp-card-title{font-size:.79rem;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .smapp-card-summary{font-size:.65rem;color:var(--sm-muted);margin-top:3px;line-height:1.35}
+  .smapp-card-number{color:var(--sm-green);font-weight:850}
+  .smapp-notice{
+    min-width:22px;height:22px;padding:0 6px;border-radius:999px;
+    background:#fff0d8;color:#9c6700;font-size:.62rem;font-weight:900;
+    display:none;align-items:center;justify-content:center
+  }
+  .smapp-notice.show{display:inline-flex}
+  .smapp-notice.red{background:#ffeded;color:#ae3434}
+  .smapp-card-arrow{color:#9aa39d;font-size:.72rem}
+  .smapp-dashboard-card.static .smapp-card-number{color:var(--sm-text)}
+
+  /* Product, order, review, customer lists -> compact cards */
+  #page-products .table-wrap,#page-orders .table-wrap,#page-reviews .table-wrap,#page-customers .table-wrap{overflow:visible!important}
+  #page-products table,#page-products thead,#page-products tbody,#page-products tr,#page-products th,#page-products td,
+  #page-orders table,#page-orders thead,#page-orders tbody,#page-orders tr,#page-orders th,#page-orders td,
+  #page-reviews table,#page-reviews thead,#page-reviews tbody,#page-reviews tr,#page-reviews th,#page-reviews td,
+  #page-customers table,#page-customers thead,#page-customers tbody,#page-customers tr,#page-customers th,#page-customers td{
+    display:block!important;width:100%!important;min-width:0!important
+  }
+  #page-products thead,#page-orders thead,#page-reviews thead,#page-customers thead{display:none!important}
+  #page-products tbody,#page-orders tbody,#page-reviews tbody,#page-customers tbody{display:grid!important;gap:7px!important}
+  #page-products tr,#page-orders tr,#page-reviews tr,#page-customers tr{
+    background:#fff;border:1px solid var(--sm-border);border-radius:13px;padding:9px;box-shadow:none
+  }
+  #page-products td,#page-orders td,#page-reviews td,#page-customers td{
+    border:0!important;padding:2px 0!important;font-size:.7rem!important;white-space:normal!important
+  }
+
+  #page-products tr{position:relative;min-height:78px;padding-left:78px;padding-right:34px}
+  #page-products td:first-child{position:absolute;left:8px;top:8px;width:61px!important;height:61px}
+  #page-products td:first-child img{width:61px!important;height:61px!important;object-fit:cover;border-radius:9px!important}
+  #page-products td:nth-child(3){font-weight:800!important;font-size:.76rem!important}
+  #page-products td:nth-child(4){color:var(--sm-green);font-weight:800!important}
+  #page-products td:last-child{position:absolute;right:5px;top:5px;width:28px!important}
+  #page-products td:last-child .btn{
+    width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;
+    padding:0!important;font-size:0!important;background:transparent!important;color:var(--sm-green)!important;border:0!important
+  }
+  #page-products td:last-child .btn:first-child:before{content:"⋮";font-size:1.3rem}
+  #page-products td:last-child .btn:not(:first-child){display:none!important}
+
+  .orders-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;margin-bottom:9px!important}
+  .stat-box{padding:9px!important;border-radius:12px!important}
+  .stat-box b{font-size:1rem!important}.stat-box span{font-size:.65rem!important}
+  #page-orders td:first-child{font-weight:800!important;color:var(--sm-green)}
+  #page-orders td:last-child .btn{width:100%!important;margin-top:5px!important}
+  .review-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important}
+  .review-photo-row img{width:50px!important;height:50px!important}
+
+  /* Full-screen mobile editor / details */
+  .modal-backdrop{
+    padding:0!important;place-items:stretch!important;z-index:1100!important;background:#fff!important
+  }
+  .modal{
+    width:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;
+    padding:0 10px 142px!important;background:var(--sm-bg)!important
+  }
+  .modal-head{
+    position:sticky;top:0;z-index:4;height:54px;margin:0 -10px 10px!important;padding:0 10px;
+    background:#fff;border-bottom:1px solid var(--sm-border);display:flex!important;align-items:center!important
+  }
+  .modal-head h2{font-size:1rem!important}
+  .close{width:34px!important;height:34px!important;background:var(--sm-soft)!important;color:var(--sm-green)!important}
+  #productForm>.message{margin:5px 0!important}
+  .form-grid{grid-template-columns:1fr!important;gap:0!important}.full{grid-column:auto!important}
+  #productForm .check-row{
+    background:#fff;border:1px solid var(--sm-border);border-radius:11px;padding:8px;margin-bottom:8px;gap:10px!important
+  }
+  #productForm .check-row label{font-size:.72rem!important}
+  #productForm .check-row input{min-height:0!important;width:auto!important;padding:0!important}
+  .variant-stock-box{padding:9px!important;margin-top:7px!important;border-radius:12px!important}
+  .variant-stock-head{margin-bottom:7px!important}.variant-stock-head strong{font-size:.75rem!important}
+  .variant-stock-grid{grid-template-columns:1fr!important;gap:5px!important}
+  .variant-stock-row{grid-template-columns:1fr 68px!important;padding:6px 8px!important;border-radius:9px!important}
+  .variant-stock-row span{font-size:.7rem!important}
+  .variant-stock-row input{min-height:34px!important;padding:5px 7px!important}
+  .variant-stock-help{font-size:.65rem!important;margin-top:5px!important}
+  #productForm button[type=submit]{
+    position:fixed!important;left:10px;right:10px;
+    bottom:calc(var(--sm-home-h) + 12px + env(safe-area-inset-bottom));
+    z-index:1200;width:calc(100% - 20px)!important;height:46px!important;
+    border-radius:13px!important;box-shadow:0 7px 20px #214f3140
+  }
+
+  .order-detail-grid{grid-template-columns:1fr!important;gap:7px!important}
+  .detail-card{padding:9px!important;border-radius:11px!important}
+  .detail-card h4{font-size:.78rem!important;margin-bottom:5px!important}
+  .detail-line,.order-item-sub{font-size:.7rem!important}
+  .order-item-row{padding:8px!important;border-radius:9px!important}
+
+  /* Media / settings / bulk */
+  .media-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:7px!important;align-items:stretch!important}
+  .media-toolbar .field{min-width:0!important}
+  .media-grid{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}
+  .media-card{padding:7px!important;border-radius:11px!important}
+  .media-card img{height:105px!important;border-radius:8px!important}
+  .media-actions .btn{padding:5px 7px!important;min-height:32px!important;font-size:.65rem!important}
+  .settings-grid{grid-template-columns:1fr!important;gap:7px!important}
+  .settings-card{padding:10px!important;border-radius:12px!important}
+  .settings-card h3{font-size:.85rem!important;margin-bottom:7px!important}
+  .bulk-grid{grid-template-columns:1fr!important;gap:7px!important}
+  .bulk-stats{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}
+  .media-help{font-size:.7rem!important;padding:8px 9px!important;margin-bottom:8px!important;border-radius:10px!important}
+
+  /* The only permanent bottom navigation on mobile */
+  body.smapp-admin-open .smapp-homebar{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:950;
+    min-height:calc(var(--sm-home-h) + env(safe-area-inset-bottom));
+    padding:5px 10px calc(5px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.98);border-top:1px solid var(--sm-border);
+    box-shadow:0 -4px 16px rgba(33,79,49,.07)
+  }
+  .smapp-homebar button{
+    width:100%;height:46px;border:0;border-radius:13px;background:var(--sm-green);
+    color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:.75rem;font-weight:850
+  }
 }
-@media(min-width:769px){.smapp-header,.smapp-nav,.smapp-more{display:none!important}}
+@media(min-width:769px){
+  .smapp-header,.smapp-homebar,.smapp-mobile-dashboard{display:none!important}
+}
 
 </style>
 </head>
@@ -505,8 +668,8 @@ async function isAdmin(user){
   const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
   return !error && !!data;
 }
-function showLogin(){$('dashboardView').classList.add('hidden');$('loginView').classList.remove('hidden')}
-function showDashboard(user){$('loginView').classList.add('hidden');$('dashboardView').classList.remove('hidden');$('adminEmail').textContent=user.email||''}
+function showLogin(){$('dashboardView').classList.add('hidden');$('loginView').classList.remove('hidden');document.body.classList.remove('smapp-admin-open')}
+function showDashboard(user){$('loginView').classList.add('hidden');$('dashboardView').classList.remove('hidden');$('adminEmail').textContent=user.email||'';document.body.classList.add('smapp-admin-open');setTimeout(()=>window.smappLoadDashboard?.(),0)}
 
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault(); clearMsg($('loginMessage')); $('loginBtn').disabled=true;
@@ -1209,39 +1372,245 @@ async function saveSiteSettings(){
 }
 </script>
 
+
 <header class="smapp-header">
- <button class="smapp-head-side" id="smappMenu"><i class="fas fa-bars"></i></button>
- <div style="text-align:center"><b>Saver Market</b><br><span>Admin</span></div>
- <button class="smapp-head-side" id="smappProfile">A</button>
+  <div class="smapp-brand">
+    <div class="smapp-brand-mark">SM</div>
+    <div class="smapp-brand-copy">
+      <b>Saver Market</b>
+      <span id="smappCurrentPage">Admin Dashboard</span>
+    </div>
+  </div>
+  <button class="smapp-logout-top" id="smappLogoutTop" type="button" aria-label="Log out">
+    <i class="fas fa-right-from-bracket"></i>
+  </button>
 </header>
-<nav class="smapp-nav" id="smappNav">
- <button data-page="home" class="active"><i class="fas fa-house"></i>Dashboard</button>
- <button data-page="products"><i class="fas fa-box"></i>Products</button>
- <button data-page="orders"><i class="fas fa-cart-shopping"></i>Orders</button>
- <button id="smappMore"><i class="fas fa-ellipsis"></i>More</button>
+
+<nav class="smapp-homebar">
+  <button id="smappHomeBtn" type="button">
+    <i class="fas fa-house"></i>
+    <span>Home · Dashboard</span>
+  </button>
 </nav>
-<div class="smapp-more" id="smappSheet"><div class="smapp-panel">
- <h3>More</h3>
- <button data-page="bulk"><i class="fas fa-file-import"></i>Bulk Import</button>
- <button data-page="reviews"><i class="fas fa-star"></i>Reviews</button>
- <button data-page="customers"><i class="fas fa-users"></i>Customers</button>
- <button data-page="media"><i class="fas fa-images"></i>Media Manager</button>
- <button data-page="settings"><i class="fas fa-gear"></i>Site Settings</button>
- <button id="smappLogout" style="color:#a53232"><i class="fas fa-right-from-bracket"></i>Log Out</button>
-</div></div>
 
 
-<script id="smapp-mobile-controller">
-(()=>{const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];
-const sheet=q('#smappSheet');
-function close(){sheet?.classList.remove('open');document.body.style.overflow=''}
-function open(){sheet?.classList.add('open');document.body.style.overflow='hidden'}
-function active(p){qa('#smappNav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));q('#smappMore')?.classList.toggle('active',!['home','products','orders'].includes(p))}
-function go(p){q(`.nav-btn[data-page="${p}"]`)?.click();active(p);close();scrollTo(0,0)}
-qa('#smappNav [data-page],#smappSheet [data-page]').forEach(x=>x.onclick=()=>go(x.dataset.page));
-q('#smappMore').onclick=open;q('#smappMenu').onclick=open;q('#smappProfile').onclick=open;
-sheet.onclick=e=>{if(e.target===sheet)close()};q('#smappLogout').onclick=()=>{close();q('#logoutBtn')?.click()};
-qa('.nav-btn[data-page]').forEach(x=>x.addEventListener('click',()=>active(x.dataset.page)));
+<script id="smapp-mobile-control-center">
+(()=>{
+  "use strict";
+  const q=s=>document.querySelector(s);
+  const qa=s=>[...document.querySelectorAll(s)];
+  const mobile=()=>window.matchMedia('(max-width:768px)').matches;
+
+  function nav(page){
+    q(`.nav-btn[data-page="${page}"]`)?.click();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function setPageName(page){
+    const names={
+      home:'Admin Dashboard',products:'Products',bulk:'Bulk Import',orders:'Orders',
+      reviews:'Reviews',customers:'Customers',media:'Media Manager',settings:'Site Settings'
+    };
+    if(q('#smappCurrentPage')) q('#smappCurrentPage').textContent=names[page]||'Admin';
+  }
+
+  function createDashboard(){
+    const home=q('#page-home');
+    if(!home || home.querySelector('.smapp-mobile-dashboard')) return;
+
+    const el=document.createElement('div');
+    el.className='smapp-mobile-dashboard';
+    el.innerHTML=`
+      <div class="smapp-dash-intro">
+        <h2>Admin Dashboard</h2>
+        <p>Everything you need to manage Saver Market in one place.</p>
+      </div>
+
+      <div class="smapp-dash-refresh">
+        <span id="smDashUpdated">Loading live store data…</span>
+        <button type="button" id="smDashRefresh"><i class="fas fa-rotate-right"></i>&nbsp; Refresh</button>
+      </div>
+
+      <div class="smapp-dashboard-list">
+        <button class="smapp-dashboard-card" type="button" data-open-page="products">
+          <span class="smapp-card-icon"><i class="fas fa-box"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title-row">
+              <span class="smapp-card-title">Products</span>
+              <span class="smapp-notice" id="smBadgeProducts"></span>
+            </span>
+            <span class="smapp-card-summary"><span class="smapp-card-number" id="smProductsTotal">—</span> products · <span id="smProductsActive">—</span> active · <span id="smProductsLow">—</span> low/out of stock</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card warn" type="button" data-open-page="orders">
+          <span class="smapp-card-icon"><i class="fas fa-cart-shopping"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title-row">
+              <span class="smapp-card-title">Orders</span>
+              <span class="smapp-notice red" id="smBadgeOrders"></span>
+            </span>
+            <span class="smapp-card-summary"><span class="smapp-card-number" id="smOrdersTotal">—</span> total · <span id="smOrdersPending">—</span> pending · Sales <span id="smOrdersSales">—</span></span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card warn" type="button" data-open-page="reviews">
+          <span class="smapp-card-icon"><i class="fas fa-star"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title-row">
+              <span class="smapp-card-title">Reviews</span>
+              <span class="smapp-notice red" id="smBadgeReviews"></span>
+            </span>
+            <span class="smapp-card-summary"><span class="smapp-card-number" id="smReviewsPending">—</span> waiting for approval · <span id="smReviewsTotal">—</span> total reviews</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card" type="button" data-open-page="customers">
+          <span class="smapp-card-icon"><i class="fas fa-users"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title-row">
+              <span class="smapp-card-title">Customers</span>
+              <span class="smapp-notice" id="smBadgeCustomers"></span>
+            </span>
+            <span class="smapp-card-summary"><span class="smapp-card-number" id="smCustomersTotal">—</span> registered · <span id="smCustomersNew">—</span> new in the last 7 days</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card static" type="button" data-open-page="bulk">
+          <span class="smapp-card-icon"><i class="fas fa-file-import"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title">Bulk Import</span>
+            <span class="smapp-card-summary">Import or update products using your Excel file and product-image ZIP.</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card" type="button" data-open-page="media">
+          <span class="smapp-card-icon"><i class="fas fa-images"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title">Media Manager</span>
+            <span class="smapp-card-summary"><span class="smapp-card-number" id="smMediaTotal">—</span> website media items · Manage logo, hero and About images.</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
+        <button class="smapp-dashboard-card static" type="button" data-open-page="settings">
+          <span class="smapp-card-icon"><i class="fas fa-gear"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title">Site Settings</span>
+            <span class="smapp-card-summary">Contact details, homepage text, announcements, Terms and Return Policy.</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+      </div>`;
+
+    home.appendChild(el);
+
+    qa('[data-open-page]').forEach(btn=>btn.addEventListener('click',()=>nav(btn.dataset.openPage)));
+    q('#smDashRefresh')?.addEventListener('click',()=>window.smappLoadDashboard?.());
+  }
+
+  function badge(id,n){
+    const el=q(id); if(!el)return;
+    const value=Math.max(0,Number(n)||0);
+    el.textContent=value>99?'99+':String(value);
+    el.classList.toggle('show',value>0);
+  }
+
+  function safeText(id,value){
+    const el=q(id); if(el)el.textContent=value;
+  }
+
+  window.smappLoadDashboard=async function(){
+    if(!mobile() || !document.body.classList.contains('smapp-admin-open'))return;
+    createDashboard();
+
+    safeText('#smDashUpdated','Refreshing live store data…');
+
+    try{
+      const settled=await Promise.allSettled([
+        sb.from('products').select('id,stock_qty,is_active'),
+        sb.from('orders').select('id,status,total_syp'),
+        sb.from('product_reviews').select('id,status'),
+        sb.rpc('admin_customer_directory'),
+        sb.from('site_media').select('id',{count:'exact',head:true})
+      ]);
+
+      const products=settled[0].status==='fulfilled' && !settled[0].value.error ? (settled[0].value.data||[]) : null;
+      const orders=settled[1].status==='fulfilled' && !settled[1].value.error ? (settled[1].value.data||[]) : null;
+      const reviews=settled[2].status==='fulfilled' && !settled[2].value.error ? (settled[2].value.data||[]) : null;
+      const customers=settled[3].status==='fulfilled' && !settled[3].value.error ? (settled[3].value.data||[]) : null;
+      const mediaResult=settled[4].status==='fulfilled' ? settled[4].value : null;
+
+      if(products){
+        const low=products.filter(p=>Math.max(0,Number(p.stock_qty)||0)<=5).length;
+        const active=products.filter(p=>p.is_active).length;
+        safeText('#smProductsTotal',products.length);
+        safeText('#smProductsActive',active);
+        safeText('#smProductsLow',low);
+        badge('#smBadgeProducts',low);
+      }
+
+      if(orders){
+        const pending=orders.filter(o=>o.status==='pending').length;
+        const sales=orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+Number(o.total_syp||0),0);
+        safeText('#smOrdersTotal',orders.length);
+        safeText('#smOrdersPending',pending);
+        safeText('#smOrdersSales',typeof money==='function'?money(sales):`${sales.toLocaleString()} SYP`);
+        badge('#smBadgeOrders',pending);
+      }
+
+      if(reviews){
+        const pending=reviews.filter(r=>r.status==='pending').length;
+        safeText('#smReviewsPending',pending);
+        safeText('#smReviewsTotal',reviews.length);
+        badge('#smBadgeReviews',pending);
+      }
+
+      if(customers){
+        const cutoff=Date.now()-(7*24*60*60*1000);
+        const newCount=customers.filter(c=>{
+          const t=Date.parse(c.created_at||'');
+          return Number.isFinite(t)&&t>=cutoff;
+        }).length;
+        safeText('#smCustomersTotal',customers.length);
+        safeText('#smCustomersNew',newCount);
+        badge('#smBadgeCustomers',newCount);
+      }
+
+      if(mediaResult && !mediaResult.error){
+        safeText('#smMediaTotal',mediaResult.count??0);
+      }
+
+      safeText('#smDashUpdated','Live data updated just now');
+    }catch(err){
+      console.warn('Mobile dashboard stats:',err);
+      safeText('#smDashUpdated','Some live data could not be loaded · Tap Refresh');
+    }
+  };
+
+  q('#smappHomeBtn')?.addEventListener('click',()=>{
+    nav('home');
+    setTimeout(()=>window.smappLoadDashboard?.(),50);
+  });
+  q('#smappLogoutTop')?.addEventListener('click',()=>q('#logoutBtn')?.click());
+
+  qa('.nav-btn[data-page]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      setPageName(btn.dataset.page);
+      if(btn.dataset.page==='home')setTimeout(()=>window.smappLoadDashboard?.(),50);
+    });
+  });
+
+  createDashboard();
+  if(document.body.classList.contains('smapp-admin-open'))setTimeout(()=>window.smappLoadDashboard?.(),200);
+  window.addEventListener('resize',()=>{
+    if(mobile() && document.body.classList.contains('smapp-admin-open'))createDashboard();
+  });
 })();
 </script>
 
