@@ -1,0 +1,25 @@
+{
+  "name": "Saver Admin",
+  "short_name": "Saver Admin",
+  "id": "./admin.html",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7f3",
+  "theme_color": "#214f31",
+  "description": "Saver Market administration",
+  "icons": [
+    {
+      "src": "saver-admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "saver-admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

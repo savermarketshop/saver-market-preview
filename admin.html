@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Saver Market Admin</title>
+<title>Saver Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -304,7 +304,64 @@ textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus
   .smapp-header,.smapp-homebar,.smapp-mobile-dashboard{display:none!important}
 }
 
+
+/* Saver Admin push-notification controls */
+.smapp-head-actions{display:flex;align-items:center;gap:6px}
+.smapp-bell{
+  position:relative;width:34px;height:34px;border:0;border-radius:10px;
+  background:#edf5ec;color:#214f31;display:grid;place-items:center
+}
+.smapp-bell-dot{
+  position:absolute;right:3px;top:3px;width:8px;height:8px;border-radius:50%;
+  background:#d64a4a;border:2px solid #fff
+}
+.smapp-bell-dot.on{background:#4b9a5f}
+.smapp-push-sheet{display:none}
+@media(max-width:768px){
+  body.smapp-admin-open .smapp-push-sheet{
+    position:fixed;inset:0;z-index:1300;background:rgba(15,29,19,.45);
+    align-items:flex-end
+  }
+  body.smapp-admin-open .smapp-push-sheet.open{display:flex}
+  .smapp-push-panel{
+    width:100%;background:#f5f7f3;border-radius:22px 22px 0 0;
+    padding:11px 11px calc(16px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 28px rgba(33,79,49,.18)
+  }
+  .smapp-push-handle{width:42px;height:4px;border-radius:999px;background:#c9d0ca;margin:1px auto 10px}
+  .smapp-push-title{font-size:1rem;font-weight:850;color:#18231c;margin:0 2px 3px}
+  .smapp-push-note{font-size:.68rem;color:#748078;line-height:1.45;margin:0 2px 10px}
+  .smapp-push-status{
+    padding:8px 9px;border:1px solid #e1e7df;background:#fff;border-radius:11px;
+    font-size:.68rem;color:#59655c;margin-bottom:8px
+  }
+  .smapp-push-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 10px;background:#fff;border:1px solid #e1e7df;border-radius:11px;margin:6px 0
+  }
+  .smapp-push-row b{font-size:.73rem;color:#18231c}
+  .smapp-push-row small{display:block;color:#748078;font-size:.62rem;margin-top:2px}
+  .smapp-switch{width:42px!important;min-height:24px!important;height:24px!important}
+  .smapp-push-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+  .smapp-push-actions button{height:40px;border-radius:11px;border:0;font-size:.7rem;font-weight:800}
+  .smapp-push-enable{background:#214f31;color:#fff}
+  .smapp-push-test{background:#edf5ec;color:#214f31}
+  .smapp-push-disable{grid-column:1/-1;background:#fff0f0!important;color:#a33232!important;border:1px solid #f1cccc!important}
+  .smapp-dashboard-card.notifications .smapp-card-icon{background:#e9f3eb}
+}
+@media(min-width:769px){.smapp-push-sheet,.smapp-bell{display:none!important}}
+
 </style>
+
+<!-- Saver Admin PWA / Home Screen identity -->
+<link rel="manifest" href="admin-manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="saver-admin-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="saver-admin-icon-180.png">
+<meta name="theme-color" content="#214f31">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Saver Admin">
+
 </head>
 <body>
 
@@ -1381,9 +1438,14 @@ async function saveSiteSettings(){
       <span id="smappCurrentPage">Admin Dashboard</span>
     </div>
   </div>
-  <button class="smapp-logout-top" id="smappLogoutTop" type="button" aria-label="Log out">
-    <i class="fas fa-right-from-bracket"></i>
-  </button>
+  <div class="smapp-head-actions">
+    <button class="smapp-bell" id="smappBell" type="button" aria-label="Admin notifications">
+      <i class="fas fa-bell"></i><span class="smapp-bell-dot" id="smappBellDot"></span>
+    </button>
+    <button class="smapp-logout-top" id="smappLogoutTop" type="button" aria-label="Log out">
+      <i class="fas fa-right-from-bracket"></i>
+    </button>
+  </div>
 </header>
 
 <nav class="smapp-homebar">
@@ -1432,6 +1494,18 @@ async function saveSiteSettings(){
       </div>
 
       <div class="smapp-dashboard-list">
+        <button class="smapp-dashboard-card notifications" id="smappNotificationsCard" type="button">
+          <span class="smapp-card-icon"><i class="fas fa-bell"></i></span>
+          <span class="smapp-card-main">
+            <span class="smapp-card-title-row">
+              <span class="smapp-card-title">Admin Notifications</span>
+              <span class="smapp-notice" id="smPushStateBadge">Setup</span>
+            </span>
+            <span class="smapp-card-summary" id="smPushDashboardStatus">Get alerts for new orders, reviews and customers.</span>
+          </span>
+          <i class="fas fa-chevron-right smapp-card-arrow"></i>
+        </button>
+
         <button class="smapp-dashboard-card" type="button" data-open-page="products">
           <span class="smapp-card-icon"><i class="fas fa-box"></i></span>
           <span class="smapp-card-main">
@@ -1611,6 +1685,261 @@ async function saveSiteSettings(){
   window.addEventListener('resize',()=>{
     if(mobile() && document.body.classList.contains('smapp-admin-open'))createDashboard();
   });
+})();
+</script>
+
+
+<div class="smapp-push-sheet" id="smappPushSheet" aria-hidden="true">
+  <div class="smapp-push-panel">
+    <div class="smapp-push-handle"></div>
+    <div class="smapp-push-title">Admin Notifications</div>
+    <p class="smapp-push-note">Receive phone notifications when Saver Market gets a new order, review, or registered customer.</p>
+    <div class="smapp-push-status" id="smappPushStatus">Checking notification support…</div>
+
+    <label class="smapp-push-row">
+      <span><b>New Orders</b><small>Notify when a customer places an order</small></span>
+      <input class="smapp-switch" id="smNotifyOrders" type="checkbox" checked>
+    </label>
+    <label class="smapp-push-row">
+      <span><b>New Reviews</b><small>Notify when a customer submits a review</small></span>
+      <input class="smapp-switch" id="smNotifyReviews" type="checkbox" checked>
+    </label>
+    <label class="smapp-push-row">
+      <span><b>New Customers</b><small>Notify when a new account is registered</small></span>
+      <input class="smapp-switch" id="smNotifyCustomers" type="checkbox" checked>
+    </label>
+
+    <div class="smapp-push-actions">
+      <button class="smapp-push-enable" id="smEnablePush" type="button"><i class="fas fa-bell"></i> Enable Notifications</button>
+      <button class="smapp-push-test" id="smTestPush" type="button"><i class="fas fa-paper-plane"></i> Test This Device</button>
+      <button class="smapp-push-disable" id="smDisablePush" type="button">Disable Notifications on This Device</button>
+    </div>
+  </div>
+</div>
+
+
+<script id="saver-admin-push-client">
+(() => {
+  "use strict";
+  const VAPID_PUBLIC_KEY = "BK4ajK0nTXcki8_WagYSYcy1vKm7nLbmJlGWIfQ4rESWg76oR122s_HFj1WiIMGvWfRpXzeIv1pmd00wlBqA7U4";
+  const q = s => document.querySelector(s);
+  let currentSubscription = null;
+
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+  function standalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+  function supported() {
+    return window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+  function urlB64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(ch => ch.charCodeAt(0)));
+  }
+
+  function setStatus(message) {
+    if(q("#smappPushStatus")) q("#smappPushStatus").textContent = message;
+  }
+  function setVisual(enabled) {
+    q("#smappBellDot")?.classList.toggle("on", !!enabled);
+    const badge=q("#smPushStateBadge");
+    if(badge){
+      badge.textContent=enabled?"On":"Setup";
+      badge.classList.add("show");
+      badge.classList.toggle("red",!enabled);
+    }
+    if(q("#smPushDashboardStatus")) q("#smPushDashboardStatus").textContent =
+      enabled ? "Notifications are enabled on this device." : "Get alerts for new orders, reviews and customers.";
+  }
+
+  async function registerSW() {
+    if(!supported()) throw new Error("Push notifications are not supported in this browser.");
+    return navigator.serviceWorker.register("./sw.js").then(()=>navigator.serviceWorker.ready);
+  }
+
+  async function saveSubscription(subscription) {
+    const json = subscription.toJSON();
+    const userRes = await sb.auth.getUser();
+    const user = userRes?.data?.user;
+    if(!user) throw new Error("Please sign in to Saver Admin first.");
+
+    const payload = {
+      user_id: user.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys?.p256dh || "",
+      auth: json.keys?.auth || "",
+      user_agent: navigator.userAgent,
+      enabled: true,
+      notify_orders: !!q("#smNotifyOrders")?.checked,
+      notify_reviews: !!q("#smNotifyReviews")?.checked,
+      notify_customers: !!q("#smNotifyCustomers")?.checked,
+      updated_at: new Date().toISOString()
+    };
+    const {error} = await sb.from("admin_push_subscriptions").upsert(payload, {onConflict:"endpoint"});
+    if(error) throw error;
+  }
+
+  async function getSubscription() {
+    if(!supported()) return null;
+    const reg = await registerSW();
+    return reg.pushManager.getSubscription();
+  }
+
+  async function syncPrefs() {
+    if(!currentSubscription) {
+      setStatus("Enable notifications first, then choose the alerts you want.");
+      return;
+    }
+    const {error} = await sb.from("admin_push_subscriptions").update({
+      notify_orders: !!q("#smNotifyOrders")?.checked,
+      notify_reviews: !!q("#smNotifyReviews")?.checked,
+      notify_customers: !!q("#smNotifyCustomers")?.checked,
+      updated_at: new Date().toISOString()
+    }).eq("endpoint", currentSubscription.endpoint);
+    if(error) setStatus("Could not save preferences: " + error.message);
+    else setStatus("Notification preferences saved.");
+  }
+
+  async function refreshPushState() {
+    if(!supported()) {
+      setVisual(false);
+      setStatus("This browser does not support Web Push notifications.");
+      return;
+    }
+    if(isIOS() && !standalone()) {
+      setVisual(false);
+      setStatus("On iPhone/iPad: first add Saver Admin to the Home Screen, open it from the new icon, then enable notifications.");
+      return;
+    }
+    try {
+      currentSubscription = await getSubscription();
+      setVisual(!!currentSubscription);
+      if(currentSubscription) {
+        const {data} = await sb.from("admin_push_subscriptions")
+          .select("notify_orders,notify_reviews,notify_customers,enabled")
+          .eq("endpoint",currentSubscription.endpoint).maybeSingle();
+        if(data){
+          q("#smNotifyOrders").checked = data.notify_orders !== false;
+          q("#smNotifyReviews").checked = data.notify_reviews !== false;
+          q("#smNotifyCustomers").checked = data.notify_customers !== false;
+          setStatus(data.enabled===false ? "This device is currently disabled." : "Notifications are enabled on this device.");
+        } else {
+          setStatus("Browser permission exists. Tap Enable Notifications to connect this device to Saver Admin.");
+        }
+      } else {
+        setStatus(Notification.permission==="denied"
+          ? "Notifications are blocked in browser settings. Allow them there, then return here."
+          : "Notifications are not enabled on this device yet.");
+      }
+    } catch(err) {
+      setVisual(false);
+      setStatus("Notification check failed: " + (err?.message || err));
+    }
+  }
+
+  async function enablePush() {
+    try {
+      if(isIOS() && !standalone()) {
+        setStatus("On iPhone/iPad, add Saver Admin to the Home Screen first and open it from that icon.");
+        return;
+      }
+      const reg = await registerSW();
+      const permission = await Notification.requestPermission();
+      if(permission !== "granted") {
+        setStatus(permission==="denied" ? "Notification permission was blocked." : "Notification permission was not granted.");
+        return;
+      }
+      currentSubscription = await reg.pushManager.getSubscription();
+      if(!currentSubscription) {
+        currentSubscription = await reg.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:urlB64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+      await saveSubscription(currentSubscription);
+      setVisual(true);
+      setStatus("Notifications are enabled. New orders, reviews and customers can now alert this device.");
+    } catch(err) {
+      setVisual(false);
+      setStatus("Could not enable notifications: " + (err?.message || err));
+    }
+  }
+
+  async function disablePush() {
+    try {
+      currentSubscription = currentSubscription || await getSubscription();
+      if(currentSubscription) {
+        await sb.from("admin_push_subscriptions").update({enabled:false,updated_at:new Date().toISOString()})
+          .eq("endpoint",currentSubscription.endpoint);
+        await currentSubscription.unsubscribe();
+      }
+      currentSubscription=null;
+      setVisual(false);
+      setStatus("Notifications are disabled on this device.");
+    } catch(err) {
+      setStatus("Could not disable notifications: " + (err?.message || err));
+    }
+  }
+
+  async function testDevice() {
+    try {
+      if(Notification.permission!=="granted") {
+        setStatus("Enable notifications first.");
+        return;
+      }
+      const reg=await registerSW();
+      await reg.showNotification("Saver Admin", {
+        body:"Test successful — this device can show Saver Market notifications.",
+        icon:"saver-admin-icon-192.png",
+        badge:"saver-admin-icon-192.png",
+        tag:"saver-admin-test",
+        data:{url:"admin.html#home"}
+      });
+      setStatus("Test notification sent to this device.");
+    } catch(err) {
+      setStatus("Test failed: " + (err?.message || err));
+    }
+  }
+
+  function openSheet() {
+    q("#smappPushSheet")?.classList.add("open");
+    q("#smappPushSheet")?.setAttribute("aria-hidden","false");
+    document.body.style.overflow="hidden";
+    refreshPushState();
+  }
+  function closeSheet() {
+    q("#smappPushSheet")?.classList.remove("open");
+    q("#smappPushSheet")?.setAttribute("aria-hidden","true");
+    document.body.style.overflow="";
+  }
+
+  q("#smappBell")?.addEventListener("click",openSheet);
+  q("#smappNotificationsCard")?.addEventListener("click",openSheet);
+  q("#smappPushSheet")?.addEventListener("click",e=>{if(e.target===q("#smappPushSheet"))closeSheet()});
+  q("#smEnablePush")?.addEventListener("click",enablePush);
+  q("#smDisablePush")?.addEventListener("click",disablePush);
+  q("#smTestPush")?.addEventListener("click",testDevice);
+  ["#smNotifyOrders","#smNotifyReviews","#smNotifyCustomers"].forEach(id=>q(id)?.addEventListener("change",syncPrefs));
+
+  // Notification clicks open the correct admin section.
+  function openHashSection() {
+    const section=(location.hash||"").replace("#","").toLowerCase();
+    if(["home","products","orders","reviews","customers","media","settings","bulk"].includes(section)) {
+      document.querySelector(`.nav-btn[data-page="${section}"]`)?.click();
+    }
+  }
+  window.addEventListener("hashchange",openHashSection);
+  setTimeout(()=>{openHashSection();refreshPushState()},350);
+
+  // Register SW even before permission so Android can install the PWA.
+  if("serviceWorker" in navigator && window.isSecureContext) {
+    window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+  }
 })();
 </script>
 

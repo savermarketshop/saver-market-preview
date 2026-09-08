@@ -1,0 +1,25 @@
+{
+  "name": "Saver Market",
+  "short_name": "Saver Market",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7f3",
+  "theme_color": "#214f31",
+  "description": "Saver Market online catalog",
+  "icons": [
+    {
+      "src": "saver-market-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "saver-market-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
