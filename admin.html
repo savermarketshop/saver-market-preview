@@ -1011,13 +1011,38 @@ window.viewOrder=id=>{
 };
 
 
+async function signAdminReviewPhoto(path,fallback=''){
+  if(!path)return fallback||'';
+  try{
+    const {data,error}=await sb.storage.from('review-images').createSignedUrl(path,1800);
+    if(error)throw error;
+    return data?.signedUrl||data?.signedURL||fallback||'';
+  }catch(e){
+    console.warn('[Saver Admin] Could not create signed review-photo URL',e);
+    return fallback||'';
+  }
+}
+
+async function prepareAdminReviewPhotos(reviews){
+  const jobs=[];
+  for(const review of (reviews||[])){
+    for(const photo of (review.review_images||[])){
+      jobs.push((async()=>{
+        photo._display_url=await signAdminReviewPhoto(photo.storage_path,photo.image_url||'');
+      })());
+    }
+  }
+  await Promise.all(jobs);
+  return reviews||[];
+}
+
 async function loadReviews(){
   $('reviewStatusMessage').textContent='Loading reviews...';
   const {data,error}=await sb.from('product_reviews')
     .select('id,product_id,user_id,customer_name,rating,review_title,review_text,status,created_at,review_images(id,image_url,storage_path,sort_order),products(sku,name_en,name_ar)')
     .order('created_at',{ascending:false});
   if(error){$('reviewStatusMessage').textContent='Error: '+error.message;return}
-  allReviews=data||[];
+  allReviews=await prepareAdminReviewPhotos(data||[]);
   $('reviewStatusMessage').textContent=allReviews.length+' review(s)';
   renderReviews();
 }
@@ -1038,7 +1063,7 @@ function renderReviews(){
       <td>${esc(r.customer_name||'Customer')}<div class="subtle">${esc(orderDate(r.created_at))}</div></td>
       <td><span class="review-stars">${'★'.repeat(Number(r.rating||0))}${'☆'.repeat(5-Number(r.rating||0))}</span></td>
       <td class="review-text-cell">${r.review_title?`<b>${esc(r.review_title)}</b><br>`:''}${esc(r.review_text||'')}</td>
-      <td>${photos.length?`<div class="review-photo-row">${photos.map(x=>`<a href="${esc(x.image_url)}" target="_blank" rel="noopener"><img src="${esc(x.image_url)}" alt=""></a>`).join('')}</div>`:'—'}</td>
+      <td>${photos.length?`<div class="review-photo-row">${photos.map(x=>{const u=x._display_url||x.image_url||'';return u?`<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt=""></a>`:''}).join('')}</div>`:'—'}</td>
       <td><span class="status ${r.status==='rejected'?'inactive':''}">${esc(r.status)}</span></td>
       <td><div class="review-actions">
         ${r.status!=='approved'?`<button class="btn btn-primary" onclick="setReviewStatus(${r.id},'approved')">Approve</button>`:''}

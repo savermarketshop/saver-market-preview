@@ -10047,8 +10047,44 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('.saver-star-picker button').forEach((b,i)=>b.classList.toggle('active',i<n));
   };
 
+  async function saverSignReviewImage(storagePath, fallbackUrl=''){
+    if(!storagePath) return fallbackUrl||'';
+    try{
+      const encodedPath=String(storagePath).split('/').map(encodeURIComponent).join('/');
+      const r=await fetch(`${SAVER_SUPABASE_URL}/storage/v1/object/sign/review-images/${encodedPath}`,{
+        method:'POST',
+        headers:apiHeaders(customerToken()),
+        body:JSON.stringify({expiresIn:3600})
+      });
+      if(!r.ok) return fallbackUrl||'';
+      const data=await r.json().catch(()=>null);
+      const signed=data?.signedURL||data?.signedUrl||'';
+      if(!signed) return fallbackUrl||'';
+      return /^https?:\/\//i.test(signed)
+        ? signed
+        : `${SAVER_SUPABASE_URL}/storage/v1${signed.startsWith('/')?signed:'/'+signed}`;
+    }catch(e){
+      console.warn('[Saver Market] Could not sign review image',e);
+      return fallbackUrl||'';
+    }
+  }
+
+  async function saverPrepareReviewImages(reviews){
+    const jobs=[];
+    for(const review of (reviews||[])){
+      for(const image of (review.review_images||[])){
+        jobs.push((async()=>{
+          image._display_url=await saverSignReviewImage(image.storage_path,image.image_url||'');
+        })());
+      }
+    }
+    await Promise.all(jobs);
+    return reviews||[];
+  }
+
   async function fetchApprovedReviews(productId){
-    return await reviewRest(`product_reviews?product_id=eq.${Number(productId)}&status=eq.approved&select=id,customer_name,rating,review_title,review_text,created_at,review_images(id,image_url,sort_order)&order=created_at.desc`);
+    const reviews=await reviewRest(`product_reviews?product_id=eq.${Number(productId)}&status=eq.approved&select=id,customer_name,rating,review_title,review_text,created_at,review_images(id,image_url,storage_path,sort_order)&order=created_at.desc`);
+    return await saverPrepareReviewImages(reviews);
   }
 
   window.saverRenderReviews=async function(productId){
@@ -10090,7 +10126,7 @@ document.addEventListener("DOMContentLoaded", function () {
               </div>
               ${r.review_title?`<div class="saver-review-title">${reviewEsc(r.review_title)}</div>`:''}
               <div class="saver-review-text">${reviewEsc(r.review_text)}</div>
-              ${(r.review_images||[]).length?`<div class="saver-review-images">${r.review_images.sort((a,b)=>a.sort_order-b.sort_order).map(img=>`<img src="${reviewEsc(img.image_url)}" alt="" onclick="saverOpenReviewPhoto('${reviewEsc(img.image_url)}')">`).join('')}</div>`:''}
+              ${(r.review_images||[]).length?`<div class="saver-review-images">${r.review_images.sort((a,b)=>a.sort_order-b.sort_order).map(img=>{const u=img._display_url||img.image_url||'';return u?`<img src="${reviewEsc(u)}" alt="" onclick="saverOpenReviewPhoto('${reviewEsc(u)}')">`:''}).join('')}</div>`:''}
             </article>`).join(''):
             `<div style="color:#888">${currentLanguage==='ar'?'لا توجد مراجعات معتمدة بعد.':'No approved reviews yet.'}</div>`
           }
@@ -10137,11 +10173,11 @@ document.addEventListener("DOMContentLoaded", function () {
           body:blob
         });
         if(!up.ok)throw new Error(await up.text());
-        const publicUrl=`${SAVER_SUPABASE_URL}/storage/v1/object/public/review-images/${path}`;
+        const legacyObjectUrl=`${SAVER_SUPABASE_URL}/storage/v1/object/public/review-images/${path}`;
         await reviewRest('review_images',{
           method:'POST',
           headers:{Prefer:'return=minimal'},
-          body:JSON.stringify({review_id:review.id,image_url:publicUrl,storage_path:path,sort_order:order})
+          body:JSON.stringify({review_id:review.id,image_url:legacyObjectUrl,storage_path:path,sort_order:order})
         });
         order++;
       }
