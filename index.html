@@ -4738,6 +4738,14 @@ html[dir="rtl"] .saver-order-picker{
 }
 </style>
 
+
+    <!-- Cloudflare Turnstile for Supabase email/password authentication -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <style>
+      .saver-turnstile-wrap{margin:4px 0 2px;min-height:65px;display:flex;align-items:center;max-width:100%;overflow:hidden}
+      .saver-turnstile{max-width:100%}
+    </style>
+
 </head>
 <body>
 
@@ -8946,11 +8954,13 @@ document.addEventListener("DOMContentLoaded", function () {
             <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverSignupEmail" type="email" required autocomplete="email">
             <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label>
             <div class="saver-password-field"><input class="form-input" id="saverSignupPassword" type="password" minlength="10" required autocomplete="new-password"><button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverSignupPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button></div>
+            <div class="saver-turnstile-wrap"><div class="saver-turnstile" data-saver-turnstile></div></div>
             <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'إنشاء الحساب':'Create Account'}</button>
           </form>`:`<form class="saver-auth-form" onsubmit="saverLogin(event)">
             <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverLoginEmail" type="email" required autocomplete="email">
             <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label>
             <div class="saver-password-field"><input class="form-input" id="saverLoginPassword" type="password" required autocomplete="current-password"><button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverLoginPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button></div>
+            <div class="saver-turnstile-wrap"><div class="saver-turnstile" data-saver-turnstile></div></div>
             <button class="saver-forgot-password" type="button" onclick="saverForgotPassword()">${currentLanguage==='ar'?'نسيت كلمة المرور؟':'Forgot password?'}</button>
             <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
           </form>`}
@@ -8966,6 +8976,7 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
         </div>
       </div>`;
+      saverRenderTurnstiles();
       return;
     }
 
@@ -9002,8 +9013,61 @@ document.addEventListener("DOMContentLoaded", function () {
     button?.setAttribute("aria-label",showing?"Show password":"Hide password");
   };
 
+  const SAVER_TURNSTILE_SITE_KEY = '0x4AAAAAAEuMJNqS33udPYtn';
+
+  function saverRenderTurnstiles(){
+    if(!window.turnstile){
+      clearTimeout(window.__saverTurnstileRetry);
+      window.__saverTurnstileRetry=setTimeout(saverRenderTurnstiles,250);
+      return;
+    }
+    document.querySelectorAll('[data-saver-turnstile]').forEach(el=>{
+      if(el.dataset.turnstileWidgetId)return;
+      try{
+        const widgetId=window.turnstile.render(el,{
+          sitekey:SAVER_TURNSTILE_SITE_KEY,
+          theme:'auto',
+          callback:(captchaToken)=>{el.dataset.captchaToken=captchaToken||'';},
+          'expired-callback':()=>{el.dataset.captchaToken='';},
+          'error-callback':()=>{el.dataset.captchaToken='';}
+        });
+        el.dataset.turnstileWidgetId=String(widgetId);
+      }catch(err){
+        console.warn('[Saver Market] Turnstile render failed',err);
+      }
+    });
+  }
+
+  function saverCaptchaToken(form){
+    const box=form?.querySelector?.('[data-saver-turnstile]');
+    return (box?.dataset?.captchaToken||'').trim();
+  }
+
+  function saverResetCaptcha(form){
+    const box=form?.querySelector?.('[data-saver-turnstile]');
+    if(!box)return;
+    box.dataset.captchaToken='';
+    const widgetId=box.dataset.turnstileWidgetId;
+    if(window.turnstile&&widgetId!==undefined&&widgetId!==''){
+      try{window.turnstile.reset(widgetId);}catch(e){}
+    }
+  }
+
+  function saverRequireCaptcha(form){
+    saverRenderTurnstiles();
+    const captchaToken=saverCaptchaToken(form);
+    if(!captchaToken){
+      authMessage(currentLanguage==='ar'
+        ?'يرجى إكمال فحص الأمان ثم المحاولة مرة أخرى.'
+        :'Please complete the security check, then try again.','error');
+      return '';
+    }
+    return captchaToken;
+  }
+
   window.saverForgotPassword=async function(){
     const emailInput=document.getElementById("saverLoginEmail");
+    const form=emailInput?.closest?.('form');
     const email=(emailInput?.value||"").trim();
     if(!email){
       authMessage(currentLanguage==="ar"
@@ -9013,6 +9077,9 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const captchaToken=saverRequireCaptcha(form);
+    if(!captchaToken)return;
+
     authMessage(currentLanguage==="ar"
       ?"جاري إرسال رابط إعادة تعيين كلمة المرور..."
       :"Sending password reset link...");
@@ -9020,12 +9087,14 @@ document.addEventListener("DOMContentLoaded", function () {
     try{
       await authRequest(
         "recover?redirect_to="+encodeURIComponent(confirmationRedirectUrl()),
-        {email}
+        {email,gotrue_meta_security:{captcha_token:captchaToken}}
       );
+      saverResetCaptcha(form);
       authMessage(currentLanguage==="ar"
         ?"تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني."
         :"Password reset link sent. Check your email.","success");
     }catch(err){
+      saverResetCaptcha(form);
       authMessage(err.message,"error");
     }
   };
@@ -9093,20 +9162,30 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   window.saverSignup=async function(e){
-    e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري إنشاء الحساب...':'Creating account...');
+    e.preventDefault();
+    const form=e.currentTarget||e.target;
+    const captchaToken=saverRequireCaptcha(form);
+    if(!captchaToken)return;
+    authMessage(currentLanguage==='ar'?'جاري إنشاء الحساب...':'Creating account...');
     try{
-      const data=await authRequest('signup?redirect_to='+encodeURIComponent(confirmationRedirectUrl()),{email:document.getElementById('saverSignupEmail').value.trim(),password:document.getElementById('saverSignupPassword').value,data:{full_name:document.getElementById('saverSignupName').value.trim(),phone:document.getElementById('saverSignupPhone').value.trim()}});
+      const data=await authRequest('signup?redirect_to='+encodeURIComponent(confirmationRedirectUrl()),{email:document.getElementById('saverSignupEmail').value.trim(),password:document.getElementById('saverSignupPassword').value,data:{full_name:document.getElementById('saverSignupName').value.trim(),phone:document.getElementById('saverSignupPhone').value.trim()},gotrue_meta_security:{captcha_token:captchaToken}});
+      saverResetCaptcha(form);
       if(data.access_token){ setSession(data); await mergeGuestCartIntoAccount(); await saverRenderAccountView(); }
       else authMessage(currentLanguage==='ar'?'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب ثم سجّل الدخول.':'Account created. Check your email for confirmation, then log in.','success');
-    }catch(err){authMessage(err.message,'error')}
+    }catch(err){saverResetCaptcha(form);authMessage(err.message,'error')}
   };
 
   window.saverLogin=async function(e){
-    e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري تسجيل الدخول...':'Signing in...');
+    e.preventDefault();
+    const form=e.currentTarget||e.target;
+    const captchaToken=saverRequireCaptcha(form);
+    if(!captchaToken)return;
+    authMessage(currentLanguage==='ar'?'جاري تسجيل الدخول...':'Signing in...');
     try{
-      const data=await authRequest('token?grant_type=password',{email:document.getElementById('saverLoginEmail').value.trim(),password:document.getElementById('saverLoginPassword').value});
+      const data=await authRequest('token?grant_type=password',{email:document.getElementById('saverLoginEmail').value.trim(),password:document.getElementById('saverLoginPassword').value,gotrue_meta_security:{captcha_token:captchaToken}});
+      saverResetCaptcha(form);
       setSession(data); await mergeGuestCartIntoAccount(); await loadAccountCart(); await syncWishlistFromAccount(); await saverRenderAccountView(); refreshCartDisplayEngine(); updateWishlistBadge();
-    }catch(err){authMessage(err.message,'error')}
+    }catch(err){saverResetCaptcha(form);authMessage(err.message,'error')}
   };
 
   window.saverLogout=async function(){
@@ -9677,6 +9756,7 @@ document.addEventListener("DOMContentLoaded", function () {
               <input class="form-input" id="saverLoginPassword" type="password" minlength="10" required autocomplete="current-password">
               <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverLoginPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
             </div>
+            <div class="saver-turnstile-wrap"><div class="saver-turnstile" data-saver-turnstile></div></div>
             <button class="saver-forgot-password" type="button" onclick="saverForgotPassword()">${lang('Forgot password?','نسيت كلمة المرور؟')}</button>
             <button class="saver-account-primary" type="submit">${lang('Login','تسجيل الدخول')}</button>
           </form>
@@ -9692,6 +9772,7 @@ document.addEventListener("DOMContentLoaded", function () {
               <input class="form-input" id="saverSignupPassword" type="password" minlength="10" required autocomplete="new-password">
               <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverSignupPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
             </div>
+            <div class="saver-turnstile-wrap"><div class="saver-turnstile" data-saver-turnstile></div></div>
             <button class="saver-account-primary" type="submit">${lang('Create Account','إنشاء الحساب')}</button>
           </form>
           <div class="saver-auth-message" id="saverAuthMessage"></div>
@@ -9699,6 +9780,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="saver-account-card"><h3>${lang('Account benefits','مزايا الحساب')}</h3><p>${lang('When signed in, your cart, wishlist, delivery details and orders can be kept with your account.','بعد تسجيل الدخول، سنحفظ سلتك والمفضلة وبيانات التوصيل والطلبات في حسابك.')}</p><div class="saver-orders-list"><div class="saver-order-row"><div><strong>${lang('Saved cart','سلة محفوظة')}</strong><small>${lang('Continue shopping on another device','تابع التسوق من جهاز آخر')}</small></div><i class="fas fa-cart-shopping"></i></div><div class="saver-order-row"><div><strong>${lang('My Orders','طلباتي')}</strong><small>${lang('View orders and their details','شاهد الطلبات وتفاصيلها')}</small></div><i class="fas fa-receipt"></i></div><div class="saver-order-row"><div><strong>${lang('Saved addresses','العناوين المحفوظة')}</strong><small>${lang('Keep Home, Work or another address','احفظ عنوان المنزل أو العمل أو عنواناً آخر')}</small></div><i class="fas fa-location-dot"></i></div></div></div>
       </div>`;
       document.querySelectorAll('.saver-auth-tab').forEach(b=>b.onclick=function(){document.querySelectorAll('.saver-auth-tab').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('saverLoginForm').style.display=this.dataset.authTab==='login'?'grid':'none';document.getElementById('saverSignupForm').style.display=this.dataset.authTab==='signup'?'grid':'none';});
+      saverRenderTurnstiles();
       return;
     }
 
