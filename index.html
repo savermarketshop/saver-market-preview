@@ -4439,6 +4439,57 @@ html[dir="rtl"] .saver-star-picker{justify-content:flex-end}
   }
 }
 
+
+        /* Saver Market Google sign-in */
+        .saver-google-auth {
+            width: 100%;
+            min-height: 48px;
+            border: 1px solid rgba(44,53,57,.18);
+            border-radius: 14px;
+            background: #fff;
+            color: var(--charcoal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 11px;
+            font-weight: 600;
+            font-size: .95rem;
+            cursor: pointer;
+            transition: .2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,.04);
+            margin: 6px 0 14px;
+        }
+        .saver-google-auth:hover {
+            border-color: rgba(85,107,47,.42);
+            box-shadow: 0 5px 14px rgba(85,107,47,.10);
+            transform: translateY(-1px);
+        }
+        .saver-google-auth:active {
+            transform: translateY(0);
+        }
+        .saver-google-auth i {
+            font-size: 1.05rem;
+            color: #4285F4;
+        }
+        .saver-auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #8a8a8a;
+            font-size: .76rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            margin: 2px 0 15px;
+        }
+        .saver-auth-divider::before,
+        .saver-auth-divider::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: rgba(44,53,57,.13);
+        }
+
 </style>
 
 <style id="saver-customer-upgrade-styles">
@@ -8858,6 +8909,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  window.saverGoogleLogin=function(){
+    try{
+      const host=(window.location.hostname||'').toLowerCase();
+      const isProductionHost=host==='savermarketshop.com'||host==='www.savermarketshop.com';
+      const redirectTo=isProductionHost
+        ? `${window.location.protocol}//${window.location.host}/`
+        : 'https://savermarketshop.com/';
+      const url=`${SAVER_SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+      window.location.assign(url);
+    }catch(e){
+      console.error('[Saver Market] Google sign-in',e);
+      authMessage(currentLanguage==='ar'?'تعذر بدء تسجيل الدخول بواسطة Google. حاول مرة أخرى.':'Could not start Google sign-in. Please try again.','error');
+    }
+  };
+
   window.saverSetAuthTab=function(tab){ authTab=tab; saverRenderAccountView(); };
 
   window.saverRenderAccountView=async function(){
@@ -8868,6 +8934,8 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="saver-account-card">
           <h3>${currentLanguage==='ar'?'مرحباً بك':'Welcome'}</h3>
           <p>${currentLanguage==='ar'?'إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.':'Creating an account is optional. You can always shop as a guest.'}</p>
+          <button class="saver-google-auth" type="button" onclick="saverGoogleLogin()"><i class="fab fa-google" aria-hidden="true"></i><span>${currentLanguage==='ar'?'المتابعة بواسطة Google':'Continue with Google'}</span></button>
+          <div class="saver-auth-divider"><span>${currentLanguage==='ar'?'أو':'OR'}</span></div>
           <div class="saver-auth-tabs">
             <button class="saver-auth-tab ${authTab==='login'?'active':''}" type="button" onclick="saverSetAuthTab('login')">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
             <button class="saver-auth-tab ${authTab==='signup'?'active':''}" type="button" onclick="saverSetAuthTab('signup')">${currentLanguage==='ar'?'إنشاء حساب':'Sign Up'}</button>
@@ -9598,6 +9666,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
         <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
+          <button class="saver-google-auth" type="button" onclick="saverGoogleLogin()"><i class="fab fa-google" aria-hidden="true"></i><span>${lang('Continue with Google','المتابعة بواسطة Google')}</span></button>
+          <div class="saver-auth-divider"><span>${lang('OR','أو')}</span></div>
           <div class="saver-auth-tabs"><button type="button" class="saver-auth-tab active" data-auth-tab="login">${lang('Login','تسجيل الدخول')}</button><button type="button" class="saver-auth-tab" data-auth-tab="signup">${lang('Sign Up','إنشاء حساب')}</button></div>
           <form id="saverLoginForm" class="saver-auth-form" onsubmit="saverLogin(event)">
             <label>${lang('Email','البريد الإلكتروني')}</label>
