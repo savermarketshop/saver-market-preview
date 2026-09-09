@@ -4608,6 +4608,85 @@ html[data-theme="dark"] #view-cart .qty-select-wrapper{background:#1d2426}
 #view-cart .saver-product-open-link{cursor:pointer}
 </style>
 
+
+<style id="saver-account-usability-fixes">
+.saver-password-field{
+  position:relative;
+  display:block;
+}
+.saver-password-field .form-input{
+  width:100%;
+  padding-right:48px;
+}
+html[dir="rtl"] .saver-password-field .form-input{
+  padding-right:14px;
+  padding-left:48px;
+}
+.saver-password-eye{
+  position:absolute;
+  top:50%;
+  right:7px;
+  transform:translateY(-50%);
+  width:38px;
+  height:38px;
+  border:0;
+  background:transparent;
+  color:var(--sage-dark);
+  border-radius:10px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1rem;
+}
+html[dir="rtl"] .saver-password-eye{
+  right:auto;
+  left:7px;
+}
+.saver-password-eye:hover{background:rgba(85,107,47,.08)}
+.saver-forgot-password{
+  border:0;
+  background:transparent;
+  padding:2px 0 8px;
+  color:var(--sage-dark);
+  text-decoration:underline;
+  cursor:pointer;
+  font:inherit;
+  font-size:.88rem;
+  width:max-content;
+}
+.saver-order-picker{
+  width:100%;
+  margin-top:10px;
+  padding:12px 42px 12px 13px;
+  border:1px solid rgba(85,107,47,.18);
+  border-radius:14px;
+  background:var(--white);
+  color:var(--charcoal);
+  font:inherit;
+  cursor:pointer;
+}
+html[dir="rtl"] .saver-order-picker{
+  padding:12px 13px 12px 42px;
+}
+.saver-order-details-host{
+  margin-top:12px;
+}
+.saver-order-selected-summary{
+  padding:13px 14px;
+  border:1px solid rgba(85,107,47,.12);
+  border-radius:14px;
+  margin-bottom:10px;
+  background:rgba(85,107,47,.035);
+}
+.saver-order-selected-summary strong{display:block}
+.saver-order-selected-summary small{display:block;margin-top:4px;color:#777}
+.saver-reset-card{
+  max-width:520px;
+  margin:0 auto;
+}
+</style>
+
 </head>
 <body>
 
@@ -8672,6 +8751,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let cartPersistenceReady = false;
   let refreshPromise = null;
   let authConfirmedFromUrl = false;
+  window.saverPasswordRecoveryMode = window.saverPasswordRecoveryMode || false;
 
   const apiHeaders = (token, extra={}) => Object.assign({
     'apikey': SAVER_SUPABASE_PUBLISHABLE_KEY,
@@ -8748,7 +8828,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const hash=new URLSearchParams((window.location.hash||'').replace(/^#/,''));
       const accessToken=hash.get('access_token');
       const refreshToken=hash.get('refresh_token');
+      const authType=hash.get('type')||'';
       if(!accessToken) return false;
+      window.saverPasswordRecoveryMode = authType === 'recovery';
 
       const r=await fetch(`${SAVER_SUPABASE_URL}/auth/v1/user`,{headers:apiHeaders(accessToken)});
       const user=await r.json().catch(()=>null);
@@ -8792,11 +8874,14 @@ document.addEventListener("DOMContentLoaded", function () {
             <label>${currentLanguage==='ar'?'الاسم الكامل':'Full name'}</label><input class="form-input" id="saverSignupName" required autocomplete="name">
             <label>${currentLanguage==='ar'?'رقم الهاتف':'Phone number'}</label><input class="form-input" id="saverSignupPhone" type="tel" required autocomplete="tel">
             <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverSignupEmail" type="email" required autocomplete="email">
-            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label><input class="form-input" id="saverSignupPassword" type="password" minlength="10" required autocomplete="new-password">
+            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label>
+            <div class="saver-password-field"><input class="form-input" id="saverSignupPassword" type="password" minlength="10" required autocomplete="new-password"><button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverSignupPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button></div>
             <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'إنشاء الحساب':'Create Account'}</button>
           </form>`:`<form class="saver-auth-form" onsubmit="saverLogin(event)">
             <label>${currentLanguage==='ar'?'البريد الإلكتروني':'Email'}</label><input class="form-input" id="saverLoginEmail" type="email" required autocomplete="email">
-            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label><input class="form-input" id="saverLoginPassword" type="password" required autocomplete="current-password">
+            <label>${currentLanguage==='ar'?'كلمة المرور':'Password'}</label>
+            <div class="saver-password-field"><input class="form-input" id="saverLoginPassword" type="password" required autocomplete="current-password"><button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverLoginPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button></div>
+            <button class="saver-forgot-password" type="button" onclick="saverForgotPassword()">${currentLanguage==='ar'?'نسيت كلمة المرور؟':'Forgot password?'}</button>
             <button class="saver-account-primary" type="submit">${currentLanguage==='ar'?'تسجيل الدخول':'Login'}</button>
           </form>`}
           <div class="saver-auth-message" id="saverAuthMessage"></div>
@@ -8834,6 +8919,108 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   function authMessage(text,type=''){ const n=document.getElementById('saverAuthMessage');if(n){n.textContent=text;n.className='saver-auth-message '+type;} }
+
+  window.saverTogglePassword=function(inputId,button){
+    const input=document.getElementById(inputId);
+    if(!input)return;
+    const showing=input.type==="text";
+    input.type=showing?"password":"text";
+    const icon=button?.querySelector("i");
+    if(icon){
+      icon.className=showing?"far fa-eye":"far fa-eye-slash";
+    }
+    button?.setAttribute("aria-label",showing?"Show password":"Hide password");
+  };
+
+  window.saverForgotPassword=async function(){
+    const emailInput=document.getElementById("saverLoginEmail");
+    const email=(emailInput?.value||"").trim();
+    if(!email){
+      authMessage(currentLanguage==="ar"
+        ?"أدخل بريدك الإلكتروني أولاً، ثم اضغط نسيت كلمة المرور."
+        :"Enter your email first, then tap Forgot password.","error");
+      emailInput?.focus();
+      return;
+    }
+
+    authMessage(currentLanguage==="ar"
+      ?"جاري إرسال رابط إعادة تعيين كلمة المرور..."
+      :"Sending password reset link...");
+
+    try{
+      await authRequest(
+        "recover?redirect_to="+encodeURIComponent(confirmationRedirectUrl()),
+        {email}
+      );
+      authMessage(currentLanguage==="ar"
+        ?"تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني."
+        :"Password reset link sent. Check your email.","success");
+    }catch(err){
+      authMessage(err.message,"error");
+    }
+  };
+
+  window.saverUpdateRecoveredPassword=async function(event){
+    event?.preventDefault?.();
+    const p1=document.getElementById("saverResetPassword")?.value||"";
+    const p2=document.getElementById("saverResetPasswordConfirm")?.value||"";
+    const msg=document.getElementById("saverResetMessage");
+
+    const show=(text,type="")=>{
+      if(msg){
+        msg.textContent=text;
+        msg.className="saver-auth-message "+type;
+      }
+    };
+
+    if(p1.length<10){
+      show(currentLanguage==="ar"
+        ?"يجب أن تتكون كلمة المرور من 10 أحرف على الأقل."
+        :"Password must be at least 10 characters.","error");
+      return;
+    }
+    if(p1!==p2){
+      show(currentLanguage==="ar"
+        ?"كلمتا المرور غير متطابقتين."
+        :"Passwords do not match.","error");
+      return;
+    }
+
+    const session=typeof window.saverCustomerGetSession==="function"
+      ? window.saverCustomerGetSession()
+      : getSession();
+    const accessToken=session?.access_token||"";
+    if(!accessToken){
+      show(currentLanguage==="ar"
+        ?"انتهت صلاحية رابط إعادة التعيين. اطلب رابطاً جديداً."
+        :"This reset link has expired. Request a new one.","error");
+      return;
+    }
+
+    show(currentLanguage==="ar"?"جاري تحديث كلمة المرور...":"Updating password...");
+    try{
+      const r=await fetch(`${SAVER_SUPABASE_URL}/auth/v1/user`,{
+        method:"PUT",
+        headers:apiHeaders(accessToken),
+        body:JSON.stringify({password:p1})
+      });
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.msg||data.message||data.error_description||"Could not update password");
+
+      window.saverPasswordRecoveryMode=false;
+      show(currentLanguage==="ar"
+        ?"تم تحديث كلمة المرور بنجاح."
+        :"Password updated successfully.","success");
+
+      setTimeout(async()=>{
+        try{
+          await saverRenderAccountView();
+        }catch(e){}
+      },700);
+    }catch(err){
+      show(err.message,"error");
+    }
+  };
 
   window.saverSignup=async function(e){
     e.preventDefault(); authMessage(currentLanguage==='ar'?'جاري إنشاء الحساب...':'Creating account...');
@@ -8912,22 +9099,82 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function loadOrders(){
-    const root=document.getElementById('saverOrdersList'); if(!root||!currentUser())return;
+    const root=document.getElementById('saverOrdersList');
+    if(!root||!currentUser())return;
+
     try{
-      const orders=await rest(`orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,total_syp,created_at&order=created_at.desc`);
-      if(!orders?.length){root.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'لا توجد طلبات بعد.':'No orders yet.'}</div>`;return}
-      root.innerHTML=orders.map(o=>`<button type="button" class="saver-order-row" onclick="saverShowOrderDetails(${Number(o.id)})" style="width:100%;text-align:inherit;cursor:pointer"><div><strong>${o.order_number}</strong><small>${new Date(o.created_at).toLocaleDateString()} · ${formatPrice(Number(o.total_syp||0))}</small></div><span class="saver-order-status">${saverOrderStatusLabel(o.status)}</span></button>`).join('');
-    }catch(e){root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`}
+      const orders=await rest(
+        `orders?user_id=eq.${encodeURIComponent(currentUser().id)}&select=id,order_number,status,total_syp,created_at&order=created_at.desc`
+      );
+
+      if(!orders?.length){
+        root.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'لا توجد طلبات بعد.':'No orders yet.'}</div>`;
+        return;
+      }
+
+      const options=orders.map(o=>{
+        const date=new Date(o.created_at).toLocaleDateString();
+        const label=`${o.order_number} · ${date} · ${formatPrice(Number(o.total_syp||0))} · ${saverOrderStatusLabel(o.status)}`;
+        return `<option value="${Number(o.id)}">${String(label).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</option>`;
+      }).join('');
+
+      root.innerHTML=`
+        <select class="saver-order-picker" id="saverOrderPicker" aria-label="${currentLanguage==='ar'?'اختر طلباً':'Choose an order'}">
+          <option value="">${currentLanguage==='ar'?'اختر طلباً لعرض التفاصيل':'Choose an order to view details'}</option>
+          ${options}
+        </select>
+        <div class="saver-order-details-host" id="saverOrderDetailsHost"></div>
+      `;
+
+      const picker=document.getElementById('saverOrderPicker');
+      if(picker){
+        picker.onchange=()=>{
+          const id=Number(picker.value);
+          const order=orders.find(o=>Number(o.id)===id);
+          if(id&&order) saverShowOrderDetails(id,order);
+          else{
+            const host=document.getElementById('saverOrderDetailsHost');
+            if(host)host.innerHTML='';
+          }
+        };
+      }
+    }catch(e){
+      root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`;
+    }
   }
 
-  window.saverShowOrderDetails=async function(orderId){
-    const root=document.getElementById('saverOrdersList');if(!root)return;
+  window.saverShowOrderDetails=async function(orderId,orderSummary=null){
+    const host=document.getElementById('saverOrderDetailsHost')||document.getElementById('saverOrdersList');
+    if(!host)return;
+
+    host.innerHTML=`<div style="color:#888">${currentLanguage==='ar'?'جاري تحميل تفاصيل الطلب...':'Loading order details...'}</div>`;
+
     try{
-      const items=await rest(`order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`);
-      const previous=root.innerHTML;
-      root.innerHTML=`<button class="saver-account-secondary" type="button" id="saverBackOrders">${currentLanguage==='ar'?'العودة للطلبات':'Back to Orders'}</button><div class="saver-orders-list">${(items||[]).map(i=>`<div class="saver-order-row"><div><strong>${i.product_name}</strong><small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small></div><strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong></div>`).join('')}</div>`;
-      document.getElementById('saverBackOrders').onclick=loadOrders;
-    }catch(e){console.warn(e)}
+      const items=await rest(
+        `order_items?order_id=eq.${Number(orderId)}&select=sku,product_name,price_syp,quantity`
+      );
+
+      const summary=orderSummary?`
+        <div class="saver-order-selected-summary">
+          <strong>${orderSummary.order_number}</strong>
+          <small>${new Date(orderSummary.created_at).toLocaleDateString()} · ${formatPrice(Number(orderSummary.total_syp||0))} · ${saverOrderStatusLabel(orderSummary.status)}</small>
+        </div>`:'';
+
+      host.innerHTML=summary+`
+        <div class="saver-orders-list">
+          ${(items||[]).map(i=>`
+            <div class="saver-order-row">
+              <div>
+                <strong>${i.product_name}</strong>
+                <small>${i.sku||''} · ${currentLanguage==='ar'?'الكمية':'Qty'} ${i.quantity}</small>
+              </div>
+              <strong>${formatPrice(Number(i.price_syp||0)*Number(i.quantity||1))}</strong>
+            </div>
+          `).join('') || `<div style="color:#888">${currentLanguage==='ar'?'لا توجد تفاصيل لهذا الطلب.':'No item details available for this order.'}</div>`}
+        </div>`;
+    }catch(e){
+      host.innerHTML=`<div class="saver-auth-message error">${currentLanguage==='ar'?'تعذر تحميل تفاصيل الطلب.':'Could not load order details.'}</div>`;
+    }
   };
 
   function cartPayload(){
@@ -9321,12 +9568,61 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverRenderAccountView=async function(){
     const root=document.getElementById('saverAccountContent'); if(!root)return;
     const user=window.saverCustomerCurrentUser();
+
+    if(window.saverPasswordRecoveryMode){
+      root.innerHTML=`<div class="saver-account-shell">
+        <div class="saver-account-card saver-reset-card">
+          <h3>${lang('Create a new password','إنشاء كلمة مرور جديدة')}</h3>
+          <p>${lang('Enter your new password below.','أدخل كلمة المرور الجديدة أدناه.')}</p>
+          <form class="saver-auth-form" onsubmit="saverUpdateRecoveredPassword(event)">
+            <label>${lang('New password','كلمة المرور الجديدة')}</label>
+            <div class="saver-password-field">
+              <input class="form-input" id="saverResetPassword" type="password" minlength="10" required autocomplete="new-password">
+              <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverResetPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
+            </div>
+            <label>${lang('Confirm new password','تأكيد كلمة المرور الجديدة')}</label>
+            <div class="saver-password-field">
+              <input class="form-input" id="saverResetPasswordConfirm" type="password" minlength="10" required autocomplete="new-password">
+              <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverResetPasswordConfirm',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
+            </div>
+            <button class="saver-account-primary" type="submit">${lang('Update Password','تحديث كلمة المرور')}</button>
+          </form>
+          <div class="saver-auth-message" id="saverResetMessage"></div>
+        </div>
+      </div>`;
+      return;
+    }
+
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
         <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
           <div class="saver-auth-tabs"><button type="button" class="saver-auth-tab active" data-auth-tab="login">${lang('Login','تسجيل الدخول')}</button><button type="button" class="saver-auth-tab" data-auth-tab="signup">${lang('Sign Up','إنشاء حساب')}</button></div>
-          <form id="saverLoginForm" class="saver-auth-form" onsubmit="saverLogin(event)"><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverLoginEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverLoginPassword" type="password" minlength="10" required><button class="saver-account-primary" type="submit">${lang('Login','تسجيل الدخول')}</button></form>
-          <form id="saverSignupForm" class="saver-auth-form" style="display:none" onsubmit="saverSignup(event)"><label>${lang('Full name','الاسم الكامل')}</label><input class="form-input" id="saverSignupName" required><label>${lang('Phone number','رقم الهاتف')}</label><input class="form-input" id="saverSignupPhone" type="tel" required><label>${lang('Email','البريد الإلكتروني')}</label><input class="form-input" id="saverSignupEmail" type="email" required><label>${lang('Password','كلمة المرور')}</label><input class="form-input" id="saverSignupPassword" type="password" minlength="10" required><button class="saver-account-primary" type="submit">${lang('Create Account','إنشاء الحساب')}</button></form><div class="saver-auth-message" id="saverAuthMessage"></div>
+          <form id="saverLoginForm" class="saver-auth-form" onsubmit="saverLogin(event)">
+            <label>${lang('Email','البريد الإلكتروني')}</label>
+            <input class="form-input" id="saverLoginEmail" type="email" required autocomplete="email">
+            <label>${lang('Password','كلمة المرور')}</label>
+            <div class="saver-password-field">
+              <input class="form-input" id="saverLoginPassword" type="password" minlength="10" required autocomplete="current-password">
+              <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverLoginPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
+            </div>
+            <button class="saver-forgot-password" type="button" onclick="saverForgotPassword()">${lang('Forgot password?','نسيت كلمة المرور؟')}</button>
+            <button class="saver-account-primary" type="submit">${lang('Login','تسجيل الدخول')}</button>
+          </form>
+          <form id="saverSignupForm" class="saver-auth-form" style="display:none" onsubmit="saverSignup(event)">
+            <label>${lang('Full name','الاسم الكامل')}</label>
+            <input class="form-input" id="saverSignupName" required autocomplete="name">
+            <label>${lang('Phone number','رقم الهاتف')}</label>
+            <input class="form-input" id="saverSignupPhone" type="tel" required autocomplete="tel">
+            <label>${lang('Email','البريد الإلكتروني')}</label>
+            <input class="form-input" id="saverSignupEmail" type="email" required autocomplete="email">
+            <label>${lang('Password','كلمة المرور')}</label>
+            <div class="saver-password-field">
+              <input class="form-input" id="saverSignupPassword" type="password" minlength="10" required autocomplete="new-password">
+              <button class="saver-password-eye" type="button" onclick="saverTogglePassword('saverSignupPassword',this)" aria-label="Show password"><i class="far fa-eye"></i></button>
+            </div>
+            <button class="saver-account-primary" type="submit">${lang('Create Account','إنشاء الحساب')}</button>
+          </form>
+          <div class="saver-auth-message" id="saverAuthMessage"></div>
         </div>
         <div class="saver-account-card"><h3>${lang('Account benefits','مزايا الحساب')}</h3><p>${lang('When signed in, your cart, wishlist, delivery details and orders can be kept with your account.','بعد تسجيل الدخول، سنحفظ سلتك والمفضلة وبيانات التوصيل والطلبات في حسابك.')}</p><div class="saver-orders-list"><div class="saver-order-row"><div><strong>${lang('Saved cart','سلة محفوظة')}</strong><small>${lang('Continue shopping on another device','تابع التسوق من جهاز آخر')}</small></div><i class="fas fa-cart-shopping"></i></div><div class="saver-order-row"><div><strong>${lang('My Orders','طلباتي')}</strong><small>${lang('View orders and their details','شاهد الطلبات وتفاصيلها')}</small></div><i class="fas fa-receipt"></i></div><div class="saver-order-row"><div><strong>${lang('Saved addresses','العناوين المحفوظة')}</strong><small>${lang('Keep Home, Work or another address','احفظ عنوان المنزل أو العمل أو عنواناً آخر')}</small></div><i class="fas fa-location-dot"></i></div></div></div>
       </div>`;
