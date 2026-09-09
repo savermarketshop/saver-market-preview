@@ -10053,7 +10053,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const encodedPath=String(storagePath).split('/').map(encodeURIComponent).join('/');
       const r=await fetch(`${SAVER_SUPABASE_URL}/storage/v1/object/sign/review-images/${encodedPath}`,{
         method:'POST',
-        headers:apiHeaders(customerToken()),
+        headers:apiHeaders(customerToken() || SAVER_SUPABASE_PUBLISHABLE_KEY),
         body:JSON.stringify({expiresIn:3600})
       });
       if(!r.ok) return fallbackUrl||'';
