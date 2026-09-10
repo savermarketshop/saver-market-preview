@@ -1,0 +1,18 @@
+SAVER MARKET SEO UPGRADE - GITHUB UPLOAD
+
+Merge these files into the ROOT of your existing GitHub repository:
+
+index.html                      -> replace existing index.html
+robots.txt                      -> replace existing robots.txt
+sitemap.xml                     -> replace existing sitemap.xml
+functions/sitemap-products.js   -> add/replace this file
+functions/p/[sku].js            -> add/replace this file
+
+IMPORTANT:
+Do NOT delete your existing website files such as products-data.js, settings.js,
+hero-data.js, images, admin files, privacy.html, terms.html, and other site files.
+
+Keep the folder structure exactly as shown.
+Your GitHub-connected Cloudflare Pages project should deploy automatically after commit.
+
+Future active products with a SKU are picked up dynamically by the product sitemap.

@@ -4804,6 +4804,53 @@ html[dir="rtl"] .saver-order-picker{
       .saver-turnstile{max-width:100%}
     </style>
 
+<style id="saver-seo-product-styles">
+
+/* =========================================================
+   SAVER MARKET SEARCH / PRODUCT SEO UX
+   Real crawlable product links + bilingual product details.
+   ========================================================= */
+.product-title a.saver-product-seo-link {
+    color: inherit;
+    text-decoration: none;
+}
+.product-title a.saver-product-seo-link:hover,
+.product-title a.saver-product-seo-link:focus-visible {
+    color: var(--sage-dark);
+    text-decoration: underline;
+    text-decoration-color: var(--gold);
+    text-underline-offset: 4px;
+}
+.details-info h1.saver-product-detail-title {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    color: var(--charcoal);
+}
+.saver-product-alt-name {
+    font-size: .92rem;
+    color: #666;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+.saver-product-alt-description {
+    color: #777;
+    font-size: .88rem;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+@media (max-width: 768px) {
+    .details-info h1.saver-product-detail-title {
+        font-size: 1.32rem !important;
+        line-height: 1.25 !important;
+        margin-bottom: 4px !important;
+    }
+    .saver-product-alt-name { font-size: .78rem; margin-bottom: 7px; }
+    .saver-product-alt-description { font-size: .80rem; line-height: 1.55; }
+}
+</style>
+
 </head>
 <body>
 
@@ -5443,7 +5490,7 @@ html[dir="rtl"] .saver-order-picker{
                     <div class="logo-box">S</div>
                     <span>Saver Market</span>
                 </div>
-                <p style="font-size:0.9rem; line-height:1.8; color:rgba(255,255,255,0.5);" data-en="Premium luxury lifestyle marketplace bringing you boutique product designs curated flawlessly." data-ar="سوق نمط الحياة الفاخر المتميز يقدم لك تصميمات منتجات فريدة ومنسقة بشكل لا تشوبه شائبة.">Premium luxury lifestyle marketplace bringing you boutique product designs curated flawlessly.</p>
+                <p style="font-size:0.9rem; line-height:1.8; color:rgba(255,255,255,0.5);" data-en="Online shopping in Syria for accessories, beauty, home products, toys, jewellery, electronics and everyday essentials, with easy ordering and delivery across Syria." data-ar="تسوق أونلاين في سوريا للإكسسوارات والجمال والمنتجات المنزلية والألعاب والمجوهرات والإلكترونيات والاحتياجات اليومية، مع طلب سهل وتوصيل إلى مختلف أنحاء سوريا.">Online shopping in Syria for accessories, beauty, home products, toys, jewellery, electronics and everyday essentials, with easy ordering and delivery across Syria.</p>
             </div>
             <div>
                 <h4 class="footer-title" data-en="Quick Navigation" data-ar="روابط سريعة">Quick Navigation</h4>
@@ -6012,7 +6059,7 @@ html[dir="rtl"] .saver-order-picker{
                                 ${product.availability}
                             </span>
                         </div>
-                        <h3 class="product-title product-title-link" role="link" tabindex="0" onclick="displayDedicatedProductDetailsPage(\'${product.id}\')" onkeydown="if(event.key===\'Enter\')displayDedicatedProductDetailsPage(\'${product.id}\')">${titleStr}</h3>
+                        <h3 class="product-title"><a class="product-title-link saver-product-seo-link" href="/p/${encodeURIComponent(product.sku.replace('#',''))}" onclick="event.preventDefault(); displayDedicatedProductDetailsPage('${product.id}')">${titleStr}</a></h3>
                         <p class="product-desc">${descStr}</p>
                         <div class="price-row">
                             <div class="price-group">
@@ -6264,7 +6311,8 @@ html[dir="rtl"] .saver-order-picker{
                     </div>
                     <div class="details-info">
                         ${product.brand ? `<div class="product-brand">${product.brand}</div>` : ''}
-                        <h2>${titleStr}</h2>
+                        <h1 class="saver-product-detail-title">${titleStr}</h1>
+                        ${(currentLanguage === 'ar' ? product.nameEn : product.nameAr) && (currentLanguage === 'ar' ? product.nameEn : product.nameAr) !== titleStr ? `<div class="saver-product-alt-name" lang="${currentLanguage === 'ar' ? 'en' : 'ar'}">${currentLanguage === 'ar' ? product.nameEn : product.nameAr}</div>` : ''}
                         <div class="details-meta-row">
                             <span><strong>${translations[currentLanguage].sku}:</strong> ${product.sku}</span>
                             <span><strong>${currentLanguage === 'ar' ? 'الفئة:' : 'Category:'}</strong> ${saverCategoryLabel(product.category)}</span>
@@ -6274,7 +6322,8 @@ html[dir="rtl"] .saver-order-picker{
                             <div class="details-price" style="margin-bottom:0;">${formatPrice(product.price)}</div>
                             ${product.oldPrice && product.oldPrice > product.price ? `<span class="old-price">${formatPrice(product.oldPrice)}</span>` : ''}
                         </div>
-                        <p style="color:#555; margin-bottom:20px;">${descStr}</p>
+                        <p style="color:#555; margin-bottom:10px;" lang="${currentLanguage}">${descStr}</p>
+                        ${(currentLanguage === 'ar' ? product.descEn : product.descAr) && (currentLanguage === 'ar' ? product.descEn : product.descAr) !== descStr ? `<p class="saver-product-alt-description" lang="${currentLanguage === 'ar' ? 'en' : 'ar'}">${currentLanguage === 'ar' ? product.descEn : product.descAr}</p>` : ''}
 
                         <div class="details-extra-grid">
                             ${materialStr ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'الخامة' : 'Material'}</strong>${materialStr}</div>` : ''}
@@ -6604,10 +6653,7 @@ aboutSlides[current].classList.add("active");
     window.shareProduct = function(type, productId){
         const p=productsDatabase.find(x=>x.id===productId); if(!p)return;
         const name=currentLanguage==='ar'?p.nameAr:p.nameEn;
-        const sharedUrl = new URL(location.href);
-        sharedUrl.hash = '';
-        sharedUrl.searchParams.set('product', p.sku.replace('#',''));
-        const url = sharedUrl.toString();
+        const url = `${location.origin}/p/${encodeURIComponent(p.sku.replace('#',''))}`;
         const text=name+' - '+formatPrice(p.price)+' - '+p.sku;
         if(type==='whatsapp') window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
         if(type==='facebook') window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url),'_blank');
@@ -6698,7 +6744,6 @@ aboutSlides[current].classList.add("active");
                 <div class="gallery-slides" id="gallery-slider-${p.id}" dir="ltr">${p.images.map((img,i)=>`<img loading="lazy" class="gallery-slide ${i===p.currentImgIndex?'active':''}" src="${img}" alt="${title} ${i+1}" draggable="false">`).join('')}</div>
                 <div class="gallery-nav" dir="ltr"><button type="button" class="gallery-arrow" aria-label="Previous image" onclick="event.stopPropagation();changeProductGallery('${p.id}',-1)"><i class="fas fa-chevron-left"></i></button><button type="button" class="gallery-arrow" aria-label="Next image" onclick="event.stopPropagation();changeProductGallery('${p.id}',1)"><i class="fas fa-chevron-right"></i></button></div>
                 <div class="gallery-dots" id="gallery-dots-${p.id}">${p.images.map((_,i)=>`<span class="gallery-dot ${i===p.currentImgIndex?'active':''}"></span>`).join('')}</div>
-                <button class="quick-view-btn" onclick="event.stopPropagation();openQuickView('${p.id}')"><i class="fas fa-eye"></i></button>
             </div><div class="card-body">${p.brand?`<div class="product-brand">${p.brand}</div>`:''}<div class="product-meta-line"><span class="product-sku sku-copy" onclick="copySku('${p.sku}')">${p.sku}</span><span class="stock-status ${p.availability==='In Stock'?'in-stock':p.availability==='Low Stock'?'low-stock':'out-stock'}">${p.availability}</span></div><h3 class="product-title product-title-link" role="link" tabindex="0" onclick="displayDedicatedProductDetailsPage(\'${p.id}\')" onkeydown="if(event.key===\'Enter\')displayDedicatedProductDetailsPage(\'${p.id}\')">${title}</h3><p class="product-desc">${desc}</p><div class="price-row"><div class="price-group"><span class="product-price">${formatPrice(p.price)}</span>${p.oldPrice&&p.oldPrice>p.price?`<span class="old-price">${formatPrice(p.oldPrice)}</span><span class="discount-pill">-${discount}%</span>`:''}</div><div class="qty-select-wrapper"><button class="qty-btn" onclick="adjustCardLocalQty('${p.id}',-1)">-</button><span class="qty-val" id="qty-val-${p.id}">1</span><button class="qty-btn" onclick="adjustCardLocalQty('${p.id}',1)">+</button></div></div><div class="card-actions"><button class="btn-card-add" ${p.availability==='Out of Stock'?'disabled style="opacity:.5"':''} onclick="pushToBagAction('${p.id}',false,this)"><i class="fas fa-shopping-basket"></i><span>${translations[currentLanguage].add_cart}</span></button><button class="btn-view-details" onclick="displayDedicatedProductDetailsPage('${p.id}')">${translations[currentLanguage].view_det}</button></div></div>`;
             grid.appendChild(card);
         });
@@ -6738,6 +6783,10 @@ aboutSlides[current].classList.add("active");
     window.openProductFromUrl = function() {
         const params = new URLSearchParams(location.search);
         let requestedSku = params.get('product');
+        if (!requestedSku) {
+            const pathMatch = location.pathname.match(/^\/p\/([^/?#]+)\/?$/i);
+            if (pathMatch) requestedSku = decodeURIComponent(pathMatch[1]);
+        }
         if (!requestedSku && location.hash.startsWith('#product=')) {
             requestedSku = decodeURIComponent(location.hash.slice('#product='.length));
         }
@@ -10605,11 +10654,17 @@ document.addEventListener("DOMContentLoaded", function () {
           String(current.productId || '') === String(productId);
 
         if(!sameProduct){
-          history.pushState(
-            {saverView:'details', productId:String(productId), saverMarket:true},
-            '',
-            location.href
-          );
+          const product = (window.productsDatabase || productsDatabase || []).find(p => String(p.id) === String(productId));
+          const cleanSku = product ? String(product.sku || '').replace(/^#/, '') : '';
+          const productPath = cleanSku ? `/p/${encodeURIComponent(cleanSku)}` : location.href;
+          const directProductLoad = cleanSku && location.pathname.replace(/\/$/, '') === productPath.replace(/\/$/, '');
+          const nextState = {saverView:'details', productId:String(productId), saverMarket:true};
+
+          if(directProductLoad){
+            history.replaceState(nextState, '', productPath);
+          }else{
+            history.pushState(nextState, '', productPath);
+          }
         }
       }
       return originalDetailsForHistory.apply(this, arguments);
@@ -11100,6 +11155,248 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     event.preventDefault();
     displayDedicatedProductDetailsPage(id);
   },true);
+})();
+</script>
+
+
+
+<script id="saver-search-product-seo">
+(function(){
+  "use strict";
+
+  const HOME = {
+    title: "Saver Market Syria | Online Shopping & Accessories",
+    description: "Shop Saver Market online for accessories, beauty, home products, toys and everyday essentials, with easy ordering and reliable delivery across Syria.",
+    url: "https://savermarketshop.com/",
+    image: "https://savermarketshop.com/saver-market-icon-512.png"
+  };
+
+  function text(value){ return String(value == null ? "" : value).trim(); }
+  function clip(value, max){
+    const s = text(value).replace(/\s+/g, " ");
+    return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+  }
+  function absoluteUrl(value){
+    const v = text(value);
+    if(!v) return "";
+    try { return new URL(v, location.origin).href; } catch(_) { return v; }
+  }
+  function upsertMeta(selector, attrs){
+    let node = document.head.querySelector(selector);
+    if(!node){
+      node = document.createElement("meta");
+      document.head.appendChild(node);
+    }
+    Object.entries(attrs).forEach(([k,v]) => node.setAttribute(k, v));
+    return node;
+  }
+  function setMetaName(name, content){
+    upsertMeta(`meta[name="${name}"]`, {name, content});
+  }
+  function setMetaProperty(property, content){
+    upsertMeta(`meta[property="${property}"]`, {property, content});
+  }
+  function setCanonical(url){
+    let node = document.head.querySelector('link[rel="canonical"]');
+    if(!node){ node = document.createElement("link"); node.rel = "canonical"; document.head.appendChild(node); }
+    node.href = url;
+  }
+  function removeProductSchema(){
+    document.getElementById("saver-dynamic-product-schema")?.remove();
+    document.getElementById("saver-server-product-schema")?.remove();
+  }
+  function productPath(product){
+    return `/p/${encodeURIComponent(text(product?.sku).replace(/^#/, ""))}`;
+  }
+  function availabilityUrl(value){
+    const a = text(value).toLowerCase();
+    if(a.includes("out")) return "https://schema.org/OutOfStock";
+    if(a.includes("backorder") || a.includes("back order")) return "https://schema.org/BackOrder";
+    if(a.includes("coming") || a.includes("preorder") || a.includes("pre-order")) return "https://schema.org/PreOrder";
+    return "https://schema.org/InStock";
+  }
+  function bilingualName(product){
+    const ar = text(product?.nameAr), en = text(product?.nameEn);
+    if(ar && en && ar.toLowerCase() !== en.toLowerCase()) return `${ar} | ${en}`;
+    return ar || en || "Product";
+  }
+  function bilingualDescription(product){
+    const ar = clip(product?.descAr, 170);
+    const en = clip(product?.descEn, 170);
+    const sku = text(product?.sku).replace(/^#/, "");
+    const pieces = [];
+    if(ar) pieces.push(ar);
+    if(en && en.toLowerCase() !== ar.toLowerCase()) pieces.push(en);
+    pieces.push(`شراء أونلاين من Saver Market مع التوصيل داخل سوريا. Buy online from Saver Market with delivery across Syria${sku ? ` (SKU ${sku})` : ""}.`);
+    return clip(pieces.join(" | "), 420);
+  }
+
+  window.saverApplyHomeSeo = function(){
+    document.title = HOME.title;
+    setMetaName("description", HOME.description);
+    setCanonical(HOME.url);
+    setMetaProperty("og:type", "website");
+    setMetaProperty("og:title", HOME.title);
+    setMetaProperty("og:description", "Shop accessories, beauty, home products, toys and everyday essentials online with reliable delivery across Syria.");
+    setMetaProperty("og:url", HOME.url);
+    setMetaProperty("og:image", HOME.image);
+    setMetaName("twitter:card", "summary");
+    setMetaName("twitter:title", HOME.title);
+    setMetaName("twitter:description", "Online shopping for accessories, beauty, home products, toys and everyday essentials with delivery across Syria.");
+    setMetaName("twitter:image", HOME.image);
+    document.head.querySelector('meta[property="product:price:amount"]')?.remove();
+    document.head.querySelector('meta[property="product:price:currency"]')?.remove();
+    removeProductSchema();
+  };
+
+  window.saverApplyProductSeo = function(product){
+    if(!product) return;
+    const name = bilingualName(product);
+    const title = clip(`${name} | Saver Market Syria`, 110);
+    const description = bilingualDescription(product);
+    const url = `${location.origin}${productPath(product)}`;
+    const images = Array.isArray(product.images) ? product.images.map(absoluteUrl).filter(Boolean) : [];
+    const image = images[0] || HOME.image;
+    const cleanSku = text(product.sku).replace(/^#/, "");
+
+    document.title = title;
+    setMetaName("description", description);
+    setCanonical(url);
+    setMetaProperty("og:type", "product");
+    setMetaProperty("og:title", title);
+    setMetaProperty("og:description", description);
+    setMetaProperty("og:url", url);
+    setMetaProperty("og:image", image);
+    setMetaName("twitter:card", "summary_large_image");
+    setMetaName("twitter:title", title);
+    setMetaName("twitter:description", description);
+    setMetaName("twitter:image", image);
+    setMetaProperty("product:price:amount", String(Number(product.price || 0)));
+    setMetaProperty("product:price:currency", "SYP");
+
+    removeProductSchema();
+    const schema = {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "@id": `${url}#product`,
+      "name": name,
+      "alternateName": [text(product.nameAr), text(product.nameEn)].filter(Boolean),
+      "description": description,
+      "sku": cleanSku,
+      "url": url,
+      "category": text(product.category),
+      "image": images,
+      "offers": {
+        "@type": "Offer",
+        "url": url,
+        "priceCurrency": "SYP",
+        "price": Number(product.price || 0),
+        "availability": availabilityUrl(product.availability),
+        "itemCondition": "https://schema.org/NewCondition",
+        "seller": {
+          "@type": "Organization",
+          "name": "Saver Market",
+          "url": HOME.url
+        }
+      }
+    };
+    if(text(product.brand)) schema.brand = {"@type":"Brand", "name":text(product.brand)};
+    if(!schema.image.length) delete schema.image;
+
+    const script = document.createElement("script");
+    script.id = "saver-dynamic-product-schema";
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema).replace(/</g, "\\u003c");
+    document.head.appendChild(script);
+  };
+
+  function findProduct(id){
+    const list = (typeof productsDatabase !== "undefined" ? productsDatabase : window.productsDatabase) || [];
+    return list.find(p => String(p.id) === String(id)) || null;
+  }
+
+  /* Final wrapper: metadata remains correct on in-app product navigation. */
+  const oldDetails = window.displayDedicatedProductDetailsPage || (typeof displayDedicatedProductDetailsPage === "function" ? displayDedicatedProductDetailsPage : null);
+  if(oldDetails && !oldDetails.__saverSeoWrapped){
+    const wrappedDetails = function(productId){
+      const result = oldDetails.apply(this, arguments);
+      const product = findProduct(productId);
+      if(product){
+        window.saverApplyProductSeo(product);
+        const path = productPath(product);
+        if(location.pathname.replace(/\/$/, "") !== path.replace(/\/$/, "")){
+          const state = Object.assign({}, history.state || {}, {saverView:"details", productId:String(productId), saverMarket:true});
+          history.replaceState(state, "", path);
+        }
+      }
+      return result;
+    };
+    wrappedDetails.__saverSeoWrapped = true;
+    window.displayDedicatedProductDetailsPage = wrappedDetails;
+    try { displayDedicatedProductDetailsPage = wrappedDetails; } catch(_) {}
+  }
+
+  /* Leaving a product page restores the normal store URL + store metadata. */
+  const oldSwitch = window.switchView || (typeof switchView === "function" ? switchView : null);
+  if(oldSwitch && !oldSwitch.__saverSeoWrapped){
+    const wrappedSwitch = function(targetViewId){
+      const result = oldSwitch.apply(this, arguments);
+      if(targetViewId !== "details"){
+        window.saverApplyHomeSeo();
+        if(/^\/p\//i.test(location.pathname)){
+          history.replaceState(Object.assign({}, history.state || {}, {saverView:targetViewId || "home", saverMarket:true}), "", "/");
+        }
+      }
+      return result;
+    };
+    wrappedSwitch.__saverSeoWrapped = true;
+    window.switchView = wrappedSwitch;
+    try { switchView = wrappedSwitch; } catch(_) {}
+  }
+
+  /* Robust direct deep-link opening, including slow mobile/API loads. */
+  function deepLinkSku(){
+    const params = new URLSearchParams(location.search);
+    let sku = params.get("product");
+    if(!sku){
+      const match = location.pathname.match(/^\/p\/([^/?#]+)\/?$/i);
+      if(match) sku = decodeURIComponent(match[1]);
+    }
+    return text(sku).replace(/^#/, "").toUpperCase();
+  }
+  function tryOpenDeepProduct(){
+    const sku = deepLinkSku();
+    if(!sku) return true;
+    const list = (typeof productsDatabase !== "undefined" ? productsDatabase : window.productsDatabase) || [];
+    const product = list.find(p => text(p.sku).replace(/^#/, "").toUpperCase() === sku);
+    if(!product) return false;
+    if(String(window.currentDedicatedProductId || "") !== String(product.id)){
+      window.displayDedicatedProductDetailsPage?.(product.id);
+    }else{
+      window.saverApplyProductSeo(product);
+    }
+    return true;
+  }
+  document.addEventListener("DOMContentLoaded", function(){
+    let tries = 0;
+    const timer = setInterval(function(){
+      tries += 1;
+      if(tryOpenDeepProduct() || tries >= 40) clearInterval(timer);
+    }, 150);
+  });
+
+  window.addEventListener("popstate", function(){
+    setTimeout(function(){
+      const id = window.currentDedicatedProductId;
+      const detailsActive = document.getElementById("view-details")?.classList.contains("active");
+      if(detailsActive && id){
+        const product = findProduct(id);
+        if(product) window.saverApplyProductSeo(product);
+      }else{
+        window.saverApplyHomeSeo();
+      }
+    }, 40);
+  });
 })();
 </script>
 
