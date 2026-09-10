@@ -1,18 +1,27 @@
-SAVER MARKET SEO PRODUCT PAGE FIX V3
+SAVER MARKET SEO FIX V4
 
-This package fixes the blank /p/SKU product pages on Cloudflare Pages.
+This version keeps the bilingual Google SEO, but the visible product page now shows
+ONLY the currently selected website language.
 
-Merge these files into the ROOT of your existing GitHub repository:
+Upload/merge these files into the ROOT of your existing GitHub repository:
 
 index.html                      -> replace existing index.html
 robots.txt                      -> replace existing robots.txt
 sitemap.xml                     -> replace existing sitemap.xml
 functions/sitemap-products.js   -> replace existing file
-functions/p/[sku].js            -> IMPORTANT: replace existing file
+functions/p/[sku].js            -> replace existing file
 
-Do NOT delete your other existing website files.
-Keep the folder structure exactly as shown.
-GitHub-connected Cloudflare Pages should deploy automatically after commit.
+IMPORTANT:
+- Do NOT delete products-data.js, settings.js, hero-data.js, images, admin files,
+  privacy.html, terms.html, or any other existing website files.
+- Keep the functions folder structure exactly as shown.
+- GitHub-connected Cloudflare Pages will deploy automatically after commit.
 
-After deployment test:
-https://savermarketshop.com/p/STK132
+Visible behavior:
+- Arabic selected -> Arabic product name and Arabic description only.
+- English selected -> English product name and English description only.
+
+SEO behavior:
+- Arabic + English product data remains available in metadata and Product schema
+  for Google/search engines.
+- Dynamic product sitemap remains enabled for current and future active products.

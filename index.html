@@ -5922,6 +5922,16 @@ html[dir="rtl"] .saver-order-picker{
             renderCatalogGrid();
             renderBackorderGrid();
             refreshCartDisplayEngine();
+
+            // If a product page is currently open, redraw it in the newly selected language.
+            if (window.currentDedicatedProductId) {
+                const openProduct = productsDatabase.find(
+                    p => String(p.id) === String(window.currentDedicatedProductId)
+                );
+                if (openProduct) {
+                    displayDedicatedProductDetailsPage(openProduct.id);
+                }
+            }
         }
 
         // Filter Matrix Engine Calculator Implementation
@@ -6312,7 +6322,6 @@ html[dir="rtl"] .saver-order-picker{
                     <div class="details-info">
                         ${product.brand ? `<div class="product-brand">${product.brand}</div>` : ''}
                         <h1 class="saver-product-detail-title">${titleStr}</h1>
-                        ${(currentLanguage === 'ar' ? product.nameEn : product.nameAr) && (currentLanguage === 'ar' ? product.nameEn : product.nameAr) !== titleStr ? `<div class="saver-product-alt-name" lang="${currentLanguage === 'ar' ? 'en' : 'ar'}">${currentLanguage === 'ar' ? product.nameEn : product.nameAr}</div>` : ''}
                         <div class="details-meta-row">
                             <span><strong>${translations[currentLanguage].sku}:</strong> ${product.sku}</span>
                             <span><strong>${currentLanguage === 'ar' ? 'الفئة:' : 'Category:'}</strong> ${saverCategoryLabel(product.category)}</span>
@@ -6323,7 +6332,6 @@ html[dir="rtl"] .saver-order-picker{
                             ${product.oldPrice && product.oldPrice > product.price ? `<span class="old-price">${formatPrice(product.oldPrice)}</span>` : ''}
                         </div>
                         <p style="color:#555; margin-bottom:10px;" lang="${currentLanguage}">${descStr}</p>
-                        ${(currentLanguage === 'ar' ? product.descEn : product.descAr) && (currentLanguage === 'ar' ? product.descEn : product.descAr) !== descStr ? `<p class="saver-product-alt-description" lang="${currentLanguage === 'ar' ? 'en' : 'ar'}">${currentLanguage === 'ar' ? product.descEn : product.descAr}</p>` : ''}
 
                         <div class="details-extra-grid">
                             ${materialStr ? `<div class="details-extra-item"><strong>${currentLanguage === 'ar' ? 'الخامة' : 'Material'}</strong>${materialStr}</div>` : ''}

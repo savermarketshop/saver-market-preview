@@ -168,7 +168,6 @@ function injectServerProduct(html, product, data, sku) {
       <div class="details-info">
         ${brand ? `<div class="product-brand">${htmlEscape(brand)}</div>` : ""}
         <h1 class="saver-product-detail-title" lang="ar">${htmlEscape(data.arName)}</h1>
-        ${data.enName && data.enName !== data.arName ? `<div class="saver-product-alt-name" lang="en">${htmlEscape(data.enName)}</div>` : ""}
         <div class="details-meta-row">
           <span><strong>رمز المنتج | SKU:</strong> #${htmlEscape(sku)}</span>
           ${category ? `<span><strong>الفئة | Category:</strong> ${htmlEscape(category)}</span>` : ""}
@@ -176,7 +175,6 @@ function injectServerProduct(html, product, data, sku) {
         </div>
         <div class="details-price" style="margin-bottom:16px;">${htmlEscape(price)} SYP</div>
         ${data.arDesc ? `<p lang="ar" style="color:#555;margin-bottom:10px;">${htmlEscape(data.arDesc)}</p>` : ""}
-        ${data.enDesc && data.enDesc !== data.arDesc ? `<p lang="en" class="saver-product-alt-description">${htmlEscape(data.enDesc)}</p>` : ""}
         <p style="font-size:.86rem;color:#666;">تسوق أونلاين من Saver Market مع التوصيل داخل سوريا. Buy online from Saver Market with delivery across Syria.</p>
       </div>
     </div>`;
