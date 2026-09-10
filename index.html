@@ -8207,8 +8207,30 @@ aboutSlides[current].classList.add("active");
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    /* Arabic is the primary Saver Market language. */
+    /* Arabic is the normal store default, but a dedicated /ar/ or /en/
+       SEO route must always keep the language encoded in its URL. */
     setTimeout(function () {
+        const routeMatch = window.location.pathname.match(/^\/(ar|en)(?:\/|$)/i);
+        if (routeMatch) {
+            const routeLanguage = routeMatch[1].toLowerCase();
+
+            if (typeof currentLanguage !== "undefined") {
+                currentLanguage = routeLanguage;
+            }
+
+            document.documentElement.lang = routeLanguage;
+            document.documentElement.dir = routeLanguage === "ar" ? "rtl" : "ltr";
+
+            const switcher = document.getElementById("langSwitch");
+            if (switcher) {
+                switcher.innerText = routeLanguage === "ar" ? "English" : "العربية";
+            }
+
+            /* Do not call toggleLanguage() here. The later multilingual
+               initializer renders the page in the route's exact language. */
+            return;
+        }
+
         if (typeof currentLanguage !== "undefined" &&
             currentLanguage !== "ar" &&
             typeof window.toggleLanguage === "function") {

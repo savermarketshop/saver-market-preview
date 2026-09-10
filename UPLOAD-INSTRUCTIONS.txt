@@ -1,34 +1,25 @@
-SAVER MARKET V6 – MULTILINGUAL GOOGLE SEO UPGRADE
+SAVER MARKET V6.1 - ROUTE LANGUAGE FIX
 
-Merge these files into the ROOT of the existing GitHub repository.
-Replace matching files and keep all other existing site files.
+Complete V6 package with one targeted correction:
+- /en/p/SKU stays English.
+- /ar/p/SKU stays Arabic.
+- English/Arabic category routes remain working.
+- V5 JWT/session fix remains included.
+- Product sitemap, multilingual SEO, hreflang, Product schema,
+  Breadcrumb schema and image SEO remain included.
 
-Files included:
-- index.html
-- robots.txt
-- sitemap.xml
-- functions/sitemap-products.js
-- functions/p/[sku].js                  (legacy /p/SKU compatibility)
-- functions/ar/p/[sku].js               (Arabic product SEO page)
-- functions/en/p/[sku].js               (English product SEO page)
-- functions/ar/category/[slug].js        (Arabic category SEO page)
-- functions/en/category/[slug].js        (English category SEO page)
-- functions/category/[slug].js           (legacy/default category redirect)
+Merge these files into the ROOT of the existing GitHub repository:
 
-DO NOT DELETE: sw.js, settings.js, hero-data.js, products-data.js, images, admin files, manifests, privacy.html, terms.html, or other existing files.
+index.html
+robots.txt
+sitemap.xml
+functions/sitemap-products.js
+functions/p/[sku].js
+functions/ar/p/[sku].js
+functions/en/p/[sku].js
+functions/ar/category/[slug].js
+functions/en/category/[slug].js
+functions/category/[slug].js
 
-What V6 adds:
-- Separate Arabic and English product URLs with hreflang.
-- Dynamic Arabic and English category landing pages.
-- Crawlable category links and localized product links.
-- Product/category BreadcrumbList structured data.
-- Better image SEO: descriptive alt text, image sitemap entries, primary page image metadata.
-- Real approved product reviews are added to Product schema automatically when they exist. No ratings are invented.
-- Existing V5 customer-session/JWT fix is preserved.
-- Existing sitemap URL remains https://savermarketshop.com/sitemap-products, so Search Console does not need a new sitemap address.
-
-After Cloudflare deploys, test:
-1) https://savermarketshop.com/ar/p/STK132
-2) https://savermarketshop.com/en/p/STK132
-3) https://savermarketshop.com/sitemap-products
-4) Click a category on the homepage; URL should become /ar/category/... or /en/category/...
+Do NOT delete sw.js, settings.js, hero-data.js, products-data.js, images,
+admin files, manifests, privacy.html, terms.html, or other existing files.
