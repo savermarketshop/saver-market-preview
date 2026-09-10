@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /bulk-import.html
+
+Sitemap: https://savermarketshop.com/sitemap.xml
