@@ -1,9 +1,8 @@
-SAVER MARKET SEO FIX V4
+SAVER MARKET V5 - SESSION RESILIENCE + GOOGLE PRODUCT SEO
 
-This version keeps the bilingual Google SEO, but the visible product page now shows
-ONLY the currently selected website language.
+This is the COMPLETE replacement/merge package based on V4.
 
-Upload/merge these files into the ROOT of your existing GitHub repository:
+Upload/merge into the ROOT of the existing GitHub repository:
 
 index.html                      -> replace existing index.html
 robots.txt                      -> replace existing robots.txt
@@ -11,17 +10,23 @@ sitemap.xml                     -> replace existing sitemap.xml
 functions/sitemap-products.js   -> replace existing file
 functions/p/[sku].js            -> replace existing file
 
-IMPORTANT:
-- Do NOT delete products-data.js, settings.js, hero-data.js, images, admin files,
-  privacy.html, terms.html, or any other existing website files.
-- Keep the functions folder structure exactly as shown.
-- GitHub-connected Cloudflare Pages will deploy automatically after commit.
+DO NOT delete the rest of the website repository (settings.js, hero-data.js,
+products-data.js, sw.js, images, admin files, manifest files, privacy.html,
+terms.html, etc.).
 
-Visible behavior:
-- Arabic selected -> Arabic product name and Arabic description only.
-- English selected -> English product name and English description only.
+V5 SESSION FIX
+- Reopens old Home Screen / installed-app sessions safely.
+- Refreshes an access token before profile/orders calls when possible.
+- If the saved refresh token is no longer valid, only the local login session is
+  cleared and the customer is asked to sign in again.
+- Account/order data in Supabase is NOT deleted.
+- Raw technical messages such as "JWT expired" are no longer shown to customers.
+- Temporary internet/server errors do not erase the saved customer session.
+- Current cart is preserved locally when an unrecoverable old login expires.
 
-SEO behavior:
-- Arabic + English product data remains available in metadata and Product schema
-  for Google/search engines.
-- Dynamic product sitemap remains enabled for current and future active products.
+GOOGLE SEO KEPT
+- Individual /p/SKU product pages
+- Dynamic product sitemap for active current/future products
+- Arabic + English SEO metadata and Product structured data
+- Visible product page remains single-language based on the selected site language
+- Product snippets and merchant-listing eligibility remain unchanged

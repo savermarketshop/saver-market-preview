@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <!-- Saver Market build: V5 session-resilience + Google product SEO -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saver Market Syria | Online Shopping &amp; Accessories</title>
@@ -8942,8 +8943,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   function setSession(session){
     saverSession=session||null;
-    if(session) localStorage.setItem(AUTH_KEY, JSON.stringify(session));
-    else localStorage.removeItem(AUTH_KEY);
+    if(session){
+      localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+      window.saverSessionExpiredNotice=false;
+    }else{
+      localStorage.removeItem(AUTH_KEY);
+    }
     updateAccountIndicators();
   }
   function currentUser(){ return getSession()?.user || null; }
@@ -8971,19 +8976,102 @@ document.addEventListener("DOMContentLoaded", function () {
     return data;
   }
 
+  function saverJwtExpiryMs(session){
+    const jwt=session?.access_token||'';
+    if(!jwt) return 0;
+    try{
+      const part=(jwt.split('.')[1]||'').replace(/-/g,'+').replace(/_/g,'/');
+      const padded=part + '='.repeat((4-part.length%4)%4);
+      const payload=JSON.parse(atob(padded));
+      return Number(payload?.exp||0)*1000;
+    }catch(e){
+      return 0;
+    }
+  }
+
+  function saverSessionNeedsRefresh(session, skewMs=120000){
+    if(!session?.access_token) return true;
+    const expiry=saverJwtExpiryMs(session);
+    return !expiry || expiry < Date.now()+Math.max(0,Number(skewMs)||0);
+  }
+
+  function saverSessionExpiredError(){
+    const err=new Error(currentLanguage==='ar'
+      ? 'انتهت صلاحية جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى.'
+      : 'Your login session expired. Please sign in again.');
+    err.code='SAVER_SESSION_EXPIRED';
+    return err;
+  }
+
+  function saverRefreshUnavailableError(){
+    const err=new Error(currentLanguage==='ar'
+      ? 'تعذر تحديث جلسة تسجيل الدخول حالياً. تحقق من اتصال الإنترنت ثم حاول مرة أخرى.'
+      : 'Could not refresh your login session right now. Check your internet connection and try again.');
+    err.code='SAVER_SESSION_REFRESH_UNAVAILABLE';
+    return err;
+  }
+
+  function saverIsPermanentRefreshFailure(error){
+    const status=Number(error?.status||0);
+    const code=String(error?.data?.code||error?.data?.error_code||'').toLowerCase();
+    const message=String(error?.message||error?.data?.message||error?.data?.msg||'').toLowerCase();
+    return status===400 || status===401 || status===403 ||
+      code.includes('refresh_token') || code.includes('invalid_grant') ||
+      message.includes('refresh token') || message.includes('invalid refresh') ||
+      message.includes('invalid grant') || message.includes('session not found');
+  }
+
+  function saverExpireLocalSession(){
+    try{
+      const u=currentUser();
+      if(u?.id && typeof cartSlim==='function'){
+        const cart=cartSlim();
+        if(Array.isArray(cart)&&cart.length) localStorage.setItem(GUEST_CART_KEY,JSON.stringify(cart));
+      }
+    }catch(e){}
+    setSession(null);
+    window.saverSessionExpiredNotice=true;
+    setTimeout(()=>{
+      try{
+        if(document.getElementById('view-account')?.classList.contains('active')){
+          window.saverRenderAccountView?.();
+        }
+      }catch(e){}
+    },0);
+    return null;
+  }
+
   async function refreshSessionIfNeeded(){
     if(refreshPromise) return refreshPromise;
-    const s=getSession(); if(!s?.refresh_token) return null;
+    const s=getSession();
+    if(!s?.refresh_token){
+      if(s?.access_token && !saverSessionNeedsRefresh(s,0)) return s;
+      if(s) saverExpireLocalSession();
+      return null;
+    }
 
     refreshPromise=(async()=>{
       try{
         const data=await authRequest('token?grant_type=refresh_token',{refresh_token:s.refresh_token});
-        if(data.access_token){ setSession(data); return data; }
-        return s;
+        if(data?.access_token){
+          // Supabase normally returns a rotated refresh token. Keep the previous
+          // one only if a response unexpectedly omits it.
+          if(!data.refresh_token) data.refresh_token=s.refresh_token;
+          if(!data.user && s.user) data.user=s.user;
+          setSession(data);
+          return data;
+        }
+        saverExpireLocalSession();
+        return null;
       }catch(e){
-        /* A mobile app can be suspended or briefly offline while refreshing.
-           Never erase the customer's session/cart because of a temporary error. */
-        console.warn('[Saver Market] Session refresh failed',e);
+        if(saverIsPermanentRefreshFailure(e)){
+          console.info('[Saver Market] Saved login session is no longer refreshable. Asking customer to sign in again.');
+          saverExpireLocalSession();
+          return null;
+        }
+        // Network/server problems are temporary. Keep the local session and cart;
+        // the caller will show a friendly retry message instead of exposing JWT text.
+        console.warn('[Saver Market] Temporary session refresh problem',e);
         return getSession()||s;
       }finally{
         refreshPromise=null;
@@ -9309,19 +9397,73 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   async function rest(path, options={}, allowRefresh=true){
-    let r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
-
-    // Customer access tokens expire. Refresh once automatically instead of silently
-    // loading an empty cart/account when the installed app is reopened later.
-    if(r.status===401 && allowRefresh && getSession()?.refresh_token){
-      const refreshed=await refreshSessionIfNeeded();
-      if(refreshed?.access_token){
-        r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+    // Proactively refresh before sending an expired/near-expiry JWT. This matters
+    // especially for Home Screen / installed web-app sessions reopened days later.
+    if(currentUser()){
+      let s=getSession();
+      if(saverSessionNeedsRefresh(s,120000)){
+        if(s?.refresh_token){
+          const refreshed=await refreshSessionIfNeeded();
+          s=getSession();
+          if(!s?.access_token) throw saverSessionExpiredError();
+          if(saverSessionNeedsRefresh(s,0) && refreshed===s){
+            throw saverRefreshUnavailableError();
+          }
+        }else{
+          saverExpireLocalSession();
+          throw saverSessionExpiredError();
+        }
       }
     }
 
-    const text=await r.text(); let data=null; try{data=text?JSON.parse(text):null}catch(e){data=text}
-    if(!r.ok) throw new Error((data&&data.message)||text||`Request failed ${r.status}`);
+    let r;
+    try{
+      r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+    }catch(e){
+      const err=new Error(currentLanguage==='ar'
+        ? 'تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت ثم حاول مرة أخرى.'
+        : 'Could not connect to the server. Check your internet connection and try again.');
+      err.code='SAVER_NETWORK_ERROR';
+      throw err;
+    }
+
+    // If Supabase rejects the token, rotate the refresh token once and retry.
+    if((r.status===401 || r.status===403) && allowRefresh){
+      const s=getSession();
+      if(s?.refresh_token){
+        const refreshed=await refreshSessionIfNeeded();
+        if(refreshed?.access_token && getSession()?.access_token){
+          try{
+            r=await fetch(`${SAVER_SUPABASE_URL}/rest/v1/${path}`,Object.assign({},options,{headers:apiHeaders(token(),options.headers||{})}));
+          }catch(e){
+            const err=new Error(currentLanguage==='ar'
+              ? 'تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت ثم حاول مرة أخرى.'
+              : 'Could not connect to the server. Check your internet connection and try again.');
+            err.code='SAVER_NETWORK_ERROR';
+            throw err;
+          }
+        }else if(!getSession()?.access_token){
+          throw saverSessionExpiredError();
+        }
+      }else{
+        saverExpireLocalSession();
+        throw saverSessionExpiredError();
+      }
+    }
+
+    const responseText=await r.text();
+    let data=null;
+    try{data=responseText?JSON.parse(responseText):null}catch(e){data=responseText}
+
+    if(!r.ok){
+      const message=String((data&&data.message)||responseText||`Request failed ${r.status}`);
+      const lower=message.toLowerCase();
+      if(r.status===401 || r.status===403 || lower.includes('jwt expired') || lower.includes('invalid jwt')){
+        saverExpireLocalSession();
+        throw saverSessionExpiredError();
+      }
+      throw new Error(message);
+    }
     return data;
   }
 
@@ -9403,7 +9545,12 @@ document.addEventListener("DOMContentLoaded", function () {
         };
       }
     }catch(e){
-      root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات.':'Could not load orders.'}</div>`;
+      if(e?.code==='SAVER_SESSION_EXPIRED'){
+        root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'انتهت صلاحية جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى.':'Your login session expired. Please sign in again.'}</div>`;
+        setTimeout(()=>window.saverRenderAccountView?.(),0);
+        return;
+      }
+      root.innerHTML=`<div style="color:#a13737">${currentLanguage==='ar'?'تعذر تحميل الطلبات. حاول مرة أخرى.':'Could not load orders. Please try again.'}</div>`;
     }
   }
 
@@ -9751,9 +9898,10 @@ document.addEventListener("DOMContentLoaded", function () {
     await consumeAuthRedirect();
     let tries=0;while(!productsDatabase.length&&tries<80){await new Promise(r=>setTimeout(r,100));tries++}
     if(getSession()){
-      // Refresh token when close to expiry. Refreshes are serialized so multiple
-      // startup requests cannot rotate the same refresh token at the same time.
-      try{const payload=JSON.parse(atob(token().split('.')[1]||''));if(payload.exp*1000<Date.now()+120000)await refreshSessionIfNeeded()}catch(e){}
+      // Home Screen / installed app sessions can sit unused for days. Validate or
+      // refresh the session before account/cart requests are made.
+      try{ await window.saverCustomerEnsureFreshSession?.(); }
+      catch(e){ console.warn('[Saver Market] Startup session check',e); }
     }
     if(currentUser()){
       // Show the locally persisted account cart immediately, then reconcile with Supabase.
@@ -9781,28 +9929,36 @@ document.addEventListener("DOMContentLoaded", function () {
   window.saverCustomerGetSession = getSession;
   window.saverCustomerRefreshSession = refreshSessionIfNeeded;
   window.saverCustomerEnsureFreshSession = async function(){
-    const u=currentUser();
-    if(!u) return null;
     let s=getSession();
-    if(!s?.access_token && s?.refresh_token){
+    if(!s?.user) return null;
+
+    if(!s?.access_token){
+      if(!s?.refresh_token){
+        saverExpireLocalSession();
+        return null;
+      }
       await refreshSessionIfNeeded();
       s=getSession();
+      if(!s?.access_token) return null;
     }
-    if(!s?.access_token) return null;
 
-    let shouldRefresh=false;
-    try{
-      const part=(s.access_token.split('.')[1]||'').replace(/-/g,'+').replace(/_/g,'/');
-      const padded=part + '='.repeat((4-part.length%4)%4);
-      const payload=JSON.parse(atob(padded));
-      shouldRefresh=!payload.exp || payload.exp*1000 < Date.now()+120000;
-    }catch(e){ shouldRefresh=true; }
-
-    if(shouldRefresh && s?.refresh_token){
-      await refreshSessionIfNeeded();
+    if(saverSessionNeedsRefresh(s,120000)){
+      if(!s?.refresh_token){
+        saverExpireLocalSession();
+        return null;
+      }
+      const beforeExpiry=saverJwtExpiryMs(s);
+      const refreshed=await refreshSessionIfNeeded();
       s=getSession();
+      if(!s?.access_token) return null;
+
+      // A temporary connection failure may leave an old token in storage. If it
+      // is already expired, do not send it to the API and do not expose "JWT expired".
+      if(saverSessionNeedsRefresh(s,0) && (!refreshed?.access_token || saverJwtExpiryMs(s)===beforeExpiry)){
+        throw saverRefreshUnavailableError();
+      }
     }
-    return s?.access_token ? s : null;
+    return s;
   };
   window.saverCustomerRest = rest;
   window.saverCustomerLoadOrders = loadOrders;
@@ -9831,7 +9987,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.saverRenderAccountView=async function(){
     const root=document.getElementById('saverAccountContent'); if(!root)return;
-    const user=window.saverCustomerCurrentUser();
+    let user=window.saverCustomerCurrentUser();
+
+    // Validate stale Home Screen / PWA sessions before loading profile or orders.
+    if(user && typeof window.saverCustomerEnsureFreshSession==='function'){
+      try{
+        const fresh=await window.saverCustomerEnsureFreshSession();
+        user=fresh?window.saverCustomerCurrentUser():null;
+      }catch(e){
+        root.innerHTML=`<div class="saver-account-shell"><div class="saver-account-card"><div class="saver-auth-message error" style="display:block">${escapeHtml(e.message||lang('Could not refresh your session. Please try again.','تعذر تحديث جلسة تسجيل الدخول. حاول مرة أخرى.'))}</div><button class="saver-account-secondary" type="button" onclick="saverRenderAccountView()">${lang('Try Again','حاول مرة أخرى')}</button></div></div>`;
+        return;
+      }
+    }
 
     if(window.saverPasswordRecoveryMode){
       root.innerHTML=`<div class="saver-account-shell">
@@ -9860,6 +10027,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if(!user){
       root.innerHTML=`<div class="saver-account-shell">
         <div class="saver-account-card"><h3>${lang('Welcome','مرحباً')}</h3><p>${lang('Creating an account is optional. You can always shop as a guest.','إنشاء الحساب اختياري. يمكنك التسوق كضيف دائماً.')}</p>
+          ${window.saverSessionExpiredNotice?`<div class="saver-auth-message error" style="display:block">${lang('Your previous login session expired. Please sign in again. Your account and orders are safe.','انتهت صلاحية جلسة تسجيل الدخول السابقة. يرجى تسجيل الدخول مرة أخرى. حسابك وطلباتك محفوظة.')}</div>`:''}
           <button class="saver-google-auth" type="button" onclick="saverGoogleLogin()"><i class="fab fa-google" aria-hidden="true"></i><span>${lang('Continue with Google','المتابعة بواسطة Google')}</span></button>
           <div class="saver-auth-divider"><span>${lang('OR','أو')}</span></div>
           <div class="saver-auth-tabs"><button type="button" class="saver-auth-tab active" data-auth-tab="login">${lang('Login','تسجيل الدخول')}</button><button type="button" class="saver-auth-tab" data-auth-tab="signup">${lang('Sign Up','إنشاء حساب')}</button></div>
@@ -9917,7 +10085,14 @@ document.addEventListener("DOMContentLoaded", function () {
       </div><div class="saver-account-section-actions"><button class="saver-account-primary" type="button" onclick="saverShowProfileEditor()">${lang('Edit Profile','تعديل الملف')}</button><button class="saver-account-secondary" type="button" onclick="saverShowAddressManager()">${lang('Manage Addresses','إدارة العناوين')}</button><button class="saver-account-secondary" type="button" onclick="saverLogout()">${lang('Logout','تسجيل الخروج')}</button></div><div id="saverAccountEditor"></div>`;
       const checkoutName=document.getElementById('custName'), checkoutPhone=document.getElementById('custPhone'), checkoutAddress=document.getElementById('custAddress');
       if(checkoutName&&!checkoutName.value)checkoutName.value=p.full_name||def?.recipient_name||''; if(checkoutPhone&&!checkoutPhone.value)checkoutPhone.value=p.phone||def?.phone||''; if(checkoutAddress&&!checkoutAddress.value&&def)checkoutAddress.value=def.address||'';
-    }catch(e){root.innerHTML=`<div class="saver-auth-message error">${escapeHtml(e.message)}</div>`}
+    }catch(e){
+      if(e?.code==='SAVER_SESSION_EXPIRED'){
+        root.innerHTML=`<div class="saver-auth-message error">${lang('Your login session expired. Please sign in again.','انتهت صلاحية جلسة تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى.')}</div>`;
+        setTimeout(()=>window.saverRenderAccountView?.(),0);
+        return;
+      }
+      root.innerHTML=`<div class="saver-auth-message error">${escapeHtml(e.message||lang('Could not load profile. Please try again.','تعذر تحميل الملف الشخصي. حاول مرة أخرى.'))}</div>`;
+    }
   };
 
   window.saverShowProfileEditor=async function(){
