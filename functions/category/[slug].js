@@ -1,0 +1,1 @@
+export function onRequestGet(context){const raw=Array.isArray(context.params.slug)?context.params.slug[0]:context.params.slug;const slug=String(raw||"").trim();if(!slug)return new Response("Category not found",{status:404});return Response.redirect(new URL(`/ar/category/${encodeURIComponent(decodeURIComponent(slug))}`,context.request.url).toString(),301)}

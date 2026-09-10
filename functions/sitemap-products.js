@@ -1,54 +1,8 @@
-const SUPABASE_URL = "https://zjfdedemugnfplrkojax.supabase.co";
-const SUPABASE_KEY = "sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
-const SITE_URL = "https://savermarketshop.com";
-
-function xmlEscape(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-export async function onRequestGet() {
-  const endpoint = `${SUPABASE_URL}/rest/v1/products?select=sku,availability&is_active=eq.true&order=created_at.desc`;
-  const response = await fetch(endpoint, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      Accept: "application/json"
-    }
-  });
-
-  if (!response.ok) {
-    return new Response("Product sitemap temporarily unavailable", {
-      status: 503,
-      headers: { "content-type": "text/plain; charset=UTF-8", "Retry-After": "60" }
-    });
-  }
-
-  const rows = await response.json();
-  const seen = new Set();
-  const urls = [];
-
-  for (const row of Array.isArray(rows) ? rows : []) {
-    const sku = String(row?.sku || "").replace(/^#/, "").trim();
-    if (!sku || seen.has(sku.toUpperCase())) continue;
-    seen.add(sku.toUpperCase());
-    urls.push(`${SITE_URL}/p/${encodeURIComponent(sku)}`);
-  }
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(url => `  <url><loc>${xmlEscape(url)}</loc></url>`).join("\n") +
-    `\n</urlset>\n`;
-
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "content-type": "application/xml; charset=UTF-8",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
-    }
-  });
-}
+const SUPABASE_URL="https://zjfdedemugnfplrkojax.supabase.co";
+const SUPABASE_KEY="sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
+const SITE_URL="https://savermarketshop.com";
+function esc(v){return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
+function slugify(value){return String(value||"").trim().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/['’]/g,"").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"")||"category"}
+function productEntry(sku,lang,images){const ar=`${SITE_URL}/ar/p/${encodeURIComponent(sku)}`,en=`${SITE_URL}/en/p/${encodeURIComponent(sku)}`,loc=lang==="ar"?ar:en;const imageXml=(images||[]).slice(0,5).map(u=>`\n    <image:image><image:loc>${esc(u)}</image:loc></image:image>`).join("");return `  <url><loc>${esc(loc)}</loc>\n    <xhtml:link rel="alternate" hreflang="ar" href="${esc(ar)}"/>\n    <xhtml:link rel="alternate" hreflang="en" href="${esc(en)}"/>\n    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(ar)}"/>${imageXml}\n  </url>`}
+function categoryEntry(category,lang){const slug=slugify(category),ar=`${SITE_URL}/ar/category/${encodeURIComponent(slug)}`,en=`${SITE_URL}/en/category/${encodeURIComponent(slug)}`,loc=lang==="ar"?ar:en;return `  <url><loc>${esc(loc)}</loc>\n    <xhtml:link rel="alternate" hreflang="ar" href="${esc(ar)}"/>\n    <xhtml:link rel="alternate" hreflang="en" href="${esc(en)}"/>\n    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(ar)}"/>\n  </url>`}
+export async function onRequestGet(){const endpoint=`${SUPABASE_URL}/rest/v1/products?select=sku,category,product_images(image_url,sort_order)&is_active=eq.true&order=created_at.desc`;const r=await fetch(endpoint,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,Accept:"application/json"}});if(!r.ok)return new Response("Product sitemap temporarily unavailable",{status:503,headers:{"content-type":"text/plain; charset=UTF-8","Retry-After":"60"}});const rows=await r.json(),seenSku=new Set(),seenCat=new Set(),entries=[];for(const row of Array.isArray(rows)?rows:[]){const sku=String(row?.sku||"").replace(/^#/,"").trim();if(sku&&!seenSku.has(sku.toUpperCase())){seenSku.add(sku.toUpperCase());const images=Array.isArray(row.product_images)?row.product_images.slice().sort((a,b)=>Number(a?.sort_order||0)-Number(b?.sort_order||0)).map(x=>x?.image_url).filter(Boolean):[];entries.push(productEntry(sku,"ar",images),productEntry(sku,"en",images))}const c=String(row?.category||"").trim();if(c)seenCat.add(c)}for(const c of [...seenCat].sort((a,b)=>a.localeCompare(b)))entries.push(categoryEntry(c,"ar"),categoryEntry(c,"en"));const xml=`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${entries.join("\n")}\n</urlset>\n`;return new Response(xml,{status:200,headers:{"content-type":"application/xml; charset=UTF-8","Cache-Control":"public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"}})}

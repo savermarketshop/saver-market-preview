@@ -1,8 +1,7 @@
 const SUPABASE_URL = "https://zjfdedemugnfplrkojax.supabase.co";
 const SUPABASE_KEY = "sb_publishable_X6KkTWLjEicaJZlWJkjkdw_Jn8mwdxI";
 const SITE_URL = "https://savermarketshop.com";
-const PAGE_LANG = "ar";
-const LEGACY_ALIAS = true;
+const PAGE_LANG = "en";
 
 function clean(value){ return String(value == null ? "" : value).trim(); }
 function htmlEscape(value){return clean(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}

@@ -1,32 +1,34 @@
-SAVER MARKET V5 - SESSION RESILIENCE + GOOGLE PRODUCT SEO
+SAVER MARKET V6 – MULTILINGUAL GOOGLE SEO UPGRADE
 
-This is the COMPLETE replacement/merge package based on V4.
+Merge these files into the ROOT of the existing GitHub repository.
+Replace matching files and keep all other existing site files.
 
-Upload/merge into the ROOT of the existing GitHub repository:
+Files included:
+- index.html
+- robots.txt
+- sitemap.xml
+- functions/sitemap-products.js
+- functions/p/[sku].js                  (legacy /p/SKU compatibility)
+- functions/ar/p/[sku].js               (Arabic product SEO page)
+- functions/en/p/[sku].js               (English product SEO page)
+- functions/ar/category/[slug].js        (Arabic category SEO page)
+- functions/en/category/[slug].js        (English category SEO page)
+- functions/category/[slug].js           (legacy/default category redirect)
 
-index.html                      -> replace existing index.html
-robots.txt                      -> replace existing robots.txt
-sitemap.xml                     -> replace existing sitemap.xml
-functions/sitemap-products.js   -> replace existing file
-functions/p/[sku].js            -> replace existing file
+DO NOT DELETE: sw.js, settings.js, hero-data.js, products-data.js, images, admin files, manifests, privacy.html, terms.html, or other existing files.
 
-DO NOT delete the rest of the website repository (settings.js, hero-data.js,
-products-data.js, sw.js, images, admin files, manifest files, privacy.html,
-terms.html, etc.).
+What V6 adds:
+- Separate Arabic and English product URLs with hreflang.
+- Dynamic Arabic and English category landing pages.
+- Crawlable category links and localized product links.
+- Product/category BreadcrumbList structured data.
+- Better image SEO: descriptive alt text, image sitemap entries, primary page image metadata.
+- Real approved product reviews are added to Product schema automatically when they exist. No ratings are invented.
+- Existing V5 customer-session/JWT fix is preserved.
+- Existing sitemap URL remains https://savermarketshop.com/sitemap-products, so Search Console does not need a new sitemap address.
 
-V5 SESSION FIX
-- Reopens old Home Screen / installed-app sessions safely.
-- Refreshes an access token before profile/orders calls when possible.
-- If the saved refresh token is no longer valid, only the local login session is
-  cleared and the customer is asked to sign in again.
-- Account/order data in Supabase is NOT deleted.
-- Raw technical messages such as "JWT expired" are no longer shown to customers.
-- Temporary internet/server errors do not erase the saved customer session.
-- Current cart is preserved locally when an unrecoverable old login expires.
-
-GOOGLE SEO KEPT
-- Individual /p/SKU product pages
-- Dynamic product sitemap for active current/future products
-- Arabic + English SEO metadata and Product structured data
-- Visible product page remains single-language based on the selected site language
-- Product snippets and merchant-listing eligibility remain unchanged
+After Cloudflare deploys, test:
+1) https://savermarketshop.com/ar/p/STK132
+2) https://savermarketshop.com/en/p/STK132
+3) https://savermarketshop.com/sitemap-products
+4) Click a category on the homepage; URL should become /ar/category/... or /en/category/...

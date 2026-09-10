@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- Saver Market build: V5 session-resilience + Google product SEO -->
+    <!-- Saver Market build: V6 multilingual SEO + category landing pages + session resilience -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saver Market Syria | Online Shopping &amp; Accessories</title>
@@ -6070,7 +6070,7 @@ html[dir="rtl"] .saver-order-picker{
                                 ${product.availability}
                             </span>
                         </div>
-                        <h3 class="product-title"><a class="product-title-link saver-product-seo-link" href="/p/${encodeURIComponent(product.sku.replace('#',''))}" onclick="event.preventDefault(); displayDedicatedProductDetailsPage('${product.id}')">${titleStr}</a></h3>
+                        <h3 class="product-title"><a class="product-title-link saver-product-seo-link" href="/${currentLanguage}/p/${encodeURIComponent(product.sku.replace('#',''))}" onclick="event.preventDefault(); displayDedicatedProductDetailsPage('${product.id}')">${titleStr}</a></h3>
                         <p class="product-desc">${descStr}</p>
                         <div class="price-row">
                             <div class="price-group">
@@ -6662,7 +6662,7 @@ aboutSlides[current].classList.add("active");
     window.shareProduct = function(type, productId){
         const p=productsDatabase.find(x=>x.id===productId); if(!p)return;
         const name=currentLanguage==='ar'?p.nameAr:p.nameEn;
-        const url = `${location.origin}/p/${encodeURIComponent(p.sku.replace('#',''))}`;
+        const url = `${location.origin}/${currentLanguage}/p/${encodeURIComponent(p.sku.replace('#',''))}`;
         const text=name+' - '+formatPrice(p.price)+' - '+p.sku;
         if(type==='whatsapp') window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
         if(type==='facebook') window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url),'_blank');
@@ -6776,7 +6776,7 @@ aboutSlides[current].classList.add("active");
             const target=document.getElementById('productDetailsContent'); if(!target||!p)return;
             const base=target.querySelector('.details-container');
             if(base){
-                const crumb=document.createElement('div');crumb.className='breadcrumb';crumb.innerHTML=`<button onclick="switchView('home')">${currentLanguage==='ar'?'الرئيسية':'Home'}</button><span>›</span><button onclick="switchView('products')">${currentLanguage==='ar'?'المنتجات':'Products'}</button><span>›</span><span>${saverCategoryLabel(p.category)}</span><span>›</span><span>${p.sku}</span>`;target.insertBefore(crumb,base);
+                const crumb=document.createElement('div');crumb.className='breadcrumb';const catUrl=window.saverCategoryUrl?window.saverCategoryUrl(p.category):'#';crumb.innerHTML=`<a href="/">${currentLanguage==='ar'?'الرئيسية':'Home'}</a><span>›</span><a href="${catUrl}">${saverCategoryLabel(p.category)}</a><span>›</span><span>${p.sku}</span>`;target.insertBefore(crumb,base);
                 const info=base.querySelector('.details-info'); if(info){
                     const share=document.createElement('div');share.className='share-row';share.innerHTML=`<button class="share-btn" onclick="shareProduct('whatsapp','${p.id}')"><i class="fab fa-whatsapp"></i> ${currentLanguage === 'ar' ? 'واتساب' : 'WhatsApp'}</button><button class="share-btn" onclick="shareProduct('facebook','${p.id}')"><i class="fab fa-facebook"></i> ${currentLanguage === 'ar' ? 'فيسبوك' : 'Facebook'}</button><button class="share-btn" onclick="shareProduct('copy','${p.id}')"><i class="fas fa-link"></i> ${currentLanguage === 'ar' ? 'نسخ الرابط' : 'Copy link'}</button>`;info.appendChild(share);
                 }
@@ -6793,7 +6793,7 @@ aboutSlides[current].classList.add("active");
         const params = new URLSearchParams(location.search);
         let requestedSku = params.get('product');
         if (!requestedSku) {
-            const pathMatch = location.pathname.match(/^\/p\/([^/?#]+)\/?$/i);
+            const pathMatch = location.pathname.match(/^\/(?:(?:ar|en)\/)?p\/([^/?#]+)\/?$/i);
             if (pathMatch) requestedSku = decodeURIComponent(pathMatch[1]);
         }
         if (!requestedSku && location.hash.startsWith('#product=')) {
@@ -7356,12 +7356,13 @@ aboutSlides[current].classList.add("active");
         if (!row || !drawer) return;
 
         row.innerHTML = categories.slice(0, 8).map((category, index) => `
-            <button class="animated-category-card"
+            <a class="animated-category-card"
+                    href="${window.saverCategoryUrl ? window.saverCategoryUrl(category) : '#'}"
                     style="animation-delay:${index * 70}ms"
-                    onclick="chooseCategory('${String(category).replace(/'/g, "\\'")}')">
+                    onclick="event.preventDefault();chooseCategory('${String(category).replace(/'/g, "\\'")}')">
                 <i class="fas ${CATEGORY_ICONS[index % CATEGORY_ICONS.length]}"></i>
                 <strong>${categoryLabel(category)}</strong>
-            </button>
+            </a>
         `).join("");
 
         drawer.innerHTML = categories.map((category, index) => `
@@ -7579,13 +7580,14 @@ aboutSlides[current].classList.add("active");
                 : `${count} product${count === 1 ? "" : "s"}`;
 
             return `
-                <button class="categories-page-card"
+                <a class="categories-page-card"
+                        href="${window.saverCategoryUrl ? window.saverCategoryUrl(category) : '#'}"
                         style="animation-delay:${index * 60}ms"
-                        onclick="chooseCategory('${String(category).replace(/'/g, "\\'")}')">
+                        onclick="event.preventDefault();chooseCategory('${String(category).replace(/'/g, "\\'")}')">
                     <i class="fas ${categoryPageIcon(category)}"></i>
                     <strong>${categoriesPageLabel(category)}</strong>
                     <small>${countText}</small>
-                </button>
+                </a>
             `;
         }).join("");
     };
@@ -8865,22 +8867,22 @@ document.addEventListener("DOMContentLoaded", function () {
     "use strict";
 
     function applyInitialArabicLanguage() {
-        /* The document is Arabic-first; keep the JS state in sync before the
-           first user interaction. This fixes the old state where direction
-           changed but the visible language could remain unchanged. */
-        currentLanguage = 'ar';
-        document.documentElement.lang = 'ar';
-        document.documentElement.dir = 'rtl';
+        /* Arabic remains the normal store default. Dedicated /en/ and /ar/
+           SEO routes explicitly select their matching language before render. */
+        const routeLanguage = (window.location.pathname.match(/^\/(ar|en)(?:\/|$)/i) || [])[1];
+        currentLanguage = routeLanguage && routeLanguage.toLowerCase() === 'en' ? 'en' : 'ar';
+        document.documentElement.lang = currentLanguage;
+        document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
 
         const switcher = document.getElementById('langSwitch');
-        if (switcher) switcher.textContent = 'English';
+        if (switcher) switcher.textContent = currentLanguage === 'ar' ? 'English' : 'العربية';
 
         document.querySelectorAll('[data-tr]').forEach(element => {
             const key = element.getAttribute('data-tr');
-            if (translations?.ar?.[key]) element.textContent = translations.ar[key];
+            if (translations?.[currentLanguage]?.[key]) element.textContent = translations[currentLanguage][key];
         });
         document.querySelectorAll('[data-en][data-ar]').forEach(element => {
-            element.textContent = element.getAttribute('data-ar') || element.textContent;
+            element.textContent = element.getAttribute(currentLanguage === 'ar' ? 'data-ar' : 'data-en') || element.textContent;
         });
 
         if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
@@ -10839,8 +10841,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if(!sameProduct){
           const product = (window.productsDatabase || productsDatabase || []).find(p => String(p.id) === String(productId));
           const cleanSku = product ? String(product.sku || '').replace(/^#/, '') : '';
-          const productPath = cleanSku ? `/p/${encodeURIComponent(cleanSku)}` : location.href;
-          const directProductLoad = cleanSku && location.pathname.replace(/\/$/, '') === productPath.replace(/\/$/, '');
+          const productPath = cleanSku ? `/${currentLanguage}/p/${encodeURIComponent(cleanSku)}` : location.href;
+          const directProductLoad = cleanSku && /^\/(?:(?:ar|en)\/)?p\//i.test(location.pathname);
           const nextState = {saverView:'details', productId:String(productId), saverMarket:true};
 
           if(directProductLoad){
@@ -11389,7 +11391,18 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     document.getElementById("saver-server-product-schema")?.remove();
   }
   function productPath(product){
+    return `/${currentLanguage}/p/${encodeURIComponent(text(product?.sku).replace(/^#/, ""))}`;
+  }
+  function legacyProductPath(product){
     return `/p/${encodeURIComponent(text(product?.sku).replace(/^#/, ""))}`;
+  }
+  function setAlternateLanguage(hreflang, href){
+    let node = document.head.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`);
+    if(!node){ node=document.createElement("link"); node.rel="alternate"; node.hreflang=hreflang; document.head.appendChild(node); }
+    node.href=href;
+  }
+  function removeLanguageAlternates(){
+    document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach(node=>node.remove());
   }
   function availabilityUrl(value){
     const a = text(value).toLowerCase();
@@ -11427,6 +11440,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     setMetaName("twitter:title", HOME.title);
     setMetaName("twitter:description", "Online shopping for accessories, beauty, home products, toys and everyday essentials with delivery across Syria.");
     setMetaName("twitter:image", HOME.image);
+    removeLanguageAlternates();
     document.head.querySelector('meta[property="product:price:amount"]')?.remove();
     document.head.querySelector('meta[property="product:price:currency"]')?.remove();
     removeProductSchema();
@@ -11434,9 +11448,18 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 
   window.saverApplyProductSeo = function(product){
     if(!product) return;
-    const name = bilingualName(product);
-    const title = clip(`${name} | Saver Market Syria`, 110);
-    const description = bilingualDescription(product);
+    const arName = text(product?.nameAr) || text(product?.nameEn) || "Product";
+    const enName = text(product?.nameEn) || text(product?.nameAr) || "Product";
+    const name = currentLanguage === "ar" ? arName : enName;
+    const localDesc = clip(currentLanguage === "ar" ? (product?.descAr || product?.descEn) : (product?.descEn || product?.descAr), 210);
+    const cleanSkuForText = text(product?.sku).replace(/^#/, "");
+    const suffix = currentLanguage === "ar"
+      ? `تسوق أونلاين من Saver Market مع التوصيل داخل سوريا ودمشق.${cleanSkuForText ? ` رمز المنتج ${cleanSkuForText}.` : ""}`
+      : `Shop online from Saver Market with delivery across Syria, including Damascus.${cleanSkuForText ? ` SKU ${cleanSkuForText}.` : ""}`;
+    const description = clip([localDesc, suffix].filter(Boolean).join(" "), 360);
+    const title = clip(currentLanguage === "ar"
+      ? `${name} | شراء أونلاين في سوريا | Saver Market`
+      : `${name} | Buy Online in Syria | Saver Market`, 110);
     const url = `${location.origin}${productPath(product)}`;
     const images = Array.isArray(product.images) ? product.images.map(absoluteUrl).filter(Boolean) : [];
     const image = images[0] || HOME.image;
@@ -11454,6 +11477,12 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     setMetaName("twitter:title", title);
     setMetaName("twitter:description", description);
     setMetaName("twitter:image", image);
+    setMetaProperty("og:image:alt", name);
+    setMetaName("twitter:image:alt", name);
+    const skuPath = encodeURIComponent(cleanSkuForText);
+    setAlternateLanguage("ar", `${location.origin}/ar/p/${skuPath}`);
+    setAlternateLanguage("en", `${location.origin}/en/p/${skuPath}`);
+    setAlternateLanguage("x-default", `${location.origin}/ar/p/${skuPath}`);
     setMetaProperty("product:price:amount", String(Number(product.price || 0)));
     setMetaProperty("product:price:currency", "SYP");
 
@@ -11467,6 +11496,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
       "description": description,
       "sku": cleanSku,
       "url": url,
+      "mainEntityOfPage": url,
       "category": text(product.category),
       "image": images,
       "offers": {
@@ -11526,7 +11556,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
       const result = oldSwitch.apply(this, arguments);
       if(targetViewId !== "details"){
         window.saverApplyHomeSeo();
-        if(/^\/p\//i.test(location.pathname)){
+        if(/^\/(?:(?:ar|en)\/)?p\//i.test(location.pathname)){
           history.replaceState(Object.assign({}, history.state || {}, {saverView:targetViewId || "home", saverMarket:true}), "", "/");
         }
       }
@@ -11542,7 +11572,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     const params = new URLSearchParams(location.search);
     let sku = params.get("product");
     if(!sku){
-      const match = location.pathname.match(/^\/p\/([^/?#]+)\/?$/i);
+      const match = location.pathname.match(/^\/(?:(?:ar|en)\/)?p\/([^/?#]+)\/?$/i);
       if(match) sku = decodeURIComponent(match[1]);
     }
     return text(sku).replace(/^#/, "").toUpperCase();
@@ -11582,6 +11612,199 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
   });
 })();
 </script>
+
+
+<script id="saver-v6-multilingual-category-seo">
+(function(){
+  "use strict";
+
+  const CATEGORY_AR = {
+    "Women's Fashion":"أزياء نسائية","Men's Fashion":"أزياء رجالية","Accessories":"إكسسوارات",
+    "Beauty":"تجميل","Home":"منتجات منزلية","Home Products":"منتجات منزلية","Kids":"أطفال",
+    "Shoes":"أحذية","Bags":"حقائب","Electronics":"إلكترونيات","Luxury Collection":"المجموعة الفاخرة",
+    "Jewelry":"مجوهرات","Jewellery":"مجوهرات","Makeup":"مكياج","Toys":"ألعاب",
+    "Stationery":"قرطاسية","School Supplies":"مستلزمات مدرسية","Personal Care":"العناية الشخصية",
+    "Kitchen":"المطبخ","Beauty Tools":"أدوات تجميل","Jewelry & Accessories":"مجوهرات وإكسسوارات"
+  };
+
+  function clean(v){ return String(v == null ? "" : v).trim(); }
+  function slugify(value){
+    return clean(value).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+      .replace(/['’]/g,"").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"") || "category";
+  }
+  function catLabel(category, lang){ return lang === "ar" ? (CATEGORY_AR[category] || category) : category; }
+  function currentLang(){ return (typeof currentLanguage !== "undefined" && currentLanguage === "en") ? "en" : "ar"; }
+
+  window.saverSeoCategorySlug = slugify;
+  window.saverCategoryUrl = function(category, lang=currentLang()){
+    return `/${lang}/category/${encodeURIComponent(slugify(category))}`;
+  };
+  window.saverProductUrl = function(product, lang=currentLang()){
+    const sku=clean(product?.sku).replace(/^#/,"");
+    return `/${lang}/p/${encodeURIComponent(sku)}`;
+  };
+
+  function routeCategory(){
+    const m=location.pathname.match(/^\/(ar|en)\/category\/([^/?#]+)\/?$/i);
+    return m ? {lang:m[1].toLowerCase(), slug:decodeURIComponent(m[2])} : null;
+  }
+  function categoryBySlug(slug){
+    const list=(typeof productsDatabase!=="undefined"?productsDatabase:window.productsDatabase)||[];
+    const match=list.find(p=>slugify(p.category)===slug);
+    return match?.category || "";
+  }
+  function setCanonical(url){
+    let n=document.head.querySelector('link[rel="canonical"]');
+    if(!n){n=document.createElement('link');n.rel='canonical';document.head.appendChild(n)}
+    n.href=url;
+  }
+  function setMeta(selector,attr,value){
+    let n=document.head.querySelector(selector);
+    if(!n){n=document.createElement('meta');document.head.appendChild(n)}
+    Object.entries(attr).forEach(([k,v])=>n.setAttribute(k,v));
+    n.setAttribute('content',value);
+  }
+  function setAlt(lang,href){
+    let n=document.head.querySelector(`link[rel="alternate"][hreflang="${lang}"]`);
+    if(!n){n=document.createElement('link');n.rel='alternate';n.hreflang=lang;document.head.appendChild(n)}
+    n.href=href;
+  }
+  function categoryDescription(category,lang){
+    const label=catLabel(category,lang);
+    return lang==='ar'
+      ? `تسوق ${label} أونلاين من Saver Market. اكتشف المنتجات والأسعار بالليرة السورية مع التوصيل داخل سوريا ودمشق.`
+      : `Shop ${label} online at Saver Market. Browse products and prices in SYP with delivery across Syria, including Damascus.`;
+  }
+  function applyCategorySeo(category,lang=currentLang()){
+    if(!category)return;
+    const label=catLabel(category,lang), slug=slugify(category);
+    const path=`/${lang}/category/${encodeURIComponent(slug)}`;
+    const url=location.origin+path;
+    const title=lang==='ar' ? `${label} في سوريا | تسوق أونلاين | Saver Market` : `${label} in Syria | Shop Online | Saver Market`;
+    const desc=categoryDescription(category,lang);
+    document.title=title;
+    setCanonical(url);
+    setMeta('meta[name="description"]',{name:'description'},desc);
+    setMeta('meta[property="og:type"]',{property:'og:type'},'website');
+    setMeta('meta[property="og:title"]',{property:'og:title'},title);
+    setMeta('meta[property="og:description"]',{property:'og:description'},desc);
+    setMeta('meta[property="og:url"]',{property:'og:url'},url);
+    setMeta('meta[name="twitter:title"]',{name:'twitter:title'},title);
+    setMeta('meta[name="twitter:description"]',{name:'twitter:description'},desc);
+    setAlt('ar',`${location.origin}/ar/category/${encodeURIComponent(slug)}`);
+    setAlt('en',`${location.origin}/en/category/${encodeURIComponent(slug)}`);
+    setAlt('x-default',`${location.origin}/ar/category/${encodeURIComponent(slug)}`);
+
+    const heading=document.querySelector('#view-products .section-header .section-title');
+    if(heading) heading.textContent=label;
+    let sub=document.getElementById('saverCategorySeoSubtitle');
+    if(!sub){
+      sub=document.createElement('p');sub.id='saverCategorySeoSubtitle';sub.style.cssText='text-align:center;color:#666;max-width:760px;margin:8px auto 0;';
+      document.querySelector('#view-products .section-header')?.appendChild(sub);
+    }
+    sub.textContent=desc;
+  }
+  function resetProductsHeading(){
+    const heading=document.querySelector('#view-products .section-header .section-title');
+    if(heading) heading.textContent=currentLang()==='ar' ? translations.ar.our_products : translations.en.our_products;
+    document.getElementById('saverCategorySeoSubtitle')?.remove();
+  }
+  function applyCategoryRoute(replace=false){
+    const info=routeCategory();
+    if(!info)return false;
+    if(typeof currentLanguage!=="undefined" && currentLanguage!==info.lang){
+      currentLanguage=info.lang;
+      document.documentElement.lang=info.lang;
+      document.documentElement.dir=info.lang==='ar'?'rtl':'ltr';
+    }
+    const category=categoryBySlug(info.slug);
+    if(!category)return false;
+    window.saverLastCategoryUrl=window.saverCategoryUrl(category,info.lang);
+    const select=document.getElementById('filterCategory');
+    if(!select || ![...select.options].some(o=>o.value===category))return false;
+    if(typeof switchView==='function') switchView('products');
+    select.value=category;
+    if(typeof processFilters==='function') processFilters();
+    applyCategorySeo(category,info.lang);
+    const state=Object.assign({},history.state||{},{saverView:'products',saverCategory:category,saverMarket:true});
+    if(replace) history.replaceState(state,'',window.saverCategoryUrl(category,info.lang));
+    return true;
+  }
+
+  const originalChoose=window.chooseCategory;
+  window.chooseCategory=function(category){
+    if(!category){ if(originalChoose)return originalChoose.apply(this,arguments); return; }
+    const url=window.saverCategoryUrl(category,currentLang());
+    window.saverLastCategoryUrl=url;
+    const same=location.pathname.replace(/\/$/,'')===url.replace(/\/$/,'');
+    const state={saverView:'products',saverCategory:category,saverMarket:true};
+    if(same) history.replaceState(state,'',url); else history.pushState(state,'',url);
+    if(typeof switchView==='function') switchView('products');
+    setTimeout(()=>{
+      const select=document.getElementById('filterCategory');
+      if(select){select.value=category;if(typeof processFilters==='function')processFilters()}
+      applyCategorySeo(category,currentLang());
+    },0);
+  };
+  try{chooseCategory=window.chooseCategory}catch(_){ }
+
+  const oldToggle=window.toggleLanguage || (typeof toggleLanguage==='function'?toggleLanguage:null);
+  if(oldToggle && !oldToggle.__v6SeoLocale){
+    const wrapped=function(){
+      const categoryRoute=routeCategory();
+      const result=oldToggle.apply(this,arguments);
+      if(categoryRoute){
+        const category=categoryBySlug(categoryRoute.slug);
+        if(category){
+          const next=window.saverCategoryUrl(category,currentLang());
+          history.replaceState(Object.assign({},history.state||{},{saverView:'products',saverCategory:category,saverMarket:true}),'',next);
+          window.saverLastCategoryUrl=next;
+          applyCategorySeo(category,currentLang());
+        }
+      }
+      return result;
+    };
+    wrapped.__v6SeoLocale=true;window.toggleLanguage=wrapped;try{toggleLanguage=wrapped}catch(_){ }
+  }
+
+  const oldSwitch=window.switchView || (typeof switchView==='function'?switchView:null);
+  if(oldSwitch && !oldSwitch.__v6CategoryHeading){
+    const wrapped=function(view){
+      const result=oldSwitch.apply(this,arguments);
+      if(view==='products'){
+        const info=routeCategory();
+        if(!info)resetProductsHeading();
+      }
+      return result;
+    };
+    wrapped.__v6CategoryHeading=true;window.switchView=wrapped;try{switchView=wrapped}catch(_){ }
+  }
+
+  /* Keep product language URL synchronized after an in-page language switch. */
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest?.('#langSwitch');if(!btn)return;
+    setTimeout(()=>{
+      const id=window.currentDedicatedProductId;
+      const list=(typeof productsDatabase!=="undefined"?productsDatabase:window.productsDatabase)||[];
+      const product=list.find(p=>String(p.id)===String(id));
+      if(product && document.getElementById('view-details')?.classList.contains('active')){
+        const path=window.saverProductUrl(product,currentLang());
+        history.replaceState(Object.assign({},history.state||{},{saverView:'details',productId:String(product.id),saverMarket:true}),'',path);
+      }
+    },30);
+  },true);
+
+  document.addEventListener('DOMContentLoaded',function(){
+    let tries=0;
+    const timer=setInterval(()=>{tries++;if(applyCategoryRoute(true)||tries>=50)clearInterval(timer)},150);
+  });
+  window.addEventListener('popstate',()=>setTimeout(()=>{ if(!applyCategoryRoute(false) && !/^\/(?:(?:ar|en)\/)?p\//i.test(location.pathname)) resetProductsHeading(); },30));
+})();
+</script>
+<style id="saver-v6-seo-link-style">
+.animated-category-card,.categories-page-card{text-decoration:none;color:inherit}
+.saver-seo-category-breadcrumb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:#777;font-size:.86rem;margin-bottom:18px}
+</style>
 
 </body>
 </html>
