@@ -1,18 +1,18 @@
-SAVER MARKET SEO UPGRADE - GITHUB UPLOAD
+SAVER MARKET SEO PRODUCT PAGE FIX V3
+
+This package fixes the blank /p/SKU product pages on Cloudflare Pages.
 
 Merge these files into the ROOT of your existing GitHub repository:
 
 index.html                      -> replace existing index.html
 robots.txt                      -> replace existing robots.txt
 sitemap.xml                     -> replace existing sitemap.xml
-functions/sitemap-products.js   -> add/replace this file
-functions/p/[sku].js            -> add/replace this file
+functions/sitemap-products.js   -> replace existing file
+functions/p/[sku].js            -> IMPORTANT: replace existing file
 
-IMPORTANT:
-Do NOT delete your existing website files such as products-data.js, settings.js,
-hero-data.js, images, admin files, privacy.html, terms.html, and other site files.
-
+Do NOT delete your other existing website files.
 Keep the folder structure exactly as shown.
-Your GitHub-connected Cloudflare Pages project should deploy automatically after commit.
+GitHub-connected Cloudflare Pages should deploy automatically after commit.
 
-Future active products with a SKU are picked up dynamically by the product sitemap.
+After deployment test:
+https://savermarketshop.com/p/STK132

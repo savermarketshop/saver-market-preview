@@ -99,6 +99,9 @@ function replaceMeta(html, product, data, sku) {
   const canonicalEsc = htmlEscape(data.canonical);
   const imageEsc = htmlEscape(image);
 
+  if (!/<base\s/i.test(html)) {
+    html = html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n    <base href="/">`);
+  }
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${titleEsc}</title>`);
   html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta name="description" content="${descEsc}">`);
   html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?\s*>/i, `<link rel="canonical" href="${canonicalEsc}">`);
@@ -185,12 +188,23 @@ function injectServerProduct(html, product, data, sku) {
 }
 
 async function getIndexHtml(context, status = 200) {
+  // Ask Pages' asset server for the root route, not /index.html.
+  // Cloudflare normalizes /index.html to /, and the redirect response can have
+  // an empty body when fetched internally, which caused blank /p/SKU pages.
   const assetUrl = new URL(context.request.url);
-  assetUrl.pathname = "/index.html";
+  assetUrl.pathname = "/";
   assetUrl.search = "";
   assetUrl.hash = "";
-  const assetResponse = await context.env.ASSETS.fetch(new Request(assetUrl.toString(), context.request));
+
+  const assetRequest = new Request(assetUrl.toString(), {
+    method: "GET",
+    headers: { "Accept": "text/html" }
+  });
+  const assetResponse = await context.env.ASSETS.fetch(assetRequest);
   const html = await assetResponse.text();
+  if (!html || !/<html[\s>]/i.test(html)) {
+    throw new Error(`Could not load Saver Market index asset (${assetResponse.status})`);
+  }
   const headers = new Headers(assetResponse.headers);
   headers.set("content-type", "text/html; charset=UTF-8");
   return { html, headers, status };
