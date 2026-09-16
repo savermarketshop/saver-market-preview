@@ -1,25 +1,45 @@
-SAVER MARKET V6.1 - ROUTE LANGUAGE FIX
+SAVER MARKET V8 - FINAL SEO BUILD
 
-Complete V6 package with one targeted correction:
-- /en/p/SKU stays English.
-- /ar/p/SKU stays Arabic.
-- English/Arabic category routes remain working.
-- V5 JWT/session fix remains included.
-- Product sitemap, multilingual SEO, hreflang, Product schema,
-  Breadcrumb schema and image SEO remain included.
+Use this instead of V7. V8 is the final technical/content SEO build before launch.
 
-Merge these files into the ROOT of the existing GitHub repository:
+What V8 preserves:
+- V5 expired JWT/session recovery
+- multilingual /ar/ and /en/ product URLs
+- multilingual category URLs
+- Product / Merchant / Breadcrumb structured data
+- dynamic product/category/image sitemap
+- V7 homepage and category content SEO
 
-index.html
-robots.txt
-sitemap.xml
-functions/sitemap-products.js
-functions/p/[sku].js
-functions/ar/p/[sku].js
-functions/en/p/[sku].js
-functions/ar/category/[slug].js
-functions/en/category/[slug].js
-functions/category/[slug].js
+What V8 adds:
+- a dedicated English homepage: https://savermarketshop.com/en/
+- Arabic/fallback homepage remains: https://savermarketshop.com/
+- correct homepage hreflang + canonicals
+- language-specific homepage titles/descriptions instead of a mixed-language title
+- server-rendered homepage category links (not dependent only on JavaScript)
+- server-rendered Arabic/English homepage text for crawlers
+- localized Home breadcrumb links from English product/category pages
+- /en/ added to the main sitemap with hreflang
+- language toggle keeps the homepage URL synchronized
 
-Do NOT delete sw.js, settings.js, hero-data.js, products-data.js, images,
-admin files, manifests, privacy.html, terms.html, or other existing files.
+UPLOAD:
+Merge these files into the ROOT of the existing GitHub repository and replace matching files.
+
+Do NOT delete unrelated existing production files such as:
+sw.js, settings.js, hero-data.js, products-data.js, images, admin files,
+manifest files, privacy.html, terms.html, or other existing assets.
+
+After Cloudflare deployment test:
+1) https://savermarketshop.com/
+2) https://savermarketshop.com/en/
+3) language switch on both homepages
+4) /en/p/STK132 and /ar/p/STK132
+5) one English and Arabic category page
+6) My Account from the Home Screen/PWA
+7) https://savermarketshop.com/sitemap-products
+8) https://savermarketshop.com/sitemap.xml
+
+Then in Search Console request indexing only for:
+- https://savermarketshop.com/
+- https://savermarketshop.com/en/
+
+Do not keep changing SEO code after this unless Search Console reports a real technical problem.
